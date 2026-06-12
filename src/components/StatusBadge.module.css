@@ -1,0 +1,44 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* 有效 - 绿色 */
+.active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+.active .dot {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}
+
+/* 已过期 - 黄色 */
+.expired {
+  background: rgba(234, 179, 8, 0.12);
+  color: #facc15;
+}
+.expired .dot {
+  background: #facc15;
+}
+
+/* 已撤销 - 红色 */
+.revoked {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+.revoked .dot {
+  background: #f87171;
+}

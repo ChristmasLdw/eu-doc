@@ -1,0 +1,598 @@
+/* ===== 首页样式 ===== */
+
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ===== 主搜索区域 ===== */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  padding: 120px 24px 80px;
+}
+
+.heroContent {
+  max-width: 720px;
+  width: 100%;
+  text-align: center;
+}
+
+/* 标题 */
+.titleSection {
+  margin-bottom: 48px;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  /* 渐变文字效果 */
+  background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* ===== 搜索框 ===== */
+.searchForm {
+  margin-bottom: 32px;
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 6px 6px 6px 20px;
+  transition: all 0.3s ease;
+  /* 聚焦时的发光效果 */
+  box-shadow: var(--shadow-card);
+}
+
+.searchBox:focus-within {
+  border-color: var(--accent-blue);
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.searchInput {
+  flex: 1;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font-family);
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+/* 清除按钮 */
+.clearBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.searchButton {
+  flex-shrink: 0;
+  padding: 14px 32px;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.searchButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.searchButton:active {
+  transform: translateY(0);
+}
+
+/* ===== 搜索建议下拉 ===== */
+.suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  background: #141b2d;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  z-index: 200;
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  background: var(--bg-card-hover);
+}
+
+/* 按类型区分背景色 */
+.type_company {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.type_product {
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.type_model {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.type_certNo {
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.type_company:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.type_product:hover {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.type_model:hover {
+  background: rgba(168, 85, 247, 0.15);
+}
+
+.type_certNo:hover {
+  background: rgba(251, 191, 36, 0.15);
+}
+
+.suggestionType {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.suggestionType[data-type="company"] {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+.suggestionType[data-type="product"] {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+.suggestionType[data-type="model"] {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+}
+
+.suggestionType[data-type="certNo"] {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.suggestionValue {
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== 快捷分类 ===== */
+.categories {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.categoriesLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.categoryList {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.categoryTag {
+  padding: 6px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.categoryTag:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+/* ===== 统计区域 ===== */
+.statsSection {
+  padding: 60px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.statsContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.statCard {
+  text-align: center;
+  padding: 32px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.statNumber {
+  font-size: 36px;
+  font-weight: 700;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ===== 使用说明 ===== */
+.guideSection {
+  padding: 80px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.guideContainer {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.guideTitle {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 48px;
+  color: var(--text-primary);
+}
+
+.guideSteps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.guideStep {
+  text-align: center;
+  padding: 24px;
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.stepContent h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.stepContent p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===== 页脚 ===== */
+.footer {
+  padding: 32px 24px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.footer p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .title {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .searchBox {
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .searchIcon {
+    display: none;
+  }
+
+  .searchInput {
+    width: 100%;
+    padding: 12px 16px;
+    text-align: center;
+  }
+
+  .searchButton {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .statsContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .guideSteps {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 100px 16px 60px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .statNumber {
+    font-size: 28px;
+  }
+}
+
+/* ===== 已入驻企业板块 ===== */
+.companiesSection {
+  padding: 80px 24px;
+  background: var(--bg-subtle);
+}
+
+.companiesContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.sectionSubtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.companyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.companyCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.companyCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-color);
+}
+
+.companyIcon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  margin-bottom: 16px;
+  color: white;
+}
+
+.companyName {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.companyCertCount {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.certCount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.certLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.companyArrow {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 20px;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.companyCard:hover .companyArrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+.loading,
+.emptyState {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .companiesSection {
+    padding: 48px 16px;
+  }
+  
+  .sectionTitle {
+    font-size: 24px;
+  }
+  
+  .companyGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  
+  .companyCard {
+    padding: 24px 16px;
+  }
+  
+  .companyIcon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .companyIcon svg {
+    width: 24px;
+    height: 24px;
+  }
+}

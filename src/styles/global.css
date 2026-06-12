@@ -1,0 +1,143 @@
+/**
+ * EU-DOC 证书查询系统 - 全局样式
+ * 版本: 1.0.1
+ * 
+ * 设计理念:
+ * - 深色主题，传达专业、可信的感觉
+ * - 参考 LightVela 的现代 UI 风格
+ * - 主色调: 深蓝灰 (#0a0f1e, #111827)
+ * - 强调色: 蓝色渐变 (#3b82f6 → #6366f1)
+ * - 卡片: 半透明玻璃效果 (glassmorphism)
+ */
+
+/* ===== CSS 变量（设计令牌）===== */
+/* 
+  CSS 变量的作用：把颜色、字体等设计参数集中定义在一个地方。
+  好处是：如果以后要改主色调，只需要改这一个地方，所有引用它的地方都会自动更新。
+  这比在每个组件里硬编码颜色值要好得多。
+*/
+:root {
+  /* 背景色 */
+  --bg-primary: #0a0f1e;
+  --bg-secondary: #111827;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-input: rgba(255, 255, 255, 0.08);
+
+  /* 文字色 */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* 强调色 */
+  --accent-blue: #3b82f6;
+  --accent-indigo: #6366f1;
+  --accent-gradient: linear-gradient(135deg, #3b82f6, #6366f1);
+
+  /* 状态色 */
+  --status-active: #22c55e;
+  --status-expired: #eab308;
+  --status-revoked: #ef4444;
+
+  /* 边框 */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* 阴影 */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.15);
+
+  /* 字体 */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ===== 全局重置 ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== 背景装饰 ===== */
+/* 
+  使用伪元素创建渐变光晕效果，让页面背景更有层次感。
+  这是现代深色 UI 的常见技巧，参考了 LightVela 的风格。
+*/
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== 链接样式 ===== */
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-indigo);
+}
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ===== 选中文字样式 ===== */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: var(--text-primary);
+}

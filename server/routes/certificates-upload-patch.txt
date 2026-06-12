@@ -1,0 +1,39 @@
+  try {
+    const fs = require('fs');
+    const certDir = path.join(__dirname, '..', 'uploads', 'certificates');
+    if (!fs.existsSync(certDir)) {
+      fs.mkdirSync(certDir, { recursive: true });
+    }
+    
+    const newFilename = `${cert.cert_no.replace(/[^a-zA-Z0-9-_]/g, '_')}_cert.pdf`;
+    const newPath = path.join(certDir, newFilename);
+    fs.renameSync(req.file.path, newPath);
+    const filePath = `/certificates/${newFilename}`;
+
+    let thumbnailPath = null;
+    try {
+      thumbnailPath = await generateThumbnail(newPath, cert.cert_no);
+      console.log(`✓ 证书 ${cert.cert_no} 缩略图生成成功: ${thumbnailPath}`);
+    } catch (thumbError) {
+      console.error('缩略图生成失败:', thumbError.message);
+    }
+
+    db.prepare('UPDATE certificates SET file_path = ?, thumbnail_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(filePath, thumbnailPath, cert.id);
+
+    db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(req.admin.id, 'upload', 'certificate', cert.id, JSON.stringify({ file: filePath, thumbnail: thumbnailPath }), req.ip);
+
+    res.json({
+      success: true,
+      message: '文件上传成功，缩略图已自动生成',
+      filePath,
+      thumbnailPath,
+    });
+  } catch (error) {
+    console.error('上传处理失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '文件处理失败: ' + error.message,
+    });
+  }

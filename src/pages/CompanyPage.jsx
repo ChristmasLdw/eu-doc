@@ -1,0 +1,321 @@
+/**
+ * EU-DOC 公司详情页
+ * 版本: 1.1.0
+ *
+ * 功能:
+ * - 展示公司基本信息
+ * - 展示该公司下的所有证书
+ * - 支持搜索公司内的证书
+ * - 支持按名称、日期排序
+ * - 支持点击证书查看详情
+ */
+
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { getCompany } from '../services/api';
+import StatusBadge from '../components/StatusBadge';
+import styles from './CompanyPage.module.css';
+
+// 排序选项
+const sortOptions = [
+  { value: 'name-asc', label: '名称 A→Z' },
+  { value: 'name-desc', label: '名称 Z→A' },
+  { value: 'date-desc', label: '签发日期（新→旧）' },
+  { value: 'date-asc', label: '签发日期（旧→新）' },
+  { value: 'expiry-asc', label: '有效期（近→远）' },
+  { value: 'expiry-desc', label: '有效期（远→近）' },
+];
+
+export default function CompanyPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [company, setCompany] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 搜索和排序状态
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('date-desc');
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    getCompany(id)
+      .then((data) => setCompany(data))
+      .catch((err) => {
+        setError(err.message || '获取公司信息失败');
+        setCompany(null);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // 过滤和排序后的证书列表
+  const filteredCertificates = useMemo(() => {
+    if (!company?.certificates) return [];
+
+    let certs = [...company.certificates];
+
+    // 搜索过滤
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      certs = certs.filter((cert) => {
+        return (
+          (cert.productName && cert.productName.toLowerCase().includes(q)) ||
+          (cert.certNo && cert.certNo.toLowerCase().includes(q)) ||
+          (cert.model && cert.model.toLowerCase().includes(q)) ||
+          (cert.category && cert.category.toLowerCase().includes(q)) ||
+          (cert.standard && cert.standard.toLowerCase().includes(q)) ||
+          (cert.issuer && cert.issuer.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    // 排序
+    switch (sortBy) {
+      case 'name-asc':
+        certs.sort((a, b) => (a.productName || '').localeCompare(b.productName || '', 'zh-CN'));
+        break;
+      case 'name-desc':
+        certs.sort((a, b) => (b.productName || '').localeCompare(a.productName || '', 'zh-CN'));
+        break;
+      case 'date-desc':
+        certs.sort((a, b) => new Date(b.issueDate || 0) - new Date(a.issueDate || 0));
+        break;
+      case 'date-asc':
+        certs.sort((a, b) => new Date(a.issueDate || 0) - new Date(b.issueDate || 0));
+        break;
+      case 'expiry-asc':
+        certs.sort((a, b) => new Date(a.expiryDate || '9999') - new Date(b.expiryDate || '9999'));
+        break;
+      case 'expiry-desc':
+        certs.sort((a, b) => new Date(b.expiryDate || '9999') - new Date(a.expiryDate || '9999'));
+        break;
+      default:
+        break;
+    }
+
+    return certs;
+  }, [company, searchQuery, sortBy]);
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.notFound}>
+            <div className={styles.emptyText}>加载中...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !company) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.notFound}>
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+              <path d="m15 9-6 6" />
+              <path d="m9 9 6 6" />
+            </svg>
+            <h2 className={styles.notFoundTitle}>加载失败</h2>
+            <p className={styles.notFoundText}>{error}</p>
+            <button className={styles.notFoundLink} onClick={() => navigate(-1)}>返回上一页</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!company) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.notFound}>
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+              <path d="m15 9-6 6" />
+              <path d="m9 9 6 6" />
+            </svg>
+            <h2 className={styles.notFoundTitle}>公司未找到</h2>
+            <p className={styles.notFoundText}>该公司不存在或已被删除。</p>
+            <Link to="/" className={styles.notFoundLink}>返回首页</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '未知';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {/* 返回按钮 */}
+        <button className={styles.backButton} onClick={() => navigate(-1)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          返回
+        </button>
+
+        {/* 公司主卡片 */}
+        <div className={styles.companyCard}>
+          {/* 公司信息 */}
+          <div className={styles.companyInfo}>
+            <div className={styles.companyHeader}>
+              <div className={styles.companyIcon}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 21h18" />
+                  <path d="M5 21V7l8-4v18" />
+                  <path d="M19 21V11l-6-4" />
+                  <path d="M9 9v.01" />
+                  <path d="M9 12v.01" />
+                  <path d="M9 15v.01" />
+                  <path d="M9 18v.01" />
+                </svg>
+              </div>
+              <div className={styles.companyTitle}>
+                <h1 className={styles.companyName}>{company.name}</h1>
+                {company.nameEn && company.nameEn !== company.name && (
+                  <p className={styles.companyNameEn}>{company.nameEn}</p>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.companyStats}>
+              <div className={styles.statItem}>
+                <span className={styles.statNumber}>{company.certificates?.length || 0}</span>
+                <span className={styles.statLabel}>证书数量</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statNumber}>{formatDate(company.createdAt)}</span>
+                <span className={styles.statLabel}>入驻时间</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 证书列表 */}
+          <div className={styles.certSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+                证书列表
+              </h2>
+              <span className={styles.resultCount}>
+                {searchQuery ? `${filteredCertificates.length} / ${company.certificates?.length || 0}` : company.certificates?.length || 0} 份证书
+              </span>
+            </div>
+
+            {/* 搜索和排序工具栏 */}
+            <div className={styles.toolbar}>
+              <div className={styles.searchBox}>
+                <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  type="text"
+                  className={styles.searchInput}
+                  placeholder="搜索产品名称、证书编号、型号..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    className={styles.clearBtn}
+                    onClick={() => setSearchQuery('')}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <select
+                className={styles.sortSelect}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                {sortOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {filteredCertificates.length > 0 ? (
+              <div className={styles.certList}>
+                {filteredCertificates.map((cert) => (
+                  <Link
+                    key={cert.id}
+                    to={`/certificate/${cert.id}`}
+                    className={styles.certCard}
+                  >
+                    <div className={styles.certInfo}>
+                      <div className={styles.certHeader}>
+                        <span className={styles.certNo}>{cert.certNo}</span>
+                        <StatusBadge status={cert.status} />
+                      </div>
+                      <h3 className={styles.certName}>{cert.productName}</h3>
+                      <div className={styles.certMeta}>
+                        {cert.category && (
+                          <span className={styles.certTag}>{cert.category}</span>
+                        )}
+                        {cert.standard && (
+                          <span className={styles.certTag}>{cert.standard}</span>
+                        )}
+                        {cert.issueDate && (
+                          <span className={styles.certDate}>签发: {cert.issueDate}</span>
+                        )}
+                        {cert.expiryDate && (
+                          <span className={styles.certDate}>到期: {cert.expiryDate}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.certArrow}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <p>{searchQuery ? '没有找到匹配的证书' : '暂无证书记录'}</p>
+                {searchQuery && (
+                  <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>
+                    清除搜索
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 页脚 */}
+        <footer className={styles.footer}>
+          <p>© 2025 EU-DOC 证书查询系统 · 版本 1.0.4</p>
+        </footer>
+      </div>
+    </div>
+  );
+}

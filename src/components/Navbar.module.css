@@ -1,0 +1,175 @@
+/**
+ * 导航栏样式 - CSS Modules
+ * 
+ * CSS Modules 的作用: 每个 CSS 文件的类名都会被自动加上唯一的哈希值，
+ * 这样不同组件之间就算用了相同的类名也不会互相冲突。
+ * 比如 .navbar 会变成 .navbar_a3x2b1，这是 React 推荐的样式隔离方案。
+ */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  /* 毛玻璃效果: backdrop-filter 让导航栏背景半透明且模糊 */
+  background: rgba(10, 15, 30, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  transition: border-color 0.3s ease;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Logo 样式 */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.logo:hover {
+  opacity: 0.9;
+  color: var(--text-primary);
+}
+
+.logoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.logoText {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 导航链接 */
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navLink {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+/* 当前页面的导航链接高亮 */
+.active {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+/* 管理后台链接 - 用不同的视觉风格区分 */
+.adminLink {
+  border: 1px solid var(--border-color);
+}
+
+.adminLink:hover {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+}
+
+/* 登录链接 - 蓝色渐变背景，更醒目 */
+.loginLink {
+  background: var(--accent-gradient);
+  border: none;
+}
+
+.loginLink:hover {
+  opacity: 0.9;
+  color: white;
+}
+
+/* 注册链接 - 带边框的次要按钮 */
+.registerLink {
+  border: 1px solid var(--border-color);
+}
+
+.registerLink:hover {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+}
+
+/* 普通用户链接 */
+.userLink {
+  border: 1px solid var(--border-color);
+}
+
+.userLink:hover {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+}
+
+/* 退出按钮 */
+.logoutBtn {
+  padding: 8px 16px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutBtn:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+/* 响应式：小屏幕 */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .logoText {
+    font-size: 18px;
+  }
+
+  .navLink {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
