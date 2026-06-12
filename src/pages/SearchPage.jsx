@@ -12,6 +12,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
 import { getCertificates, getStats, getCompanies } from '../services/api';
+import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
 import styles from './SearchPage.module.css';
@@ -26,6 +27,9 @@ export default function SearchPage() {
   const suggestionsRef = useRef(null);
   const isUserTyping = useRef(false);
   const { t } = useTranslation();
+
+  // 获取排序选项（使用多语言）
+  const sortOptions = getSortOptions(t);
 
   // 从 URL 参数获取初始值
   const initialQuery = searchParams.get('q') || '';
