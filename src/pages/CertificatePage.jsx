@@ -1,16 +1,14 @@
 /**
  * EU-DOC 证书详情页
- * 版本: 1.0.3
+ * 版本: 2.0.0
  *
- * 功能:
- * - 展示证书的完整信息
- * - 提供证书文件预览/下载入口
- * - 显示发证机构和认证标准
- * - 包含返回搜索结果的导航
+ * 变更记录 (2.0.0):
+ * - 添加多语言支持
  */
 
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getCertificate } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
@@ -19,6 +17,7 @@ import styles from './CertificatePage.module.css';
 export default function CertificatePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const [cert, setCert] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +29,7 @@ export default function CertificatePage() {
     getCertificate(id)
       .then((data) => setCert(data))
       .catch((err) => {
-        setError(err.message || '获取证书失败');
+        setError(err.message || t('messages.networkError'));
         setCert(null);
       })
       .finally(() => setLoading(false));
@@ -41,7 +40,7 @@ export default function CertificatePage() {
       <div className={styles.page}>
         <div className={styles.container}>
           <div className={styles.notFound}>
-            <div className={styles.emptyText}>加载中...</div>
+            <div className={styles.emptyText}>{t('common.loading')}</div>
           </div>
         </div>
       </div>
@@ -58,9 +57,9 @@ export default function CertificatePage() {
               <path d="m15 9-6 6" />
               <path d="m9 9 6 6" />
             </svg>
-            <h2 className={styles.notFoundTitle}>加载失败</h2>
+            <h2 className={styles.notFoundTitle}>{t('messages.networkError')}</h2>
             <p className={styles.notFoundText}>{error}</p>
-            <button className={styles.notFoundLink} onClick={() => navigate(-1)}>返回上一页</button>
+            <button className={styles.notFoundLink} onClick={() => navigate(-1)}>{t('common.back')}</button>
           </div>
         </div>
       </div>
@@ -77,9 +76,9 @@ export default function CertificatePage() {
               <path d="m15 9-6 6" />
               <path d="m9 9 6 6" />
             </svg>
-            <h2 className={styles.notFoundTitle}>证书未找到</h2>
-            <p className={styles.notFoundText}>该证书编号不存在或已被删除。</p>
-            <Link to="/" className={styles.notFoundLink}>返回首页</Link>
+            <h2 className={styles.notFoundTitle}>{t('certificate.notFound')}</h2>
+            <p className={styles.notFoundText}>{t('certificate.notFoundText')}</p>
+            <Link to="/" className={styles.notFoundLink}>{t('common.backToHome')}</Link>
           </div>
         </div>
       </div>
@@ -87,9 +86,9 @@ export default function CertificatePage() {
   }
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '未知';
+    if (!dateStr) return t('certificate.unknown');
     const date = new Date(dateStr);
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString(i18n.language === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -104,7 +103,7 @@ export default function CertificatePage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m15 18-6-6 6-6" />
           </svg>
-          返回
+          {t('common.back')}
         </button>
 
         {/* 证书主卡片 */}
@@ -134,15 +133,15 @@ export default function CertificatePage() {
                     <line x1="16" y1="13" x2="8" y2="13" />
                     <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
-                  <span>基本信息</span>
+                  <span>{t('certificate.basicInfo')}</span>
                 </div>
                 <div className={styles.cardBody}>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>产品类别</span>
+                    <span className={styles.infoLabel}>{t('certificate.category')}</span>
                     <span className={styles.infoValue}>{cert.category || '-'}</span>
                   </div>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>认证型号</span>
+                    <span className={styles.infoLabel}>{t('certificate.model')}</span>
                     <div className={styles.modelTags}>
                       {cert.model ? (
                         cert.model.split(/[,，]\s*/).map((item, index) => (
@@ -154,11 +153,11 @@ export default function CertificatePage() {
                     </div>
                   </div>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>发证机构</span>
+                    <span className={styles.infoLabel}>{t('certificate.issuer')}</span>
                     <span className={styles.infoValue}>{cert.issuer || '-'}</span>
                   </div>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>认证标准</span>
+                    <span className={styles.infoLabel}>{t('certificate.standard')}</span>
                     <span className={styles.infoValue}>{cert.standard || '-'}</span>
                   </div>
                 </div>
@@ -171,15 +170,15 @@ export default function CertificatePage() {
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
-                  <span>有效期信息</span>
+                  <span>{t('certificate.validityInfo')}</span>
                 </div>
                 <div className={styles.cardBody}>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>签发日期</span>
+                    <span className={styles.infoLabel}>{t('certificate.issueDate')}</span>
                     <span className={styles.infoValue}>{formatDate(cert.issueDate)}</span>
                   </div>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>有效期至</span>
+                    <span className={styles.infoLabel}>{t('certificate.expiryDate')}</span>
                     <span className={styles.infoValue}>{formatDate(cert.expiryDate)}</span>
                   </div>
                   <div className={styles.infoRow}>
