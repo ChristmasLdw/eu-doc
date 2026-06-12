@@ -1,0 +1,151 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "search": "Search",
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "tips": "Tips",
+    "language": "Language",
+    "theme": "Theme",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode"
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search Certificates",
+    "admin": "Admin",
+    "about": "About Us"
+  },
+  "home": {
+    "title": "EU-DOC Certificate System",
+    "subtitle": "Transform certificates from email attachments into verifiable online credentials",
+    "searchPlaceholder": "Enter certificate number, company name, product model...",
+    "searchButton": "Search Certificates",
+    "features": {
+      "title": "Why Choose EU-DOC?",
+      "feature1Title": "Always Online",
+      "feature1Desc": "Certificates never lost, always accessible",
+      "feature2Title": "Real-time Updates",
+      "feature2Desc": "Status displayed in real-time, avoid expiration",
+      "feature3Title": "Quick Sharing",
+      "feature3Desc": "One-click link generation for easy customer access",
+      "feature4Title": "Secure & Reliable",
+      "feature4Desc": "Encrypted storage, traceable access"
+    },
+    "stats": {
+      "certificates": "Total Certificates",
+      "companies": "Companies",
+      "searches": "Searches"
+    }
+  },
+  "search": {
+    "title": "Certificate Search",
+    "filters": {
+      "all": "All",
+      "category": "Category",
+      "status": "Status",
+      "issuer": "Issuer",
+      "standard": "Standard"
+    },
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "sort": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "expiring": "Expiring Soon"
+    },
+    "noResults": "No certificates found",
+    "total": "{{count}} results"
+  },
+  "certificate": {
+    "title": "Certificate Details",
+    "certNo": "Certificate No.",
+    "productName": "Product Name",
+    "model": "Model",
+    "company": "Company",
+    "issuer": "Issuer",
+    "issueDate": "Issue Date",
+    "expiryDate": "Expiry Date",
+    "standard": "Standard",
+    "status": "Status",
+    "category": "Category",
+    "downloadPDF": "Download PDF",
+    "share": "Share Link",
+    "viewCompany": "View Company",
+    "linkCopied": "Link copied"
+  },
+  "company": {
+    "title": "Company Details",
+    "name": "Company Name",
+    "location": "Location",
+    "certificates": "Certificates",
+    "totalCerts": "Total Certificates",
+    "activeCerts": "Active Certificates",
+    "expiredCerts": "Expired Certificates"
+  },
+  "auth": {
+    "loginTitle": "Admin Login",
+    "registerTitle": "User Registration",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "companyName": "Company Name (Optional)",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "goToRegister": "Register now",
+    "goToLogin": "Login now",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "agreement": "I have read and agree to the",
+    "userAgreement": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy",
+    "mustAgree": "Please agree to the Terms of Service and Privacy Policy first"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "certificates": "Certificates",
+    "companies": "Companies",
+    "logs": "Logs",
+    "settings": "Settings",
+    "logout": "Logout",
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "recentActivities": "Recent Activities"
+  },
+  "footer": {
+    "about": "About Us",
+    "contact": "Contact",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "copyright": "© 2026 EU-DOC. All rights reserved."
+  },
+  "messages": {
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed",
+    "registerSuccess": "Registration successful",
+    "registerFailed": "Registration failed",
+    "deleteConfirm": "Are you sure you want to delete?",
+    "deleteSuccess": "Deleted successfully",
+    "deleteFailed": "Delete failed",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Save failed",
+    "networkError": "Network error. Please check if the backend service is running"
+  }
+}

@@ -1,0 +1,165 @@
+/**
+ * 法律文档页面样式
+ * 版本: 1.0.0
+ *
+ * 用于展示用户协议、隐私政策等法律文档
+ */
+
+.legalPage {
+  min-height: 100vh;
+  padding: 80px 24px 40px;
+  background: var(--bg-primary);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 头部 */
+.header {
+  margin-bottom: 40px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  margin-bottom: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.backLink:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* 内容区域 */
+.content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-card);
+}
+
+.content section {
+  margin-bottom: 32px;
+}
+
+.content section:last-child {
+  margin-bottom: 0;
+}
+
+.content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  margin-top: 32px;
+}
+
+.content h2:first-child {
+  margin-top: 0;
+}
+
+.content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  margin-top: 20px;
+}
+
+.content p {
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+.content ul,
+.content ol {
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-left: 24px;
+  margin-bottom: 12px;
+}
+
+.content li {
+  margin-bottom: 8px;
+}
+
+.content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 高亮提示 */
+.highlight {
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+/* 页脚 */
+.footer {
+  margin-top: 40px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.footer p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .legalPage {
+    padding: 70px 16px 32px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .content {
+    padding: 24px;
+  }
+
+  .content h2 {
+    font-size: 20px;
+  }
+
+  .content h3 {
+    font-size: 16px;
+  }
+
+  .content ul,
+  .content ol {
+    margin-left: 20px;
+  }
+}

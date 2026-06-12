@@ -1,0 +1,151 @@
+{
+  "common": {
+    "welcome": "欢迎",
+    "search": "搜索",
+    "login": "登录",
+    "logout": "退出",
+    "register": "注册",
+    "submit": "提交",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "back": "返回",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "confirm": "确认",
+    "tips": "提示",
+    "language": "语言",
+    "theme": "主题",
+    "lightMode": "明亮模式",
+    "darkMode": "暗夜模式"
+  },
+  "nav": {
+    "home": "首页",
+    "search": "证书查询",
+    "admin": "管理后台",
+    "about": "关于我们"
+  },
+  "home": {
+    "title": "EU-DOC 证书查询系统",
+    "subtitle": "让证书从「邮件里的附件」变成「在线可查的凭证」",
+    "searchPlaceholder": "输入证书编号、公司名称、产品型号...",
+    "searchButton": "搜索证书",
+    "features": {
+      "title": "为什么选择 EU-DOC？",
+      "feature1Title": "永久在线",
+      "feature1Desc": "证书不会丢失，随时可查",
+      "feature2Title": "实时更新",
+      "feature2Desc": "状态实时显示，避免过期",
+      "feature3Title": "快速分享",
+      "feature3Desc": "一键生成链接，方便客户查看",
+      "feature4Title": "安全可靠",
+      "feature4Desc": "数据加密存储，访问可追溯"
+    },
+    "stats": {
+      "certificates": "证书总数",
+      "companies": "企业数量",
+      "searches": "查询次数"
+    }
+  },
+  "search": {
+    "title": "证书搜索",
+    "filters": {
+      "all": "全部",
+      "category": "类别",
+      "status": "状态",
+      "issuer": "发证机构",
+      "standard": "认证标准"
+    },
+    "status": {
+      "active": "有效",
+      "expired": "已过期",
+      "revoked": "已撤销"
+    },
+    "sort": {
+      "newest": "最新",
+      "oldest": "最早",
+      "expiring": "即将过期"
+    },
+    "noResults": "未找到相关证书",
+    "total": "共 {{count}} 个结果"
+  },
+  "certificate": {
+    "title": "证书详情",
+    "certNo": "证书编号",
+    "productName": "产品名称",
+    "model": "产品型号",
+    "company": "公司名称",
+    "issuer": "发证机构",
+    "issueDate": "发证日期",
+    "expiryDate": "过期日期",
+    "standard": "认证标准",
+    "status": "状态",
+    "category": "类别",
+    "downloadPDF": "下载 PDF",
+    "share": "分享链接",
+    "viewCompany": "查看公司",
+    "linkCopied": "链接已复制"
+  },
+  "company": {
+    "title": "公司详情",
+    "name": "公司名称",
+    "location": "所在地",
+    "certificates": "公司证书",
+    "totalCerts": "证书总数",
+    "activeCerts": "有效证书",
+    "expiredCerts": "过期证书"
+  },
+  "auth": {
+    "loginTitle": "管理员登录",
+    "registerTitle": "用户注册",
+    "username": "用户名",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "companyName": "公司名称（可选）",
+    "rememberMe": "记住我",
+    "forgotPassword": "忘记密码？",
+    "noAccount": "没有账号？",
+    "hasAccount": "已有账号？",
+    "goToRegister": "立即注册",
+    "goToLogin": "立即登录",
+    "loginButton": "登录",
+    "registerButton": "注册",
+    "agreement": "我已阅读并同意",
+    "userAgreement": "《用户服务协议》",
+    "and": "和",
+    "privacyPolicy": "《隐私政策》",
+    "mustAgree": "请先同意用户协议和隐私政策"
+  },
+  "admin": {
+    "dashboard": "仪表盘",
+    "certificates": "证书管理",
+    "companies": "企业管理",
+    "logs": "操作日志",
+    "settings": "设置",
+    "logout": "退出登录",
+    "welcome": "欢迎回来",
+    "overview": "数据概览",
+    "recentActivities": "最近操作"
+  },
+  "footer": {
+    "about": "关于我们",
+    "contact": "联系我们",
+    "terms": "服务条款",
+    "privacy": "隐私政策",
+    "copyright": "© 2026 EU-DOC. 保留所有权利。"
+  },
+  "messages": {
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败",
+    "registerSuccess": "注册成功",
+    "registerFailed": "注册失败",
+    "deleteConfirm": "确定要删除吗？",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "networkError": "网络连接失败，请检查后端服务是否运行"
+  }
+}

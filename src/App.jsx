@@ -1,9 +1,10 @@
 /**
  * EU-DOC 证书查询系统 - 应用根组件
- * 版本: 1.0.2
+ * 版本: 2.0.0
  *
- * 变更记录 (1.0.2):
- * - 新增 /admin/register 路由 -> RegisterPage
+ * 变更记录 (2.0.0):
+ * - 添加 /terms 和 /privacy 路由（法律文档页面）
+ * - 法律页面也显示导航栏
  *
  * 功能:
  * - 定义页面路由（URL 与组件的对应关系）
@@ -14,6 +15,9 @@
  * / -> 首页（搜索入口）
  * /search -> 搜索结果页
  * /certificate/:id -> 证书详情页
+ * /company/:id -> 公司详情页
+ * /terms -> 用户服务协议
+ * /privacy -> 隐私政策
  * /admin/login -> 管理后台登录页
  * /admin/register -> 用户注册页
  * /admin -> 管理后台布局（需登录，包含子路由）
@@ -30,6 +34,8 @@ import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import CertificatePage from './pages/CertificatePage';
 import CompanyPage from './pages/CompanyPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -70,6 +76,10 @@ function App() {
 
         {/* 公司详情页 */}
         <Route path="/company/:id" element={<CompanyPage />} />
+
+        {/* 法律文档页面 */}
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
 
         {/* ===== 后台管理路由 ===== */}
         {/* 登录页 - 不需要登录保护 */}

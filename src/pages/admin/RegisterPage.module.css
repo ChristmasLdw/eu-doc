@@ -1,5 +1,6 @@
 /**
- * 注册页样式 - 与登录页风格一致，居中卡片，暗色主题
+ * 注册页样式 - 与登录页风格一致，居中卡片，支持主题切换
+ * 版本: 2.0.0
  */
 
 .page {
@@ -18,8 +19,8 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
 }
 
 /* Logo 区域 */
@@ -86,7 +87,7 @@
   font-size: 14px;
   font-family: var(--font-family);
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .input::placeholder {
@@ -95,6 +96,47 @@
 
 .input:focus {
   border-color: var(--accent-blue);
+  background: var(--bg-card);
+}
+
+/* 用户协议勾选 */
+.agreementField {
+  margin-top: 4px;
+}
+
+.agreementLabel {
+  display: flex;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--accent-blue);
+}
+
+.agreementText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.agreementLink {
+  color: var(--accent-blue);
+  text-decoration: none;
+  margin: 0 2px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.agreementLink:hover {
+  color: var(--accent-indigo);
+  text-decoration: underline;
 }
 
 /* 错误提示 */
@@ -158,5 +200,9 @@
 @media (max-width: 480px) {
   .card {
     padding: 24px;
+  }
+
+  .agreementText {
+    font-size: 12px;
   }
 }
