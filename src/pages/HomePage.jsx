@@ -1,15 +1,16 @@
 /**
  * EU-DOC 首页 - 证书搜索入口
- * 版本: 1.0.6
- * 
- * 变更记录 (1.0.6):
- * - 新增"已入驻企业"板块，展示所有公司列表
- * - 点击公司卡片跳转到公司详情页
- * - 显示公司的证书数量
+ * 版本: 2.0.0
+ *
+ * 变更记录 (2.0.0):
+ * - 添加多语言支持
+ * - 所有文案使用 t() 函数
+ * - 适配主题切换
  */
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
 import { getStats, getCertificates, getCompanies } from '../services/api';
 import styles from './HomePage.module.css';
@@ -19,6 +20,7 @@ export default function HomePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchBoxRef = useRef(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // 统计数据（从 API 获取）
   const [stats, setStats] = useState(null);
@@ -115,14 +117,25 @@ export default function HomePage() {
     navigate(`/search?category=${encodeURIComponent(category)}`);
   };
 
+  // 获取建议类型的显示文本
+  const getSuggestionTypeLabel = (type) => {
+    const labels = {
+      product: t('certificate.productName'),
+      model: t('certificate.model'),
+      company: t('certificate.company'),
+      certNo: t('certificate.certNo')
+    };
+    return labels[type] || type;
+  };
+
   return (
     <div className={styles.page}>
       {/* 主搜索区域 */}
       <section className={styles.hero}>
         <div className={styles.heroContent}>
           <div className={styles.titleSection}>
-            <h1 className={styles.title}>EU-DOC 证书查询系统</h1>
-            <p className={styles.subtitle}>快速查询产品认证证书，确保合规无忧</p>
+            <h1 className={styles.title}>{t('home.title')}</h1>
+            <p className={styles.subtitle}>{t('home.subtitle')}</p>
           </div>
 
           <form className={styles.searchForm} onSubmit={handleSearch}>
@@ -130,7 +143,7 @@ export default function HomePage() {
               <input
                 type="text"
                 className={styles.searchInput}
-                placeholder="输入公司名称、产品名称、型号或证书编号"
+                placeholder={t('home.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -143,7 +156,7 @@ export default function HomePage() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <span>搜索</span>
+                <span>{t('home.searchButton')}</span>
               </button>
 
               {showSuggestions && suggestions.length > 0 && (
@@ -156,7 +169,7 @@ export default function HomePage() {
                       type="button"
                     >
                       <span className={styles.suggestionType} data-type={s.type}>
-                        {s.type === 'product' ? '产品' : s.type === 'model' ? '型号' : s.type === 'company' ? '公司' : '证书'}
+                        {getSuggestionTypeLabel(s.type)}
                       </span>
                       <span className={styles.suggestionValue}>{s.value}</span>
                     </button>
@@ -168,7 +181,7 @@ export default function HomePage() {
 
           {/* 快捷分类入口 */}
           <div className={styles.categories}>
-            <span className={styles.categoriesLabel}>快速筛选：</span>
+            <span className={styles.categoriesLabel}>{t('search.filters.category')}：</span>
             <div className={styles.categoryList}>
               {categories.map((cat) => (
                 <button
@@ -184,16 +197,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 已入驻企业板块 - 新增 */}
+      {/* 已入驻企业板块 */}
       <section className={styles.companiesSection}>
         <div className={styles.companiesContainer}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>已入驻企业</h2>
-            <p className={styles.sectionSubtitle}>点击查看企业的所有认证证书</p>
+            <h2 className={styles.sectionTitle}>{t('company.certificates')}</h2>
+            <p className={styles.sectionSubtitle}>{t('home.subtitle')}</p>
           </div>
-          
+
           {companiesLoading ? (
-            <div className={styles.loading}>加载中...</div>
+            <div className={styles.loading}>{t('common.loading')}</div>
           ) : companies.length > 0 ? (
             <div className={styles.companyGrid}>
               {companies.map((company) => (
@@ -216,14 +229,14 @@ export default function HomePage() {
                   <h3 className={styles.companyName}>{company.name}</h3>
                   <div className={styles.companyCertCount}>
                     <span className={styles.certCount}>{company.certCount || 0}</span>
-                    <span className={styles.certLabel}>份证书</span>
+                    <span className={styles.certLabel}>{t('company.certificates')}</span>
                   </div>
                   <div className={styles.companyArrow}>→</div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className={styles.emptyState}>暂无企业数据</div>
+            <div className={styles.emptyState}>{t('search.noResults')}</div>
           )}
         </div>
       </section>
@@ -235,63 +248,28 @@ export default function HomePage() {
             <div className={styles.statNumber}>
               {statsLoading ? '--' : (stats?.total ?? '--')}
             </div>
-            <div className={styles.statLabel}>证书总数</div>
+            <div className={styles.statLabel}>{t('home.stats.certificates')}</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNumber}>
               {statsLoading ? '--' : (stats?.active ?? '--')}
             </div>
-            <div className={styles.statLabel}>有效证书</div>
+            <div className={styles.statLabel}>{t('search.status.active')}</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNumber}>
               {statsLoading ? '--' : (stats?.companies ?? '--')}
             </div>
-            <div className={styles.statLabel}>认证企业</div>
+            <div className={styles.statLabel}>{t('home.stats.companies')}</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNumber}>
-              {statsLoading ? '--' : (stats?.issuers ?? '--')}
+              {statsLoading ? '--' : (stats?.searches ?? '--')}
             </div>
-            <div className={styles.statLabel}>发证机构</div>
+            <div className={styles.statLabel}>{t('home.stats.searches')}</div>
           </div>
         </div>
       </section>
-
-      {/* 使用说明区域 */}
-      <section className={styles.guideSection}>
-        <div className={styles.guideContainer}>
-          <h2 className={styles.guideTitle}>如何查询证书？</h2>
-          <div className={styles.guideSteps}>
-            <div className={styles.guideStep}>
-              <div className={styles.stepNumber}>1</div>
-              <div className={styles.stepContent}>
-                <h3>输入关键词</h3>
-                <p>输入公司名称、产品名称、型号或证书编号</p>
-              </div>
-            </div>
-            <div className={styles.guideStep}>
-              <div className={styles.stepNumber}>2</div>
-              <div className={styles.stepContent}>
-                <h3>查看结果</h3>
-                <p>浏览匹配的证书列表，查看状态和有效期</p>
-              </div>
-            </div>
-            <div className={styles.guideStep}>
-              <div className={styles.stepNumber}>3</div>
-              <div className={styles.stepContent}>
-                <h3>验证详情</h3>
-                <p>点击证书查看完整信息和原始文件</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 页脚 */}
-      <footer className={styles.footer}>
-        <p>© 2025 EU-DOC 证书查询系统 · 版本 1.0.6</p>
-      </footer>
     </div>
   );
 }
