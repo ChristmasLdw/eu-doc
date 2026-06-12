@@ -196,7 +196,7 @@ export default function SearchPage() {
         }
       })
       .catch((err) => {
-        setError(err.message || '获取数据失败');
+        setError(err.message || t('common.fetchFailed'));
         setResults([]);
         setTotalResults(0);
         setTotalPages(1);
@@ -434,7 +434,7 @@ export default function SearchPage() {
               {loading ? (
                 <>搜索中...</>
               ) : error ? (
-                <>加载失败</>
+                <>{t('common.loadFailed')}</>
               ) : (
                 <>找到 <strong>{totalResults}</strong> 条结果</>
               )}
@@ -459,7 +459,7 @@ export default function SearchPage() {
         {/* 错误提示 */}
         {error && (
           <div className={styles.emptyState}>
-            <h3 className={styles.emptyTitle}>加载失败</h3>
+            <h3 className={styles.emptyTitle}>{t('common.loadFailed')}</h3>
             <p className={styles.emptyText}>{error}</p>
             <button className={styles.emptyClearBtn} onClick={fetchResults}>重试</button>
           </div>

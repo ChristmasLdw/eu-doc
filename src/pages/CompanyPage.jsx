@@ -91,7 +91,7 @@ export default function CompanyPage() {
       <div className={styles.page}>
         <div className={styles.container}>
           <div className={styles.notFound}>
-            <div className={styles.emptyText}>加载中...</div>
+            <div className={styles.emptyText}>{t('common.loading')}</div>
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@ export default function CompanyPage() {
               <path d="m15 9-6 6" />
               <path d="m9 9 6 6" />
             </svg>
-            <h2 className={styles.notFoundTitle}>加载失败</h2>
+            <h2 className={styles.notFoundTitle}>{t('common.loadFailed')}</h2>
             <p className={styles.notFoundText}>{error}</p>
             <button className={styles.notFoundLink} onClick={() => navigate(-1)}>返回上一页</button>
           </div>

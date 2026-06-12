@@ -1,16 +1,17 @@
 /**
  * 懒加载图片组件
- * - 加载时显示骨架屏占位
- * - 加载完成后淡入显示
- * - 加载失败显示默认图标
+ * 版本: 2.0.0
+ * - 添加多语言支持
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './LazyImage.module.css';
 
 export default function LazyImage({ src, alt, className, ...props }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const { t } = useTranslation();
 
   const handleLoad = () => {
     setLoading(false);
@@ -38,7 +39,7 @@ export default function LazyImage({ src, alt, className, ...props }) {
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
           </svg>
-          <span>图片加载失败</span>
+          <span>{t('common.imageLoadFailed')}</span>
         </div>
       )}
 
