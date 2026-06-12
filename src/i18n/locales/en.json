@@ -130,7 +130,18 @@
     "certificates": "Certificates",
     "totalCerts": "Total Certificates",
     "activeCerts": "Active Certificates",
-    "expiredCerts": "Expired Certificates"
+    "expiredCerts": "Expired Certificates",
+    "searchPlaceholder": "Search certificates...",
+    "sortBy": "Sort by",
+    "sortNameAsc": "Name A→Z",
+    "sortNameDesc": "Name Z→A",
+    "sortDateDesc": "Date (Newest)",
+    "sortDateAsc": "Date (Oldest)",
+    "sortExpiryAsc": "Expiry (Near→Far)",
+    "sortExpiryDesc": "Expiry (Far→Near)",
+    "noCertificates": "No certificates found",
+    "notFound": "Company Not Found",
+    "notFoundText": "The company does not exist or has been deleted"
   },
   "auth": {
     "loginTitle": "Admin Login",
