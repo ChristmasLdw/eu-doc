@@ -1,34 +1,22 @@
 /**
  * EU-DOC 公司详情页
- * 版本: 1.1.0
+ * 版本: 2.0.0
  *
- * 功能:
- * - 展示公司基本信息
- * - 展示该公司下的所有证书
- * - 支持搜索公司内的证书
- * - 支持按名称、日期排序
- * - 支持点击证书查看详情
+ * 变更记录 (2.0.0):
+ * - 添加多语言支持
  */
 
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getCompany } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import styles from './CompanyPage.module.css';
 
-// 排序选项
-const sortOptions = [
-  { value: 'name-asc', label: '名称 A→Z' },
-  { value: 'name-desc', label: '名称 Z→A' },
-  { value: 'date-desc', label: '签发日期（新→旧）' },
-  { value: 'date-asc', label: '签发日期（旧→新）' },
-  { value: 'expiry-asc', label: '有效期（近→远）' },
-  { value: 'expiry-desc', label: '有效期（远→近）' },
-];
-
 export default function CompanyPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +32,7 @@ export default function CompanyPage() {
     getCompany(id)
       .then((data) => setCompany(data))
       .catch((err) => {
-        setError(err.message || '获取公司信息失败');
+        setError(err.message || t('messages.networkError'));
         setCompany(null);
       })
       .finally(() => setLoading(false));

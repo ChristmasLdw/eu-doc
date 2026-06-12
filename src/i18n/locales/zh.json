@@ -130,7 +130,18 @@
     "certificates": "公司证书",
     "totalCerts": "证书总数",
     "activeCerts": "有效证书",
-    "expiredCerts": "过期证书"
+    "expiredCerts": "过期证书",
+    "searchPlaceholder": "搜索公司内的证书...",
+    "sortBy": "排序方式",
+    "sortNameAsc": "名称 A→Z",
+    "sortNameDesc": "名称 Z→A",
+    "sortDateDesc": "签发日期（新→旧）",
+    "sortDateAsc": "签发日期（旧→新）",
+    "sortExpiryAsc": "有效期（近→远）",
+    "sortExpiryDesc": "有效期（远→近）",
+    "noCertificates": "该公司暂无证书",
+    "notFound": "公司未找到",
+    "notFoundText": "该公司不存在或已被删除"
   },
   "auth": {
     "loginTitle": "管理员登录",
