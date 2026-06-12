@@ -1,27 +1,15 @@
 /**
  * EU-DOC 搜索结果页
- * 版本: 1.0.5
+ * 版本: 2.0.0
  *
- * 变更记录 (1.0.5):
- * - 搜索结果改为从后端 API 获取（api.getCertificates()）
- * - 分页改为服务端分页（API 返回 pagination 信息）
- * - 排序改为服务端排序（sortBy/sortOrder 参数）
- * - 搜索建议数据源改为从 API 获取证书列表后前端缓存过滤
- * - 发证机构和认证标准列表从 API 统计数据获取
- * - 移除对 mockData 中 certificates 的直接 import
- * - 新增 loading 和 error 状态处理
- *
- * 功能:
- * - 搜索建议/自动补全（输入时实时显示下拉建议）
- * - 多维度筛选（分类、状态、发证机构、认证标准）
- * - 结果排序（相关度、有效期、签发日期）
- * - 服务端分页（每页 8 条）
- * - 搜索关键词高亮
- * - 缩略图展示
+ * 变更记录 (2.0.0):
+ * - 添加多语言支持
+ * - 所有文案使用 t() 函数
  */
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
 import { getCertificates, getStats, getCompanies } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -31,35 +19,13 @@ import styles from './SearchPage.module.css';
 // 每页显示条数
 const PAGE_SIZE = 8;
 
-// 排序选项配置（前端显示标签 -> 后端 sortBy/sortOrder 参数）
-const sortOptions = [
-  { value: 'relevance', label: '相关度优先' },
-  { value: 'expiry-asc', label: '有效期（近→远）' },
-  { value: 'expiry-desc', label: '有效期（远→近）' },
-  { value: 'issue-desc', label: '签发日期（新→旧）' },
-  { value: 'issue-asc', label: '签发日期（旧→新）' },
-];
-
-/**
- * 将前端排序值映射为后端 API 的 sortBy 和 sortOrder 参数
- * 'relevance' 是前端特有概念（匹配字段越多越靠前），后端不支持，需前端处理
- */
-function mapSortToApiParams(sortValue) {
-  switch (sortValue) {
-    case 'expiry-asc': return { sortBy: 'expiry_date', sortOrder: 'ASC' };
-    case 'expiry-desc': return { sortBy: 'expiry_date', sortOrder: 'DESC' };
-    case 'issue-desc': return { sortBy: 'issue_date', sortOrder: 'DESC' };
-    case 'issue-asc': return { sortBy: 'issue_date', sortOrder: 'ASC' };
-    default: return null; // relevance: 不传排序参数，后端按 created_at DESC
-  }
-}
-
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchBoxRef = useRef(null);
   const suggestionsRef = useRef(null);
-  const isUserTyping = useRef(false); // 标记是否为用户主动输入（区分 URL 初始化）
+  const isUserTyping = useRef(false);
+  const { t } = useTranslation();
 
   // 从 URL 参数获取初始值
   const initialQuery = searchParams.get('q') || '';

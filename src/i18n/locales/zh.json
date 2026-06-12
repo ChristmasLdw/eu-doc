@@ -64,6 +64,9 @@
       "revoked": "已撤销"
     },
     "sort": {
+      "relevance": "相关度优先",
+      "expiryAsc": "有效期（近→远）",
+      "expiryDesc": "有效期（远→近）",
       "newest": "最新",
       "oldest": "最早",
       "expiring": "即将过期"

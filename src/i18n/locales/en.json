@@ -64,6 +64,9 @@
       "revoked": "Revoked"
     },
     "sort": {
+      "relevance": "Relevance",
+      "expiryAsc": "Expiry (Near→Far)",
+      "expiryDesc": "Expiry (Far→Near)",
       "newest": "Newest",
       "oldest": "Oldest",
       "expiring": "Expiring Soon"
