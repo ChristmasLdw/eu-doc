@@ -51,8 +51,8 @@ export default function HomePage() {
       .catch(() => {})
       .finally(() => setCompaniesLoading(false));
 
-    // 获取搜索建议数据源
-    getCertificates({ pageSize: 100, sortBy: 'created_at', sortOrder: 'DESC' })
+    // 获取搜索建议数据源（按id升序，优先显示有缩略图的早期证书）
+    getCertificates({ pageSize: 100, sortBy: 'id', sortOrder: 'ASC' })
       .then((result) => {
         if (result && Array.isArray(result.data)) {
           setSuggestionData(result.data);

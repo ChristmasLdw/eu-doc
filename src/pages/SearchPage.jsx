@@ -68,8 +68,8 @@ export default function SearchPage() {
 
   // 组件挂载时获取搜索建议数据源和筛选选项列表
   useEffect(() => {
-    // 获取搜索建议数据源（一次获取足够多的数据，前端做关键词匹配）
-    getCertificates({ pageSize: 100, sortBy: 'created_at', sortOrder: 'DESC' })
+    // 获取搜索建议数据源（按id升序，优先显示有缩略图的早期证书）
+    getCertificates({ pageSize: 100, sortBy: 'id', sortOrder: 'ASC' })
       .then((result) => {
         if (result && Array.isArray(result.data)) {
           setSuggestionData(result.data);
@@ -151,12 +151,17 @@ export default function SearchPage() {
     if (activeIssuer) params.issuer = activeIssuer;
     if (activeStandard) params.standard = activeStandard;
 
-    // 排序（relevance 不传排序参数，后端默认按 created_at DESC）
+    // 排序
     const sortMapping = mapSortToApiParams(sortBy);
     if (sortMapping) {
       params.sortBy = sortMapping.sortBy;
       params.sortOrder = sortMapping.sortOrder;
+    } else if (sortBy === 'relevance' && !query) {
+      // relevance 排序且无搜索词时，按 id 升序（显示有缩略图的早期证书）
+      params.sortBy = 'id';
+      params.sortOrder = 'ASC';
     }
+    // 否则不传排序参数，后端使用默认排序
 
     // 同时搜索公司（仅在第一页且有搜索关键词时）
     const companyPromise = (query && currentPage === 1)
