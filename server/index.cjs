@@ -60,6 +60,8 @@ app.use(express.json({ limit: '10mb' }));
 // 静态文件服务
 // 让前端可以直接通过 URL 访问上传的文件（如 /uploads/xxx.pdf）
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// 添加 /certificates 路径映射到 uploads/certificates
+app.use('/certificates', express.static(path.join(__dirname, 'uploads/certificates')));
 
 /**
  * API 路由注册
