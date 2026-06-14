@@ -1,28 +1,15 @@
 import {
-  pgTable,
+  sqliteTable,
   text,
-  timestamp,
-  boolean,
   integer,
-  pgEnum,
-  uniqueIndex,
   index,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
-
-// ==================== Enums ====================
-
-export const roleEnum = pgEnum("role", ["USER", "ADMIN"]);
-export const certStatusEnum = pgEnum("cert_status", [
-  "ACTIVE",
-  "EXPIRED",
-  "PENDING",
-]);
-export const searchTypeEnum = pgEnum("search_type", ["docpic", "doc", "comp"]);
+import { sql } from "drizzle-orm";
 
 // ==================== Users ====================
 
-export const users = pgTable(
+export const users = sqliteTable(
   "users",
   {
     id: text("id")
@@ -32,21 +19,20 @@ export const users = pgTable(
     password: text("password").notNull(),
     name: text("name"),
     avatar: text("avatar"),
-    role: roleEnum("role").default("USER").notNull(),
-    emailVerified: timestamp("email_verified"),
-    twoFactorEnabled: boolean("two_factor_enabled").default(false).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .notNull()
-      .$onUpdate(() => new Date()),
+    role: text("role", { enum: ["USER", "ADMIN"] }).default("USER").notNull(),
+    emailVerified: integer("email_verified", { mode: "timestamp" }),
+    twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).default(false).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
   },
-  (table) => [index("email_idx").on(table.email)]
+  (table) => ({
+    emailIdx: index("email_idx").on(table.email),
+  })
 );
 
 // ==================== Accounts (for OAuth) ====================
 
-export const accounts = pgTable(
+export const accounts = sqliteTable(
   "accounts",
   {
     id: text("id")
@@ -66,17 +52,17 @@ export const accounts = pgTable(
     idToken: text("id_token"),
     sessionState: text("session_state"),
   },
-  (table) => [
-    uniqueIndex("provider_account_idx").on(
+  (table) => ({
+    providerAccountIdx: index("provider_account_idx").on(
       table.provider,
       table.providerAccountId
     ),
-  ]
+  })
 );
 
 // ==================== Sessions ====================
 
-export const sessions = pgTable("sessions", {
+export const sessions = sqliteTable("sessions", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -84,12 +70,12 @@ export const sessions = pgTable("sessions", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires").notNull(),
+  expires: integer("expires", { mode: "timestamp" }).notNull(),
 });
 
 // ==================== Categories ====================
 
-export const categories = pgTable(
+export const categories = sqliteTable(
   "categories",
   {
     id: text("id")
@@ -101,12 +87,12 @@ export const categories = pgTable(
     parentId: text("parent_id"),
     icon: text("icon"),
     sortOrder: integer("sort_order").default(0).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
   },
-  (table) => [
-    index("category_parent_idx").on(table.parentId),
-    index("category_slug_idx").on(table.slug),
-  ]
+  (table) => ({
+    categoryParentIdx: index("category_parent_idx").on(table.parentId),
+    categorySlugIdx: index("category_slug_idx").on(table.slug),
+  })
 );
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -121,7 +107,7 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
 
 // ==================== Companies ====================
 
-export const companies = pgTable(
+export const companies = sqliteTable(
   "companies",
   {
     id: text("id")
@@ -131,9 +117,11 @@ export const companies = pgTable(
     country: text("country"),
     logo: text("logo"),
     website: text("website"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
   },
-  (table) => [index("company_name_idx").on(table.name)]
+  (table) => ({
+    companyNameIdx: index("company_name_idx").on(table.name),
+  })
 );
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -142,7 +130,7 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 
 // ==================== Certificates ====================
 
-export const certificates = pgTable(
+export const certificates = sqliteTable(
   "certificates",
   {
     id: text("id")
@@ -159,22 +147,19 @@ export const certificates = pgTable(
     companyId: text("company_id").references(() => companies.id),
     pdfUrl: text("pdf_url"),
     imageUrl: text("image_url"),
-    languages: text("languages").array().default([]),
-    status: certStatusEnum("status").default("ACTIVE").notNull(),
-    expiryDate: timestamp("expiry_date"),
+    languages: text("languages"), // Store as JSON string
+    status: text("status", { enum: ["ACTIVE", "EXPIRED", "PENDING"] }).default("ACTIVE").notNull(),
+    expiryDate: integer("expiry_date", { mode: "timestamp" }),
     viewCount: integer("view_count").default(0).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .notNull()
-      .$onUpdate(() => new Date()),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
   },
-  (table) => [
-    index("cert_category_idx").on(table.categoryId),
-    index("cert_company_idx").on(table.companyId),
-    index("cert_type_idx").on(table.certifiedType),
-    index("cert_status_idx").on(table.status),
-  ]
+  (table) => ({
+    certCategoryIdx: index("cert_category_idx").on(table.categoryId),
+    certCompanyIdx: index("cert_company_idx").on(table.companyId),
+    certTypeIdx: index("cert_type_idx").on(table.certifiedType),
+    certStatusIdx: index("cert_status_idx").on(table.status),
+  })
 );
 
 export const certificatesRelations = relations(
@@ -194,7 +179,7 @@ export const certificatesRelations = relations(
 
 // ==================== Favorites ====================
 
-export const favorites = pgTable(
+export const favorites = sqliteTable(
   "favorites",
   {
     id: text("id")
@@ -206,11 +191,11 @@ export const favorites = pgTable(
     certificateId: text("certificate_id")
       .notNull()
       .references(() => certificates.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
   },
-  (table) => [
-    uniqueIndex("user_cert_fav_idx").on(table.userId, table.certificateId),
-  ]
+  (table) => ({
+    userCertFavIdx: index("user_cert_fav_idx").on(table.userId, table.certificateId),
+  })
 );
 
 export const favoritesRelations = relations(favorites, ({ one }) => ({
@@ -223,7 +208,7 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
 
 // ==================== Search History ====================
 
-export const searchHistory = pgTable("search_history", {
+export const searchHistory = sqliteTable("search_history", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -231,8 +216,8 @@ export const searchHistory = pgTable("search_history", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   keyword: text("keyword").notNull(),
-  searchType: searchTypeEnum("search_type").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  searchType: text("search_type", { enum: ["docpic", "doc", "comp"] }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull(),
 });
 
 // ==================== Relations (back-references) ====================

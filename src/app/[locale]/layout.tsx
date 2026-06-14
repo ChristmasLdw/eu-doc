@@ -4,6 +4,7 @@ import { locales } from "@/i18n/config";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ThemeProvider } from "@/components/layout/theme-provider";
+import { AuthProvider } from "@/components/auth/auth-provider";
 
 export default async function LocaleLayout({
   children,
@@ -20,13 +21,15 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={await getMessages(locale)}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <div className="min-h-screen flex flex-col">
-          <Header locale={locale} />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <div className="min-h-screen flex flex-col">
+            <Header locale={locale} />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </ThemeProvider>
+      </AuthProvider>
     </NextIntlClientProvider>
   );
 }

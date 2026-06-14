@@ -1,8 +1,18 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 import * as schema from "./schema";
+import { mkdir } from "fs/promises";
+import { dirname } from "path";
 
-const connectionString = process.env.DATABASE_URL!;
+const dbPath = process.env.DATABASE_URL || "./data/eu-doc.db";
 
-const client = postgres(connectionString);
-export const db = drizzle(client, { schema });
+// Ensure data directory exists
+const dir = dirname(dbPath);
+try {
+  await mkdir(dir, { recursive: true });
+} catch (error) {
+  // Directory might already exist
+}
+
+const sqlite = new Database(dbPath);
+export const db = drizzle(sqlite, { schema });

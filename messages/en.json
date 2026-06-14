@@ -113,7 +113,8 @@
       "passwordMismatch": "Passwords do not match",
       "agreeRequired": "Please agree to the user agreement",
       "loginFailed": "Invalid email or password",
-      "registerFailed": "Registration failed. Please try again."
+      "registerFailed": "Registration failed. Please try again.",
+      "registrationSuccess": "Registration successful! Please sign in with your credentials."
     }
   },
   "cert": {

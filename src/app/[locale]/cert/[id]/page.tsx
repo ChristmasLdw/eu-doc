@@ -195,7 +195,7 @@ export default function CertDetailPage() {
                   <Button variant="outline" size="sm" onClick={() => setPdfFullscreen(true)}>
                     <Maximize2 className="mr-1 h-3.5 w-3.5" /> {t("cert.fullscreen")}
                   </Button>
-                  <Button size="sm" asChild={false} onClick={() => window.open(cert.pdfUrl, "_blank")}>
+                  <Button size="sm" onClick={() => window.open(cert.pdfUrl, "_blank")}>
                     <Download className="mr-1 h-3.5 w-3.5" /> {t("cert.download")}
                   </Button>
                 </div>

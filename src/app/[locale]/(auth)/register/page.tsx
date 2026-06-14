@@ -53,9 +53,28 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual registration
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } catch {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrors({ general: data.error || t("auth.errors.registerFailed") });
+        return;
+      }
+
+      // Registration successful, redirect to login
+      window.location.href = "/login?registered=true";
+    } catch (error) {
+      console.error("Registration error:", error);
       setErrors({ general: t("auth.errors.registerFailed") });
     } finally {
       setIsLoading(false);

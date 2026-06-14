@@ -8,14 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const t = useTranslations();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+
+  const registered = searchParams.get("registered");
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -35,9 +41,22 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual login
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } catch {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setErrors({ general: t("auth.errors.loginFailed") });
+        return;
+      }
+
+      // Login successful, redirect to home
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Login error:", error);
       setErrors({ general: t("auth.errors.loginFailed") });
     } finally {
       setIsLoading(false);
@@ -85,6 +104,12 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {registered && (
+                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-sm">
+                  {t("auth.registrationSuccess")}
+                </div>
+              )}
+
               {errors.general && (
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-sm">
                   {errors.general}
