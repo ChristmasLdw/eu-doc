@@ -1,0 +1,271 @@
+{
+  "common": {
+    "appName": "EU-DOC",
+    "appSubtitle": "证书文件库平台",
+    "home": "首页",
+    "search": "搜索",
+    "browseCompanies": "公司",
+    "browseCategories": "类别",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出登录",
+    "profile": "个人资料",
+    "favorites": "我的收藏",
+    "loading": "加载中...",
+    "noResults": "未找到结果",
+    "submit": "提交",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "darkMode": "深色模式",
+    "language": "语言",
+    "footer": "©2024 EU-DOC 保留所有权利"
+  },
+  "search": {
+    "certifiedType": "认证类型",
+    "category": "类别",
+    "company": "公司",
+    "country": "国家",
+    "allCountries": "全部国家",
+    "allStatus": "全部状态",
+    "filteredByCountry": "当前筛选：{country}",
+    "clearCountry": "清除",
+    "statusLabel": "状态",
+    "backToResults": "返回结果列表",
+    "placeholder": {
+      "company": "按公司名称搜索...",
+      "product": "按产品名称搜索...",
+      "category": "按类别搜索...",
+      "model": "按型号搜索...",
+      "certificate": "按证书编号搜索..."
+    },
+    "advanced": "高级搜索",
+    "sortBy": "排序方式",
+    "relevance": "相关度",
+    "newest": "最新",
+    "name": "名称",
+    "results": "找到 {count} 条结果",
+    "resultsSubtitle": "结合筛选和排序，快速判断哪条证书记录才是你要找的。",
+    "searchWorkspace": "搜索工作台",
+    "pageTitle": "搜索证书档案库",
+    "pageSubtitle": "按公司、产品、类别、型号或证书编号搜索，并在打开详情页之前先判断记录是否正确。",
+    "systemNoteTitle": "查询系统 MVP",
+    "systemNoteBody": "这一阶段只聚焦可靠查询、清晰结果和证书文件可见性。",
+    "noResults": "未找到证书",
+    "tryAgain": "请尝试调整搜索关键词",
+    "scope": {
+      "company": "公司",
+      "product": "产品",
+      "category": "类别",
+      "model": "型号",
+      "certificate": "证书编号"
+    },
+    "sort": {
+      "newest": "按签发时间",
+      "expiry": "按有效期",
+      "product": "按产品名称"
+    },
+    "review": {
+      "approved": "已审核",
+      "pending": "待审核",
+      "rejected": "已驳回"
+    },
+    "result": {
+      "company": "公司",
+      "product": "产品",
+      "model": "型号",
+      "expiry": "有效期",
+      "category": "类别",
+      "issueDate": "签发日期",
+      "uploader": "上传者",
+      "country": "国家",
+      "viewDetail": "查看详情",
+      "certificateNumber": "证书编号"
+    }
+  },
+  "auth": {
+    "email": "邮箱",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "name": "姓名",
+    "verificationCode": "验证码",
+    "rememberMe": "记住我",
+    "forgotPassword": "忘记密码？",
+    "agreeToTerms": "我已阅读并同意",
+    "userAgreement": "用户协议",
+    "or": "或",
+    "signInTitle": "欢迎回来",
+    "signInSubtitle": "登录您的账户",
+    "registerTitle": "创建账户",
+    "registerSubtitle": "加入 EU-DOC",
+    "forgotTitle": "重置密码",
+    "forgotSubtitle": "输入邮箱以接收重置链接",
+    "sendResetLink": "发送重置链接",
+    "backToLogin": "返回登录",
+    "googleLogin": "使用 Google 登录",
+    "errors": {
+      "invalidEmail": "请输入有效的邮箱地址",
+      "passwordTooShort": "密码长度至少为 8 位",
+      "passwordMismatch": "两次输入的密码不一致",
+      "agreeRequired": "请同意用户协议",
+      "loginFailed": "邮箱或密码错误",
+      "registerFailed": "注册失败，请重试"
+    }
+  },
+  "cert": {
+    "details": "证书详情",
+    "type": "认证类型",
+    "category": "类别",
+    "company": "公司",
+    "languages": "支持语言",
+    "status": "状态",
+    "reviewStatus": "审核状态",
+    "expiryDate": "有效期至",
+    "active": "有效",
+    "expired": "已过期",
+    "pending": "待审核",
+    "download": "下载 PDF",
+    "share": "分享",
+    "addToFavorites": "添加收藏",
+    "removeFromFavorites": "取消收藏",
+    "relatedCerts": "相关证书",
+    "viewCount": "次浏览",
+    "previewSectionTitle": "证书预览",
+    "previewSectionSubtitle": "查看扫描页并打开原始证书文件。",
+    "fullscreen": "全屏查看",
+    "recordSummaryTitle": "记录摘要",
+    "auditTitle": "审核说明"
+  },
+  "home": {
+    "hero": {
+      "kicker": "EU 证书档案库",
+      "title": "先确认，再打开证书",
+      "subtitle": "让用户先确认公司、产品、型号或证书编号是否存在、是否有效、是否可信，再进入完整证书详情。"
+    },
+    "search": {
+      "scopeCertificate": "证书编号",
+      "scopeCompany": "公司",
+      "scopeCategory": "类别",
+      "cta": "搜索证书",
+      "hintLabel": "快速示例",
+      "quickCompany": "RIF Sports",
+      "quickProduct": "Equestrian Helmet",
+      "quickModel": "F70-709A",
+      "quickCertificate": "CE-2024-00128"
+    },
+    "stats": {
+      "certificates": "已收录证书",
+      "companies": "公司数量",
+      "countries": "国家数量"
+    },
+    "preview": {
+      "title": "最近审核通过的记录",
+      "subtitle": "直接打开经过审核的证书记录，先看结构化字段，再决定是否下载文件。",
+      "badge": "已审核",
+      "modelLabel": "型号",
+      "expiryLabel": "有效期"
+    },
+    "browse": {
+      "kicker": "从已知信息进入",
+      "title": "先从公司、类别或国家开始",
+      "subtitle": "很多用户一开始并不知道证书编号，而是先知道供应商、产品大类或归属国家。",
+      "viewAll": "打开完整搜索",
+      "companiesTitle": "按公司",
+      "companiesSubtitle": "直接进入已知制造商，比较其现有证书记录。",
+      "categoriesTitle": "按类别",
+      "categoriesSubtitle": "从大类分组进入，再缩小到具体产品证书。",
+      "regionsTitle": "按国家",
+      "regionsSubtitle": "按产地或归档国家筛选证书记录。"
+    },
+    "recent": {
+      "kicker": "最新记录",
+      "title": "先看结果行，再决定要不要点进详情",
+      "subtitle": "在列表里直接判断公司、产品、型号、状态和有效期，快速定位目标证书。",
+      "viewAll": "浏览全部结果"
+    },
+    "table": {
+      "company": "公司",
+      "product": "产品",
+      "model": "型号",
+      "status": "状态",
+      "expiry": "有效期",
+      "action": "操作",
+      "view": "查看"
+    },
+    "workflow": {
+      "kicker": "使用方式",
+      "title": "一个真正可用的证书查询 MVP",
+      "subtitle": "这一版只聚焦可靠搜索、清晰结果行，以及把证书文件和核心字段清楚地展示出来。",
+      "searchLabel": "步骤 01",
+      "searchTitle": "按已知线索搜索",
+      "searchDescription": "从公司、产品、类别、型号或证书编号出发，快速进入查询。",
+      "previewLabel": "步骤 02",
+      "previewTitle": "先判断结果行",
+      "previewDescription": "先看状态、有效期、证书编号和审核状态，再决定是否进入详情。",
+      "openLabel": "步骤 03",
+      "openTitle": "打开完整记录",
+      "openDescription": "在详情页统一查看证书文件预览和结构化字段。"
+    },
+    "cta": {
+      "kicker": "下一步",
+      "title": "把它当作一个工作系统，而不是宣传首页",
+      "subtitle": "当前 MVP 只服务于三件事：搜索、判断结果、查看证书。先把根基做对，再扩展后台和数据库。",
+      "primary": "打开搜索",
+      "secondary": "管理员登录",
+      "noteTitle1": "为什么页面更克制",
+      "noteBody1": "因为现在第一目标是可靠查询，而不是品牌展示。",
+      "noteTitle2": "这一版之后做什么",
+      "noteBody2": "等查询路径确认后，再进入后台管理、公司维护和数据库对接。"
+    }
+  },
+  "favorites": {
+    "title": "我的收藏",
+    "empty": "您还没有收藏任何证书",
+    "browseNow": "浏览证书"
+  },
+  "profile": {
+    "title": "个人资料",
+    "personalInfo": "个人信息",
+    "security": "安全设置",
+    "changePassword": "修改密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "updateProfile": "更新资料",
+    "deleteAccount": "删除账户",
+    "deleteConfirm": "确定要删除账户吗？此操作不可撤销。"
+  },
+  "agreement": {
+    "title": "用户协议",
+    "effectiveDate": "生效日期：2024年1月1日",
+    "sections": {
+      "introduction": {
+        "title": "1. 简介",
+        "content": "本用户协议规定了 EU-DOC 向您提供服务的条款。使用我们的服务即表示您同意遵守所有条款。"
+      },
+      "about": {
+        "title": "2. 关于 EU-DOC",
+        "content": "EU-DOC 是一个平台，允许用户上传和浏览认证类型的符合性声明，并为每个证书提供可分享的 URL 链接。"
+      },
+      "services": {
+        "title": "3. 我们的服务",
+        "content": "我们的使命是提供一个全面的证书库，用户可以上传、搜索和分享认证产品的符合性声明。"
+      },
+      "usage": {
+        "title": "4. 使用规范",
+        "content": "同意本协议后，您需要遵守以下规则：不进行非法活动；不从事有害活动；不发送垃圾信息；不分享不当内容；不进行欺诈活动。"
+      },
+      "privacy": {
+        "title": "5. 隐私保护",
+        "content": "您的隐私对我们非常重要。我们按照隐私声明收集和使用您的数据。您拥有自己的信息，可以随时删除。"
+      },
+      "cookies": {
+        "title": "6. Cookies",
+        "content": "我们使用 Cookies 来提供和改进服务。Cookies 帮助我们了解使用模式并提供更好的体验。"
+      }
+    }
+  }
+}

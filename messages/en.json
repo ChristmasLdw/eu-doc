@@ -1,0 +1,271 @@
+{
+  "common": {
+    "appName": "EU-DOC",
+    "appSubtitle": "Certificate Library Platform",
+    "home": "Home",
+    "search": "Search",
+    "browseCompanies": "Companies",
+    "browseCategories": "Categories",
+    "login": "Sign In",
+    "register": "Create Account",
+    "logout": "Sign Out",
+    "profile": "Profile",
+    "favorites": "Favorites",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "darkMode": "Dark Mode",
+    "language": "Language",
+    "footer": "©2024 EU-DOC. All rights reserved."
+  },
+  "search": {
+    "certifiedType": "Certified Type",
+    "category": "Category",
+    "company": "Company",
+    "country": "Country",
+    "allCountries": "All countries",
+    "allStatus": "All status",
+    "filteredByCountry": "Filtered by {country}",
+    "clearCountry": "Clear",
+    "statusLabel": "Status",
+    "backToResults": "Back to results",
+    "placeholder": {
+      "company": "Search by company name...",
+      "product": "Search by product name...",
+      "category": "Search by category...",
+      "model": "Search by model...",
+      "certificate": "Search by certificate number..."
+    },
+    "advanced": "Advanced Search",
+    "sortBy": "Sort by",
+    "relevance": "Relevance",
+    "newest": "Newest",
+    "name": "Name",
+    "results": "{count} results found",
+    "resultsSubtitle": "Use filters and sorting to quickly decide which record is the right one.",
+    "searchWorkspace": "Search workspace",
+    "pageTitle": "Search the certificate archive",
+    "pageSubtitle": "Search by company, product, category, model, or certificate number — then judge each record before opening the full detail page.",
+    "systemNoteTitle": "MVP query system",
+    "systemNoteBody": "This stage focuses on trustworthy record lookup, document preview, and core certificate visibility.",
+    "noResults": "No certificates found",
+    "tryAgain": "Try adjusting your search terms",
+    "scope": {
+      "company": "Company",
+      "product": "Product",
+      "category": "Category",
+      "model": "Model",
+      "certificate": "Certificate No."
+    },
+    "sort": {
+      "newest": "Latest issue date",
+      "expiry": "Expiry date",
+      "product": "Product name"
+    },
+    "review": {
+      "approved": "Reviewed",
+      "pending": "Pending review",
+      "rejected": "Rejected"
+    },
+    "result": {
+      "company": "Company",
+      "product": "Product",
+      "model": "Model",
+      "expiry": "Expiry",
+      "category": "Category",
+      "issueDate": "Issue date",
+      "uploader": "Uploader",
+      "country": "Country",
+      "viewDetail": "View details",
+      "certificateNumber": "Certificate No."
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Full Name",
+    "verificationCode": "Verification Code",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "agreeToTerms": "I have read and agree to the",
+    "userAgreement": "User Agreement",
+    "or": "or",
+    "signInTitle": "Welcome Back",
+    "signInSubtitle": "Sign in to your account",
+    "registerTitle": "Create Account",
+    "registerSubtitle": "Join EU-DOC today",
+    "forgotTitle": "Reset Password",
+    "forgotSubtitle": "Enter your email to receive a reset link",
+    "sendResetLink": "Send Reset Link",
+    "backToLogin": "Back to Login",
+    "googleLogin": "Continue with Google",
+    "errors": {
+      "invalidEmail": "Please enter a valid email address",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "agreeRequired": "Please agree to the user agreement",
+      "loginFailed": "Invalid email or password",
+      "registerFailed": "Registration failed. Please try again."
+    }
+  },
+  "cert": {
+    "details": "Certificate Details",
+    "type": "Certified Type",
+    "category": "Category",
+    "company": "Company",
+    "languages": "Languages",
+    "status": "Status",
+    "reviewStatus": "Review status",
+    "expiryDate": "Expiry Date",
+    "active": "Active",
+    "expired": "Expired",
+    "pending": "Pending",
+    "download": "Download PDF",
+    "share": "Share",
+    "addToFavorites": "Add to Favorites",
+    "removeFromFavorites": "Remove from Favorites",
+    "relatedCerts": "Related Certificates",
+    "viewCount": "views",
+    "previewSectionTitle": "Certificate preview",
+    "previewSectionSubtitle": "Review the scanned certificate pages and open the original document.",
+    "fullscreen": "Fullscreen",
+    "recordSummaryTitle": "Record summary",
+    "auditTitle": "Audit note"
+  },
+  "home": {
+    "hero": {
+      "kicker": "EU certificate archive",
+      "title": "Search certificates before you open them",
+      "subtitle": "Built for fast lookup: confirm whether a company, product, model, or certificate number exists, whether it is still valid, and whether it is ready to view."
+    },
+    "search": {
+      "scopeCertificate": "Certificate No.",
+      "scopeCompany": "Company",
+      "scopeCategory": "Category",
+      "cta": "Search certificates",
+      "hintLabel": "Quick examples",
+      "quickCompany": "RIF Sports",
+      "quickProduct": "Equestrian Helmet",
+      "quickModel": "F70-709A",
+      "quickCertificate": "CE-2024-00128"
+    },
+    "stats": {
+      "certificates": "Indexed certificates",
+      "companies": "Companies",
+      "countries": "Countries"
+    },
+    "preview": {
+      "title": "Recently reviewed records",
+      "subtitle": "Open a verified record directly and inspect the structured fields before downloading the document.",
+      "badge": "Reviewed",
+      "modelLabel": "Model",
+      "expiryLabel": "Expiry"
+    },
+    "browse": {
+      "kicker": "Browse from what you know",
+      "title": "Start with company, category, or country",
+      "subtitle": "For many users, the first known clue is not the certificate number — it is the supplier, the product family, or the filing country.",
+      "viewAll": "Open full search",
+      "companiesTitle": "By company",
+      "companiesSubtitle": "Jump into known manufacturers and compare active records.",
+      "categoriesTitle": "By category",
+      "categoriesSubtitle": "Move from broad certificate groupings into precise product lookup.",
+      "regionsTitle": "By country",
+      "regionsSubtitle": "Filter filings by origin or importer location."
+    },
+    "recent": {
+      "kicker": "Latest records",
+      "title": "Use the list to judge before clicking into details",
+      "subtitle": "See company, product, model, status, and expiry in one pass so you can quickly decide which record matters.",
+      "viewAll": "Browse all results"
+    },
+    "table": {
+      "company": "Company",
+      "product": "Product",
+      "model": "Model",
+      "status": "Status",
+      "expiry": "Expiry",
+      "action": "Action",
+      "view": "View"
+    },
+    "workflow": {
+      "kicker": "How it works",
+      "title": "A simple certificate-query MVP",
+      "subtitle": "This first version focuses on reliable search, understandable result rows, and a detail page that exposes the document and core certificate fields clearly.",
+      "searchLabel": "Step 01",
+      "searchTitle": "Search by clue",
+      "searchDescription": "Start from the company, product, category, model, or certificate number you already know.",
+      "previewLabel": "Step 02",
+      "previewTitle": "Judge the result row",
+      "previewDescription": "Check status, expiry, certificate number, and review state before opening the full record.",
+      "openLabel": "Step 03",
+      "openTitle": "Open the full record",
+      "openDescription": "Review the certificate details, file preview, and structured metadata in one place."
+    },
+    "cta": {
+      "kicker": "Next step",
+      "title": "Use the archive like a working system, not a brochure",
+      "subtitle": "The current MVP focuses on search, result clarity, and certificate visibility — the exact pieces users need first.",
+      "primary": "Open search",
+      "secondary": "Admin login",
+      "noteTitle1": "Why this page looks simpler",
+      "noteBody1": "Because the first goal is trustworthy certificate lookup, not marketing presentation.",
+      "noteTitle2": "What comes after this",
+      "noteBody2": "Once the query flow is right, the next stage can add admin management, company maintenance, and database-backed records."
+    }
+  },
+  "favorites": {
+    "title": "My Favorites",
+    "empty": "You haven't added any certificates to your favorites yet",
+    "browseNow": "Browse Certificates"
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal Information",
+    "security": "Security",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "updateProfile": "Update Profile",
+    "deleteAccount": "Delete Account",
+    "deleteConfirm": "Are you sure you want to delete your account? This action cannot be undone."
+  },
+  "agreement": {
+    "title": "User Agreement",
+    "effectiveDate": "Effective Date: January 1, 2024",
+    "sections": {
+      "introduction": {
+        "title": "1. Introduction",
+        "content": "This User Agreement sets out the terms on which EU-DOC offers you access to and use of our Services. You agree to comply with all of the terms when accessing or using our Services."
+      },
+      "about": {
+        "title": "2. About EU-DOC",
+        "content": "EU-DOC is a platform that allows users to upload and browse Declaration of Conformity for certified types, and provides shareable URL links for each certificate."
+      },
+      "services": {
+        "title": "3. Our Services",
+        "content": "Our mission is to provide a comprehensive certificate library where users can upload, search, and share Declarations of Conformity for certified products."
+      },
+      "usage": {
+        "title": "4. Using EU-DOC",
+        "content": "By agreeing to this user agreement, you will follow these rules: Don't do anything illegal; Don't engage in harmful activities; Don't send spam; Don't share inappropriate content; Don't engage in fraudulent activities."
+      },
+      "privacy": {
+        "title": "5. Privacy",
+        "content": "Your privacy is important to us. We collect and use your data as described in our Privacy Statement. You own your information and can delete it at any time."
+      },
+      "cookies": {
+        "title": "6. Cookies",
+        "content": "We use cookies to provide and improve our services. Cookies enable us to understand your usage patterns and provide a better experience."
+      }
+    }
+  }
+}

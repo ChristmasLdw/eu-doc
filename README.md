@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EU-DOC - Certificate Library Platform
+
+A modern European certificate library platform built with Next.js, TypeScript, and Tailwind CSS.
+
+## Features
+
+- 🔍 **Multi-dimensional search** — Search by certified type, category, or company
+- 🌍 **Internationalization** — Chinese and English (extensible to more languages)
+- 🌙 **Dark mode** — System/light/dark theme support
+- 📱 **Responsive design** — Works on all devices
+- 🔐 **User authentication** — Registration, login, password reset
+- ❤️ **Favorites** — Save and manage certificates
+- 📄 **Certificate details** — Full certificate information view
+- 🎨 **Modern UI** — Clean, professional design with shadcn/ui
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Database**: PostgreSQL + Drizzle ORM
+- **Auth**: NextAuth.js
+- **i18n**: next-intl
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your database credentials
+
+# Push database schema
+npx drizzle-kit push
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See `deploy.sh` for deployment instructions.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+src/
+├── app/              # Next.js App Router pages
+│   ├── [locale]/     # Internationalized routes
+│   └── api/          # API routes
+├── components/       # React components
+│   ├── ui/           # shadcn/ui components
+│   ├── layout/       # Layout components
+│   ├── search/       # Search components
+│   └── cert/         # Certificate components
+├── db/               # Database schema & connection
+├── i18n/             # Internationalization config
+├── lib/              # Utility functions
+├── store/            # Zustand state management
+└── types/            # TypeScript types
+```
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+©2024 EU-DOC. All rights reserved.
