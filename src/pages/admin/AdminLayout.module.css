@@ -219,3 +219,23 @@
     padding: 16px;
   }
 }
+
+/* ===== 简化布局样式 (v2.0) ===== */
+/* 用于普通用户，去除侧边栏，使用顶部导航栏 */
+.simpleLayout {
+  min-height: calc(100vh - 60px); /* 减去导航栏高度 */
+  background-color: var(--bg-primary);
+  padding-top: 80px; /* 给导航栏留空间 */
+}
+
+.simpleContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .simpleContent {
+    padding: 16px;
+  }
+}

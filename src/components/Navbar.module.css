@@ -15,11 +15,16 @@
   right: 0;
   z-index: 1000;
   /* 毛玻璃效果: 半透明背景 + 模糊 */
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   transition: all 0.3s ease;
+}
+
+/* 暗黑模式下的导航栏 */
+[data-theme="dark"] .navbar {
+  background: rgba(10, 15, 30, 0.7);
 }
 
 .container {

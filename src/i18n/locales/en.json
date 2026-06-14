@@ -27,7 +27,7 @@
   },
   "nav": {
     "home": "Home",
-    "search": "Search Certificates",
+    "search": "Search",
     "admin": "Admin",
     "about": "About Us"
   },
@@ -35,7 +35,7 @@
     "title": "EU-DOC Certificate System",
     "subtitle": "Transform certificates from email attachments into verifiable online credentials",
     "searchPlaceholder": "Enter certificate number, company name, product model...",
-    "searchButton": "Search Certificates",
+    "searchButton": "Search",
     "features": {
       "title": "Why Choose EU-DOC?",
       "feature1Title": "Always Online",

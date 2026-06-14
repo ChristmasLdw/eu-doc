@@ -27,7 +27,7 @@
   },
   "nav": {
     "home": "首页",
-    "search": "证书查询",
+    "search": "搜索",
     "admin": "管理后台",
     "about": "关于我们"
   },
@@ -35,7 +35,7 @@
     "title": "EU-DOC 证书查询系统",
     "subtitle": "让证书从「邮件里的附件」变成「在线可查的凭证」",
     "searchPlaceholder": "输入证书编号、公司名称、产品型号...",
-    "searchButton": "搜索证书",
+    "searchButton": "搜索",
     "features": {
       "title": "为什么选择 EU-DOC？",
       "feature1Title": "永久在线",

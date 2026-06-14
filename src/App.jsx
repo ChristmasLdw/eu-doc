@@ -39,20 +39,23 @@ import PrivacyPage from './pages/PrivacyPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminLayout from './pages/admin/AdminLayout';
+import AdminLayoutSimple from './pages/admin/AdminLayoutSimple';
 import DashboardPage from './pages/admin/DashboardPage';
 import CertificatesPage from './pages/admin/CertificatesPage';
 import CompaniesPage from './pages/admin/CompaniesPage';
 import LogsPage from './pages/admin/LogsPage';
+import { useAdmin } from './contexts/AdminContext';
 
 function App() {
   const location = useLocation();
-  // 后台管理页面有自己的侧边栏导航，不显示前台 Navbar
-  const isAdminPage = location.pathname.startsWith('/admin');
+  const { isAdmin } = useAdmin();
+  // 只在登录和注册页面隐藏导航栏
+  const isLoginOrRegister = location.pathname === '/admin/login' || location.pathname === '/admin/register';
 
   return (
     <>
-      {/* 公共导航栏 - 仅在前台页面显示 */}
-      {!isAdminPage && <Navbar />}
+      {/* 公共导航栏 - 除了登录/注册页面，所有页面都显示 */}
+      {!isLoginOrRegister && <Navbar />}
 
       {/*
         Routes 定义 URL 路径与页面组件的映射关系
@@ -90,13 +93,15 @@ function App() {
         {/*
           后台管理布局 - 需要登录保护
           AdminRoute 包裹 AdminLayout，未登录会重定向到 /admin/login
-          AdminLayout 内部使用 Outlet 渲染子路由
+          根据用户角色选择不同布局：
+          - 管理员(admin): 使用完整的 AdminLayout（带侧边栏）
+          - 普通用户(user): 使用简化的 AdminLayoutSimple（只有导航栏）
         */}
         <Route
           path="/admin"
           element={
             <AdminRoute>
-              <AdminLayout />
+              {isAdmin ? <AdminLayout /> : <AdminLayoutSimple />}
             </AdminRoute>
           }
         >

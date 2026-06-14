@@ -296,7 +296,7 @@ export default function SearchPage() {
           disabled={currentPage === 1}
           onClick={() => { const p = currentPage - 1; setCurrentPage(p); syncUrl(p); }}
         >
-          上一页
+          {t('search.prevPage')}
         </button>
         {pages.map((p, i) =>
           p === '...' ? (
@@ -316,7 +316,7 @@ export default function SearchPage() {
           disabled={currentPage === totalPages}
           onClick={() => { const p = currentPage + 1; setCurrentPage(p); syncUrl(p); }}
         >
-          下一页
+          {t('search.nextPage')}
         </button>
       </div>
     );
@@ -336,7 +336,7 @@ export default function SearchPage() {
               <input
                 type="text"
                 className={styles.searchInput}
-                placeholder="搜索公司、产品、型号、证书编号..."
+                placeholder={t('search.placeholder')}
                 value={query}
                 onChange={(e) => { isUserTyping.current = true; setQuery(e.target.value); setShowSuggestions(true); }}
                 onFocus={() => isUserTyping.current && query && setShowSuggestions(true)}
@@ -351,7 +351,7 @@ export default function SearchPage() {
                   ✕
                 </button>
               )}
-              <button type="submit" className={styles.searchButton}>搜索</button>
+              <button type="submit" className={styles.searchButton}>{t('common.search')}</button>
 
               {/* 搜索建议下拉 */}
               {showSuggestions && suggestions.length > 0 && (
@@ -364,7 +364,7 @@ export default function SearchPage() {
                       type="button"
                     >
                       <span className={styles.suggestionType} data-type={s.type}>
-                        {s.type === 'product' ? '产品' : s.type === 'model' ? '型号' : s.type === 'company' ? '公司' : '证书'}
+                        {getSuggestionTypeLabel(s.type, t)}
                       </span>
                       <span className={styles.suggestionValue}>{s.value}</span>
                     </button>
@@ -381,7 +381,7 @@ export default function SearchPage() {
                 className={`${styles.filterTag} ${!activeCategory ? styles.filterActive : ''}`}
                 onClick={() => handleFilterChange(setActiveCategory, undefined)}
               >
-                全部分类
+                {t('search.filters.allCategories')}
               </button>
               {categories.map((cat) => (
                 <button
@@ -401,10 +401,10 @@ export default function SearchPage() {
                 value={activeStatus}
                 onChange={(e) => handleFilterChange(setActiveStatus, e.target.value || undefined)}
               >
-                <option value="">全部状态</option>
-                <option value="active">有效</option>
-                <option value="expired">已过期</option>
-                <option value="revoked">已撤销</option>
+                <option value="">{t('search.filters.allStatus')}</option>
+                <option value="active">{t('search.status.active')}</option>
+                <option value="expired">{t('search.status.expired')}</option>
+                <option value="revoked">{t('search.status.revoked')}</option>
               </select>
 
               <select
@@ -412,7 +412,7 @@ export default function SearchPage() {
                 value={activeIssuer}
                 onChange={(e) => handleFilterChange(setActiveIssuer, e.target.value || undefined)}
               >
-                <option value="">全部机构</option>
+                <option value="">{t('search.filters.allIssuers')}</option>
                 {issuers.map((issuer) => (
                   <option key={issuer} value={issuer}>{issuer}</option>
                 ))}
@@ -423,7 +423,7 @@ export default function SearchPage() {
                 value={activeStandard}
                 onChange={(e) => handleFilterChange(setActiveStandard, e.target.value || undefined)}
               >
-                <option value="">全部标准</option>
+                <option value="">{t('search.filters.allStandards')}</option>
                 {standards.map((std) => (
                   <option key={std} value={std}>{std}</option>
                 ))}
@@ -437,16 +437,22 @@ export default function SearchPage() {
           <div className={styles.resultLeft}>
             <span className={styles.resultCount}>
               {loading ? (
-                <>搜索中...</>
+                <>{t('search.searching')}</>
               ) : error ? (
                 <>{t('common.loadFailed')}</>
               ) : (
-                <>找到 <strong>{totalResults}</strong> 条结果</>
+                <>{t('search.foundResults', { count: totalResults }).replace('<strong>', '').replace('</strong>', '')
+                  .split(totalResults.toString())
+                  .map((part, i, arr) =>
+                    i < arr.length - 1 ? (
+                      <span key={i}>{part}<strong>{totalResults}</strong></span>
+                    ) : part
+                  )}</>
               )}
             </span>
             {activeFilterCount > 0 && (
               <button className={styles.clearFilters} onClick={clearAllFilters}>
-                清除筛选 ({activeFilterCount})
+                {t('search.clearFilters')} ({activeFilterCount})
               </button>
             )}
           </div>
@@ -466,7 +472,7 @@ export default function SearchPage() {
           <div className={styles.emptyState}>
             <h3 className={styles.emptyTitle}>{t('common.loadFailed')}</h3>
             <p className={styles.emptyText}>{error}</p>
-            <button className={styles.emptyClearBtn} onClick={fetchResults}>重试</button>
+            <button className={styles.emptyClearBtn} onClick={fetchResults}>{t('search.retry')}</button>
           </div>
         )}
 

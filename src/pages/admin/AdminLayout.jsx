@@ -24,6 +24,17 @@ import styles from './AdminLayout.module.css';
 // 导航菜单配置
 const navItems = [
   {
+    to: '/',
+    label: '返回首页',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+    isExternal: true, // 标记为外部链接，不添加active样式
+  },
+  {
     to: '/admin',
     label: '仪表盘',
     icon: (
@@ -122,7 +133,7 @@ export default function AdminLayout() {
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
+              className={({ isActive }) => `${styles.navItem} ${isActive && !item.isExternal ? styles.navActive : ''}`}
               onClick={handleNavClick}
             >
               {item.icon}
