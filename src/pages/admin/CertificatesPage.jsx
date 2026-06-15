@@ -1,6 +1,9 @@
 /**
  * EU-DOC 后台管理 - 证书管理页
- * 版本: 1.0.2
+ * 版本: 1.0.3
+ *
+ * 变更记录 (1.0.3):
+ * - 添加完整的多语言支持
  *
  * 变更记录 (1.0.2):
  * - 新增审核状态筛选（pending/approved/rejected）
@@ -20,6 +23,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import * as api from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
@@ -27,22 +31,6 @@ import styles from './CertificatesPage.module.css';
 
 // 每页条数
 const PAGE_SIZE = 10;
-
-// 状态选项
-const STATUS_OPTIONS = [
-  { value: '', label: '全部状态' },
-  { value: 'active', label: '有效' },
-  { value: 'expired', label: '已过期' },
-  { value: 'revoked', label: '已撤销' },
-];
-
-// 审核状态选项
-const REVIEW_STATUS_OPTIONS = [
-  { value: '', label: '全部审核状态' },
-  { value: 'pending', label: '待审核' },
-  { value: 'approved', label: '已通过' },
-  { value: 'rejected', label: '已拒绝' },
-];
 
 // 空的证书表单（用于新增和重置）
 const emptyForm = {
@@ -60,6 +48,24 @@ const emptyForm = {
 };
 
 export default function CertificatesPage() {
+  const { t } = useTranslation();
+
+  // 状态选项
+  const STATUS_OPTIONS = [
+    { value: '', label: t('admin.certificatesPage.allStatus') },
+    { value: 'active', label: t('search.status.active') },
+    { value: 'expired', label: t('search.status.expired') },
+    { value: 'revoked', label: t('search.status.revoked') },
+  ];
+
+  // 审核状态选项
+  const REVIEW_STATUS_OPTIONS = [
+    { value: '', label: t('admin.certificatesPage.allReviewStatus') },
+    { value: 'pending', label: t('certificate.pending') },
+    { value: 'approved', label: t('certificate.approved') },
+    { value: 'rejected', label: t('admin.certificatesPage.reject') },
+  ];
+
   // 列表数据状态
   const [certificates, setCertificates] = useState([]);
   const [total, setTotal] = useState(0);
@@ -75,7 +81,7 @@ export default function CertificatesPage() {
 
   // 模态框状态
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCert, setEditingCert] = useState(null); // null = 新增模式，有值 = 编辑模式
+  const [editingCert, setEditingCert] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -106,7 +112,6 @@ export default function CertificatesPage() {
   const fetchCertificates = useCallback(async () => {
     setLoading(true);
     try {
-      // 将前端排序值映射为后端 API 参数
       const sortMapping = {
         'issue-desc': { sortBy: 'issue_date', sortOrder: 'DESC' },
         'issue-asc': { sortBy: 'issue_date', sortOrder: 'ASC' },
@@ -182,9 +187,8 @@ export default function CertificatesPage() {
     e.preventDefault();
     setFormError('');
 
-    // 基本校验
     if (!formData.certNo.trim() || !formData.productName.trim()) {
-      setFormError('证书编号和产品名称为必填项');
+      setFormError(t('admin.certificatesPage.requiredField'));
       return;
     }
 
@@ -196,7 +200,7 @@ export default function CertificatesPage() {
         await api.createCertificate(formData);
       }
       setModalOpen(false);
-      fetchCertificates(); // 刷新列表
+      fetchCertificates();
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -211,7 +215,7 @@ export default function CertificatesPage() {
     try {
       await api.deleteCertificate(deleteTarget.id);
       setDeleteTarget(null);
-      fetchCertificates(); // 刷新列表
+      fetchCertificates();
     } catch (err) {
       console.error('删除失败:', err);
     } finally {
@@ -233,7 +237,7 @@ export default function CertificatesPage() {
     try {
       await api.reviewCertificate(reviewTarget.id, reviewStatus, reviewRemark || undefined);
       setReviewTarget(null);
-      fetchCertificates(); // 刷新列表
+      fetchCertificates();
     } catch (err) {
       console.error('审核失败:', err);
     } finally {
@@ -251,9 +255,9 @@ export default function CertificatesPage() {
   // 渲染审核状态标签
   const renderReviewBadge = (status) => {
     const map = {
-      pending: { label: '待审核', color: '#facc15', bg: 'rgba(234, 179, 8, 0.1)' },
-      approved: { label: '已通过', color: '#4ade80', bg: 'rgba(34, 197, 94, 0.1)' },
-      rejected: { label: '已拒绝', color: '#f87171', bg: 'rgba(239, 68, 68, 0.1)' },
+      pending: { label: t('certificate.pending'), color: '#facc15', bg: 'rgba(234, 179, 8, 0.1)' },
+      approved: { label: t('certificate.approved'), color: '#4ade80', bg: 'rgba(34, 197, 94, 0.1)' },
+      rejected: { label: t('admin.certificatesPage.reject'), color: '#f87171', bg: 'rgba(239, 68, 68, 0.1)' },
     };
     const info = map[status] || map.pending;
     return (
@@ -274,13 +278,13 @@ export default function CertificatesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>证书管理</h1>
+        <h1 className={styles.pageTitle}>{t('admin.certificatesPage.title')}</h1>
         <button className={styles.addBtn} onClick={handleAdd}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          新增证书
+          {t('admin.certificatesPage.addNew')}
         </button>
       </div>
 
@@ -294,7 +298,7 @@ export default function CertificatesPage() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="搜索证书编号、产品名称、企业..."
+            placeholder={t('admin.certificatesPage.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -311,7 +315,6 @@ export default function CertificatesPage() {
             ))}
           </select>
 
-          {/* 审核状态筛选（管理员可见） */}
           {isAdmin && (
             <select
               className={styles.filterSelect}
@@ -327,7 +330,7 @@ export default function CertificatesPage() {
           <input
             type="text"
             className={styles.filterInput}
-            placeholder="分类筛选"
+            placeholder={t('admin.certificatesPage.allCategories')}
             value={categoryFilter}
             onChange={(e) => handleFilterChange(setCategoryFilter, e.target.value)}
           />
@@ -337,10 +340,10 @@ export default function CertificatesPage() {
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
-            <option value="issue-desc">签发日期（新→旧）</option>
-            <option value="issue-asc">签发日期（旧→新）</option>
-            <option value="expiry-asc">有效期（近→远）</option>
-            <option value="expiry-desc">有效期（远→近）</option>
+            <option value="issue-desc">{t('admin.certificatesPage.sortByIssueDesc')}</option>
+            <option value="issue-asc">{t('admin.certificatesPage.sortByIssueAsc')}</option>
+            <option value="expiry-asc">{t('admin.certificatesPage.sortByExpiryAsc')}</option>
+            <option value="expiry-desc">{t('admin.certificatesPage.sortByExpiryDesc')}</option>
           </select>
         </div>
       </div>
@@ -350,23 +353,23 @@ export default function CertificatesPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>证书编号</th>
-              <th>产品名称</th>
-              <th>企业</th>
-              <th>状态</th>
-              {isAdmin && <th>审核状态</th>}
-              <th>有效期至</th>
-              <th>操作</th>
+              <th>{t('admin.certificatesPage.certNo')}</th>
+              <th>{t('admin.certificatesPage.productName')}</th>
+              <th>{t('admin.certificatesPage.company')}</th>
+              <th>{t('admin.certificatesPage.status')}</th>
+              {isAdmin && <th>{t('admin.certificatesPage.reviewStatus')}</th>}
+              <th>{t('admin.certificatesPage.expiryDate')}</th>
+              <th>{t('admin.certificatesPage.actions')}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className={styles.emptyCell}>加载中...</td>
+                <td colSpan={isAdmin ? 7 : 6} className={styles.emptyCell}>{t('admin.certificatesPage.loading')}</td>
               </tr>
             ) : certificates.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className={styles.emptyCell}>暂无数据</td>
+                <td colSpan={isAdmin ? 7 : 6} className={styles.emptyCell}>{t('admin.certificatesPage.noResults')}</td>
               </tr>
             ) : (
               certificates.map((cert) => (
@@ -378,13 +381,12 @@ export default function CertificatesPage() {
                   {isAdmin && <td>{renderReviewBadge(cert.reviewStatus)}</td>}
                   <td className={styles.dateCell}>{cert.expiryDate ? cert.expiryDate.split('T')[0] : '-'}</td>
                   <td className={styles.actionCell}>
-                    <button className={styles.editBtn} onClick={() => handleEdit(cert)}>编辑</button>
-                    <button className={styles.deleteBtn} onClick={() => setDeleteTarget(cert)}>删除</button>
-                    {/* 管理员审核按钮（仅对 pending 状态的证书显示） */}
+                    <button className={styles.editBtn} onClick={() => handleEdit(cert)}>{t('admin.certificatesPage.edit')}</button>
+                    <button className={styles.deleteBtn} onClick={() => setDeleteTarget(cert)}>{t('admin.certificatesPage.delete')}</button>
                     {isAdmin && cert.reviewStatus === 'pending' && (
                       <>
-                        <button className={styles.approveBtn} onClick={() => handleOpenReview(cert, 'approved')}>通过</button>
-                        <button className={styles.rejectBtn} onClick={() => handleOpenReview(cert, 'rejected')}>拒绝</button>
+                        <button className={styles.approveBtn} onClick={() => handleOpenReview(cert, 'approved')}>{t('admin.certificatesPage.approve')}</button>
+                        <button className={styles.rejectBtn} onClick={() => handleOpenReview(cert, 'rejected')}>{t('admin.certificatesPage.reject')}</button>
                       </>
                     )}
                   </td>
@@ -403,7 +405,7 @@ export default function CertificatesPage() {
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
           >
-            上一页
+            {t('admin.certificatesPage.prevPage')}
           </button>
           <span className={styles.pageInfo}>{page} / {totalPages}</span>
           <button
@@ -411,7 +413,7 @@ export default function CertificatesPage() {
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
           >
-            下一页
+            {t('admin.certificatesPage.nextPage')}
           </button>
         </div>
       )}
@@ -421,57 +423,57 @@ export default function CertificatesPage() {
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2>{editingCert ? '编辑证书' : '新增证书'}</h2>
-              <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>X</button>
+              <h2>{editingCert ? t('admin.certificatesPage.editTitle') : t('admin.certificatesPage.addTitle')}</h2>
+              <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>✕</button>
             </div>
             <form className={styles.modalForm} onSubmit={handleSubmit}>
               <div className={styles.formGrid}>
                 <div className={styles.formField}>
-                  <label>证书编号 *</label>
+                  <label>{t('admin.certificatesPage.formCertNo')} *</label>
                   <input type="text" value={formData.certNo} onChange={(e) => updateFormField('certNo', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>产品名称 *</label>
+                  <label>{t('admin.certificatesPage.formProductName')} *</label>
                   <input type="text" value={formData.productName} onChange={(e) => updateFormField('productName', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>型号</label>
+                  <label>{t('admin.certificatesPage.formModel')}</label>
                   <input type="text" value={formData.model} onChange={(e) => updateFormField('model', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>企业名称</label>
+                  <label>{t('admin.certificatesPage.formCompany')}</label>
                   <input type="text" value={formData.companyName} onChange={(e) => updateFormField('companyName', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>产品分类</label>
+                  <label>{t('admin.certificatesPage.formCategory')}</label>
                   <input type="text" value={formData.category} onChange={(e) => updateFormField('category', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>认证标准</label>
+                  <label>{t('admin.certificatesPage.formStandard')}</label>
                   <input type="text" value={formData.standard} onChange={(e) => updateFormField('standard', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>发证机构</label>
+                  <label>{t('admin.certificatesPage.formIssuer')}</label>
                   <input type="text" value={formData.issuer} onChange={(e) => updateFormField('issuer', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>状态</label>
+                  <label>{t('admin.certificatesPage.formStatus')}</label>
                   <select value={formData.status} onChange={(e) => updateFormField('status', e.target.value)}>
-                    <option value="active">有效</option>
-                    <option value="expired">已过期</option>
-                    <option value="revoked">已撤销</option>
+                    <option value="active">{t('search.status.active')}</option>
+                    <option value="expired">{t('search.status.expired')}</option>
+                    <option value="revoked">{t('search.status.revoked')}</option>
                   </select>
                 </div>
                 <div className={styles.formField}>
-                  <label>签发日期</label>
+                  <label>{t('admin.certificatesPage.formIssueDate')}</label>
                   <input type="date" value={formData.issueDate} onChange={(e) => updateFormField('issueDate', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>有效期至</label>
+                  <label>{t('admin.certificatesPage.formExpiryDate')}</label>
                   <input type="date" value={formData.expiryDate} onChange={(e) => updateFormField('expiryDate', e.target.value)} />
                 </div>
                 <div className={`${styles.formField} ${styles.fullWidth}`}>
-                  <label>描述</label>
+                  <label>{t('admin.certificatesPage.formDescription')}</label>
                   <textarea value={formData.description} onChange={(e) => updateFormField('description', e.target.value)} rows={3} />
                 </div>
               </div>
@@ -479,9 +481,9 @@ export default function CertificatesPage() {
               {formError && <div className={styles.formError}>{formError}</div>}
 
               <div className={styles.formActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setModalOpen(false)}>取消</button>
+                <button type="button" className={styles.cancelBtn} onClick={() => setModalOpen(false)}>{t('common.cancel')}</button>
                 <button type="submit" className={styles.submitBtn} disabled={formLoading}>
-                  {formLoading ? '保存中...' : '保存'}
+                  {formLoading ? t('common.loading') : t('common.save')}
                 </button>
               </div>
             </form>
@@ -493,12 +495,12 @@ export default function CertificatesPage() {
       {deleteTarget && (
         <div className={styles.modalOverlay} onClick={() => setDeleteTarget(null)}>
           <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
-            <h3>确认删除</h3>
-            <p>确定要删除证书 <strong>{deleteTarget.certNo}</strong> 吗？此操作不可撤销。</p>
+            <h3>{t('admin.certificatesPage.deleteConfirmTitle')}</h3>
+            <p>{t('admin.certificatesPage.deleteConfirmText')} <strong>{deleteTarget.certNo}</strong>?</p>
             <div className={styles.confirmActions}>
-              <button className={styles.cancelBtn} onClick={() => setDeleteTarget(null)}>取消</button>
+              <button className={styles.cancelBtn} onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</button>
               <button className={styles.dangerBtn} onClick={handleDelete} disabled={deleteLoading}>
-                {deleteLoading ? '删除中...' : '确认删除'}
+                {deleteLoading ? t('admin.certificatesPage.deleting') : t('common.delete')}
               </button>
             </div>
           </div>
@@ -509,29 +511,28 @@ export default function CertificatesPage() {
       {reviewTarget && (
         <div className={styles.modalOverlay} onClick={() => setReviewTarget(null)}>
           <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
-            <h3>{reviewStatus === 'approved' ? '审核通过' : '拒绝证书'}</h3>
+            <h3>{t('admin.certificatesPage.reviewTitle')}</h3>
             <p>
-              证书编号: <strong>{reviewTarget.certNo}</strong>
+              {t('admin.certificatesPage.certNo')}: <strong>{reviewTarget.certNo}</strong>
               <br />
-              产品名称: <strong>{reviewTarget.productName}</strong>
+              {t('admin.certificatesPage.productName')}: <strong>{reviewTarget.productName}</strong>
             </p>
             <div className={styles.reviewRemarkField}>
-              <label>审核备注（可选）</label>
+              <label>{t('admin.certificatesPage.reviewRemark')}</label>
               <textarea
                 value={reviewRemark}
                 onChange={(e) => setReviewRemark(e.target.value)}
-                placeholder={reviewStatus === 'approved' ? '可填写审核意见...' : '请填写拒绝原因...'}
                 rows={3}
               />
             </div>
             <div className={styles.confirmActions}>
-              <button className={styles.cancelBtn} onClick={() => setReviewTarget(null)}>取消</button>
+              <button className={styles.cancelBtn} onClick={() => setReviewTarget(null)}>{t('common.cancel')}</button>
               <button
                 className={reviewStatus === 'approved' ? styles.approveBtnFull : styles.dangerBtn}
                 onClick={handleReview}
                 disabled={reviewLoading}
               >
-                {reviewLoading ? '处理中...' : reviewStatus === 'approved' ? '确认通过' : '确认拒绝'}
+                {reviewLoading ? t('admin.certificatesPage.reviewing') : (reviewStatus === 'approved' ? t('admin.certificatesPage.reviewApprove') : t('admin.certificatesPage.reviewReject'))}
               </button>
             </div>
           </div>

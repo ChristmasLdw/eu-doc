@@ -1,6 +1,9 @@
 /**
  * EU-DOC 后台管理 - 企业管理页
- * 版本: 1.0.1
+ * 版本: 1.0.2
+ *
+ * 变更记录 (1.0.2):
+ * - 添加完整的多语言支持
  *
  * 设计意图:
  * - 企业的 CRUD 管理界面
@@ -9,6 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import styles from './CompaniesPage.module.css';
 
@@ -24,6 +28,7 @@ const emptyForm = {
 };
 
 export default function CompaniesPage() {
+  const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +90,7 @@ export default function CompaniesPage() {
     setFormError('');
 
     if (!formData.name.trim()) {
-      setFormError('企业名称为必填项');
+      setFormError(t('admin.companiesPage.requiredField'));
       return;
     }
 
@@ -127,13 +132,13 @@ export default function CompaniesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>企业管理</h1>
+        <h1 className={styles.pageTitle}>{t('admin.companiesPage.title')}</h1>
         <button className={styles.addBtn} onClick={handleAdd}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          新增企业
+          {t('admin.companiesPage.addNew')}
         </button>
       </div>
 
@@ -142,21 +147,21 @@ export default function CompaniesPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>企业名称</th>
-              <th>国家/地区</th>
-              <th>联系人</th>
-              <th>联系方式</th>
-              <th>操作</th>
+              <th>{t('admin.companiesPage.companyName')}</th>
+              <th>{t('admin.companiesPage.country')}</th>
+              <th>{t('admin.companiesPage.contact')}</th>
+              <th>{t('admin.companiesPage.phone')}</th>
+              <th>{t('admin.companiesPage.actions')}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="5" className={styles.emptyCell}>加载中...</td>
+                <td colSpan="5" className={styles.emptyCell}>{t('admin.companiesPage.loading')}</td>
               </tr>
             ) : companies.length === 0 ? (
               <tr>
-                <td colSpan="5" className={styles.emptyCell}>暂无数据</td>
+                <td colSpan="5" className={styles.emptyCell}>{t('admin.companiesPage.noResults')}</td>
               </tr>
             ) : (
               companies.map((company) => (
@@ -168,8 +173,8 @@ export default function CompaniesPage() {
                     {company.phone || company.email || '-'}
                   </td>
                   <td className={styles.actionCell}>
-                    <button className={styles.editBtn} onClick={() => handleEdit(company)}>编辑</button>
-                    <button className={styles.deleteBtn} onClick={() => setDeleteTarget(company)}>删除</button>
+                    <button className={styles.editBtn} onClick={() => handleEdit(company)}>{t('admin.companiesPage.edit')}</button>
+                    <button className={styles.deleteBtn} onClick={() => setDeleteTarget(company)}>{t('admin.companiesPage.delete')}</button>
                   </td>
                 </tr>
               ))
@@ -183,37 +188,37 @@ export default function CompaniesPage() {
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2>{editingCompany ? '编辑企业' : '新增企业'}</h2>
+              <h2>{editingCompany ? t('admin.companiesPage.editTitle') : t('admin.companiesPage.addTitle')}</h2>
               <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>✕</button>
             </div>
             <form className={styles.modalForm} onSubmit={handleSubmit}>
               <div className={styles.formGrid}>
                 <div className={`${styles.formField} ${styles.fullWidth}`}>
-                  <label>企业名称 *</label>
+                  <label>{t('admin.companiesPage.formName')} *</label>
                   <input type="text" value={formData.name} onChange={(e) => updateFormField('name', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>国家/地区</label>
+                  <label>{t('admin.companiesPage.formCountry')}</label>
                   <input type="text" value={formData.country} onChange={(e) => updateFormField('country', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>联系人</label>
+                  <label>{t('admin.companiesPage.formContact')}</label>
                   <input type="text" value={formData.contact} onChange={(e) => updateFormField('contact', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>电话</label>
+                  <label>{t('admin.companiesPage.formPhone')}</label>
                   <input type="text" value={formData.phone} onChange={(e) => updateFormField('phone', e.target.value)} />
                 </div>
                 <div className={styles.formField}>
-                  <label>邮箱</label>
+                  <label>{t('admin.companiesPage.formEmail')}</label>
                   <input type="email" value={formData.email} onChange={(e) => updateFormField('email', e.target.value)} />
                 </div>
                 <div className={`${styles.formField} ${styles.fullWidth}`}>
-                  <label>地址</label>
+                  <label>{t('admin.companiesPage.formAddress')}</label>
                   <input type="text" value={formData.address} onChange={(e) => updateFormField('address', e.target.value)} />
                 </div>
                 <div className={`${styles.formField} ${styles.fullWidth}`}>
-                  <label>网站</label>
+                  <label>{t('admin.companiesPage.formWebsite')}</label>
                   <input type="url" value={formData.website} onChange={(e) => updateFormField('website', e.target.value)} />
                 </div>
               </div>
@@ -221,9 +226,9 @@ export default function CompaniesPage() {
               {formError && <div className={styles.formError}>{formError}</div>}
 
               <div className={styles.formActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setModalOpen(false)}>取消</button>
+                <button type="button" className={styles.cancelBtn} onClick={() => setModalOpen(false)}>{t('common.cancel')}</button>
                 <button type="submit" className={styles.submitBtn} disabled={formLoading}>
-                  {formLoading ? '保存中...' : '保存'}
+                  {formLoading ? t('common.loading') : t('common.save')}
                 </button>
               </div>
             </form>
@@ -235,12 +240,12 @@ export default function CompaniesPage() {
       {deleteTarget && (
         <div className={styles.modalOverlay} onClick={() => setDeleteTarget(null)}>
           <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
-            <h3>确认删除</h3>
-            <p>确定要删除企业 <strong>{deleteTarget.name}</strong> 吗？此操作不可撤销。</p>
+            <h3>{t('admin.companiesPage.deleteConfirmTitle')}</h3>
+            <p>{t('admin.companiesPage.deleteConfirmText')} <strong>{deleteTarget.name}</strong>?</p>
             <div className={styles.confirmActions}>
-              <button className={styles.cancelBtn} onClick={() => setDeleteTarget(null)}>取消</button>
+              <button className={styles.cancelBtn} onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</button>
               <button className={styles.dangerBtn} onClick={handleDelete} disabled={deleteLoading}>
-                {deleteLoading ? '删除中...' : '确认删除'}
+                {deleteLoading ? t('admin.companiesPage.deleting') : t('common.delete')}
               </button>
             </div>
           </div>

@@ -1,6 +1,9 @@
 /**
  * EU-DOC 后台管理 - 仪表盘页
- * 版本: 1.0.2
+ * 版本: 1.0.3
+ *
+ * 变更记录 (1.0.3):
+ * - 添加完整的多语言支持
  *
  * 变更记录 (1.0.2):
  * - 待审核卡片可点击跳转到证书管理页（带 pending 筛选）
@@ -14,10 +17,12 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import styles from './DashboardPage.module.css';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +45,7 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className={styles.loading}>加载数据中...</div>;
+    return <div className={styles.loading}>{t('admin.dashboardPage.loading')}</div>;
   }
 
   if (error) {
@@ -55,7 +60,7 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.pageTitle}>仪表盘</h1>
+      <h1 className={styles.pageTitle}>{t('admin.dashboardPage.title')}</h1>
 
       {/* 统计卡片 */}
       <div className={styles.statsGrid}>
@@ -68,7 +73,7 @@ export default function DashboardPage() {
           </div>
           <div className={styles.statInfo}>
             <div className={styles.statNumber}>{stats?.total || 0}</div>
-            <div className={styles.statLabel}>证书总数</div>
+            <div className={styles.statLabel}>{t('admin.dashboardPage.totalCerts')}</div>
           </div>
         </div>
 
@@ -81,7 +86,7 @@ export default function DashboardPage() {
           </div>
           <div className={styles.statInfo}>
             <div className={styles.statNumber}>{stats?.active || 0}</div>
-            <div className={styles.statLabel}>有效证书</div>
+            <div className={styles.statLabel}>{t('admin.dashboardPage.activeCerts')}</div>
           </div>
         </div>
 
@@ -94,7 +99,7 @@ export default function DashboardPage() {
           </div>
           <Link to="/admin/certificates?reviewStatus=pending" className={styles.statInfo}>
             <div className={styles.statNumber}>{stats?.pending || 0}</div>
-            <div className={styles.statLabel}>待审核</div>
+            <div className={styles.statLabel}>{t('admin.dashboardPage.pendingReview')}</div>
           </Link>
         </div>
 
@@ -108,7 +113,7 @@ export default function DashboardPage() {
           </div>
           <div className={styles.statInfo}>
             <div className={styles.statNumber}>{stats?.companies || 0}</div>
-            <div className={styles.statLabel}>企业数量</div>
+            <div className={styles.statLabel}>{t('admin.dashboardPage.companiesCount')}</div>
           </div>
         </div>
       </div>
@@ -116,7 +121,7 @@ export default function DashboardPage() {
       <div className={styles.grid}>
         {/* 认证标准分布 */}
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>认证标准分布</h2>
+          <h2 className={styles.cardTitle}>{t('admin.dashboardPage.standardDistribution')}</h2>
           {categoryData.length > 0 ? (
             <div className={styles.chart}>
               {categoryData.map((item) => (
@@ -133,15 +138,15 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className={styles.empty}>暂无数据</div>
+            <div className={styles.empty}>{t('admin.dashboardPage.noData')}</div>
           )}
         </div>
 
         {/* 最近操作日志 */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>最近操作</h2>
-            <Link to="/admin/logs" className={styles.viewAll}>查看全部</Link>
+            <h2 className={styles.cardTitle}>{t('admin.dashboardPage.recentLogs')}</h2>
+            <Link to="/admin/logs" className={styles.viewAll}>{t('search.viewAll')}</Link>
           </div>
           {logs.length > 0 ? (
             <div className={styles.logList}>
@@ -156,7 +161,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className={styles.empty}>暂无操作记录</div>
+            <div className={styles.empty}>{t('admin.dashboardPage.noLogs')}</div>
           )}
         </div>
       </div>
