@@ -182,6 +182,7 @@
     "recentActivities": "最近操作",
     "dashboardPage": {
       "title": "仪表盘",
+      "myDashboard": "我的仪表盘",
       "loading": "加载数据中...",
       "totalCerts": "证书总数",
       "activeCerts": "有效证书",
@@ -190,7 +191,18 @@
       "standardDistribution": "认证标准分布",
       "recentLogs": "最近操作",
       "noData": "暂无数据",
-      "noLogs": "暂无操作记录"
+      "noLogs": "暂无操作记录",
+      "myTotalCerts": "我的证书总数",
+      "approvedCerts": "已通过",
+      "myPendingReview": "待审核",
+      "rejectedCerts": "已拒绝",
+      "myRecentUploads": "最近上传",
+      "noUploads": "暂无上传记录",
+      "status": {
+        "pending": "待审核",
+        "approved": "已通过",
+        "rejected": "已拒绝"
+      }
     },
     "certificatesPage": {
       "title": "证书管理",

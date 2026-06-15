@@ -353,3 +353,16 @@ export function getStats() {
 export function getRecentLogs() {
   return request('/stats/recent');
 }
+
+/** 获取用户个人统计数据（已登录用户） */
+export function getUserStats() {
+  return request('/stats/user').then((data) => {
+    // 映射字段名为 camelCase
+    const mapped = keysToCamelCase(data);
+    // 映射 recentUploads 中的证书对象
+    if (mapped && Array.isArray(mapped.recentUploads)) {
+      mapped.recentUploads = mapped.recentUploads.map(mapCertificate);
+    }
+    return mapped;
+  });
+}

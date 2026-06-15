@@ -182,6 +182,7 @@
     "recentActivities": "Recent Activities",
     "dashboardPage": {
       "title": "Dashboard",
+      "myDashboard": "My Dashboard",
       "loading": "Loading data...",
       "totalCerts": "Total Certificates",
       "activeCerts": "Active Certificates",
@@ -190,7 +191,18 @@
       "standardDistribution": "Standard Distribution",
       "recentLogs": "Recent Activities",
       "noData": "No data available",
-      "noLogs": "No activity logs"
+      "noLogs": "No activity logs",
+      "myTotalCerts": "My Total Certificates",
+      "approvedCerts": "Approved",
+      "myPendingReview": "Pending Review",
+      "rejectedCerts": "Rejected",
+      "myRecentUploads": "Recent Uploads",
+      "noUploads": "No uploads yet",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
     },
     "certificatesPage": {
       "title": "Certificate Management",
