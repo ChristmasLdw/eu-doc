@@ -123,14 +123,17 @@ function toCamelCase(str) {
 
 /**
  * 将对象的 snake_case 键名转为 camelCase
- * 递归处理，支持嵌套对象（但不会处理数组内的对象以避免性能开销）
+ * 递归处理，支持嵌套对象和数组
  */
 function keysToCamelCase(obj) {
   if (!obj || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(keysToCamelCase);
   const result = {};
   for (const [key, value] of Object.entries(obj)) {
-    result[toCamelCase(key)] = value;
+    // 递归处理嵌套对象和数组
+    result[toCamelCase(key)] = typeof value === 'object' && value !== null
+      ? keysToCamelCase(value)
+      : value;
   }
   return result;
 }
