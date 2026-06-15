@@ -1,0 +1,32 @@
+# AI should ignore these by default to reduce token usage.
+node_modules/
+server/node_modules/
+dist/
+server/uploads/
+server/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+package-lock.json
+.DS_Store
+
+# Historical docs should be read only when explicitly needed.
+docs/archive/
+*SUMMARY*.md
+*REPORT*.md
+*STATUS*.md
+*SUCCESS*.md
+*DEPLOYMENT*.md
+*UPDATE*.md
+*FIX*.md
+*PLAN*.md
+*RELEASE*.md
+README_TOMORROW.md
+TODAY_STATUS.md
+WORK_SUMMARY*.md
+DAILY_SUMMARY*.md
+COMPLETION*.md
+MAJOR_UPDATE*.md
+VERSION_*.md
