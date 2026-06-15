@@ -1,6 +1,10 @@
 /**
  * EU-DOC 搜索结果页
- * 版本: 2.0.0
+ * 版本: 2.1.0
+ *
+ * 变更记录 (2.1.0):
+ * - 添加搜索历史记录功能
+ * - 优化搜索建议显示
  *
  * 变更记录 (2.0.0):
  * - 添加多语言支持
@@ -13,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
 import { getCertificates, getStats, getCompanies } from '../services/api';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
+import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
 import styles from './SearchPage.module.css';
@@ -65,6 +70,14 @@ export default function SearchPage() {
   // 发证机构和认证标准列表（从 API 统计数据获取）
   const [issuers, setIssuers] = useState([]);
   const [standards, setStandards] = useState([]);
+
+  // 搜索历史记录
+  const [searchHistory, setSearchHistory] = useState([]);
+
+  // 组件挂载时加载搜索历史
+  useEffect(() => {
+    setSearchHistory(getSearchHistory());
+  }, []);
 
   // 组件挂载时获取搜索建议数据源和筛选选项列表
   useEffect(() => {
@@ -234,6 +247,10 @@ export default function SearchPage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    if (query.trim()) {
+      addSearchHistory(query);
+      setSearchHistory(getSearchHistory());
+    }
     setCurrentPage(1);
     syncUrl(1);
     setShowSuggestions(false);
@@ -241,9 +258,31 @@ export default function SearchPage() {
 
   const handleSuggestionClick = (value) => {
     setQuery(value);
+    if (value.trim()) {
+      addSearchHistory(value);
+      setSearchHistory(getSearchHistory());
+    }
     setShowSuggestions(false);
     setCurrentPage(1);
     syncUrl(1);
+  };
+
+  const handleHistoryClick = (historyItem) => {
+    setQuery(historyItem);
+    setShowSuggestions(false);
+    setCurrentPage(1);
+    // 不再添加到历史，因为已经存在
+  };
+
+  const handleDeleteHistory = (e, historyItem) => {
+    e.stopPropagation();
+    removeSearchHistory(historyItem);
+    setSearchHistory(getSearchHistory());
+  };
+
+  const handleClearHistory = () => {
+    clearSearchHistory();
+    setSearchHistory([]);
   };
 
   const handleFilterChange = (setter, value) => {
@@ -339,7 +378,7 @@ export default function SearchPage() {
                 placeholder={t('search.placeholder')}
                 value={query}
                 onChange={(e) => { isUserTyping.current = true; setQuery(e.target.value); setShowSuggestions(true); }}
-                onFocus={() => isUserTyping.current && query && setShowSuggestions(true)}
+                onFocus={() => { setShowSuggestions(true); }}
                 autoFocus
               />
               {query && (
@@ -353,10 +392,11 @@ export default function SearchPage() {
               )}
               <button type="submit" className={styles.searchButton}>{t('common.search')}</button>
 
-              {/* 搜索建议下拉 */}
-              {showSuggestions && suggestions.length > 0 && (
+              {/* 搜索建议/历史下拉 */}
+              {showSuggestions && (
                 <div className={styles.suggestions} ref={suggestionsRef}>
-                  {suggestions.map((s, i) => (
+                  {/* 当有输入时显示搜索建议 */}
+                  {query && suggestions.length > 0 && suggestions.map((s, i) => (
                     <button
                       key={i}
                       className={`${styles.suggestionItem} ${styles[`type_${s.type}`]}`}
@@ -369,6 +409,50 @@ export default function SearchPage() {
                       <span className={styles.suggestionValue}>{s.value}</span>
                     </button>
                   ))}
+
+                  {/* 当无输入时显示搜索历史 */}
+                  {!query && searchHistory.length > 0 && (
+                    <>
+                      <div className={styles.historyHeader}>
+                        <span className={styles.historyTitle}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          {t('search.searchHistory')}
+                        </span>
+                        <button
+                          type="button"
+                          className={styles.clearHistoryBtn}
+                          onClick={handleClearHistory}
+                        >
+                          {t('search.clearHistory')}
+                        </button>
+                      </div>
+                      {searchHistory.map((item, i) => (
+                        <button
+                          key={i}
+                          className={styles.historyItem}
+                          onClick={() => handleHistoryClick(item)}
+                          type="button"
+                        >
+                          <span className={styles.historyValue}>{item}</span>
+                          <button
+                            className={styles.deleteHistoryBtn}
+                            onClick={(e) => handleDeleteHistory(e, item)}
+                            type="button"
+                          >
+                            ✕
+                          </button>
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {/* 无建议和无历史时的提示 */}
+                  {query && suggestions.length === 0 && (
+                    <div className={styles.noSuggestions}>{t('search.noSuggestions')}</div>
+                  )}
                 </div>
               )}
             </div>

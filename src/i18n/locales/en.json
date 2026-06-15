@@ -67,6 +67,9 @@
     "clearAllFilters": "Clear all filters",
     "matchedCompanies": "Matched Companies",
     "viewAll": "View All",
+    "searchHistory": "Search History",
+    "clearHistory": "Clear",
+    "noSuggestions": "No suggestions",
     "filters": {
       "all": "All",
       "allCategories": "All Categories",

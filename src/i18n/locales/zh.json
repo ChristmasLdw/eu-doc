@@ -67,6 +67,9 @@
     "clearAllFilters": "清除所有筛选条件",
     "matchedCompanies": "匹配的公司",
     "viewAll": "查看全部",
+    "searchHistory": "搜索历史",
+    "clearHistory": "清空",
+    "noSuggestions": "无匹配建议",
     "filters": {
       "all": "全部",
       "allCategories": "全部分类",
