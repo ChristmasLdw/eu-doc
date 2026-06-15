@@ -92,7 +92,10 @@
       "expiring": "Expiring Soon"
     },
     "noResults": "No certificates found",
-    "total": "{{count}} results"
+    "total": "{{count}} results",
+    "categories": {
+      "马术头盔": "Equestrian Helmets"
+    }
   },
   "certificate": {
     "title": "Certificate Details",

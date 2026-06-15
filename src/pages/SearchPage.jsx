@@ -389,7 +389,7 @@ export default function SearchPage() {
                   className={`${styles.filterTag} ${activeCategory === cat ? styles.filterActive : ''}`}
                   onClick={() => handleFilterChange(setActiveCategory, activeCategory === cat ? undefined : cat)}
                 >
-                  {cat}
+                  {t(`search.categories.${cat}`) || cat}
                 </button>
               ))}
             </div>
@@ -534,26 +534,26 @@ export default function SearchPage() {
 
                       <div className={styles.certDetails}>
                         <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>证书编号</span>
+                          <span className={styles.detailLabel}>{t('certificate.certNo')}</span>
                           <span className={styles.detailValue}>{highlightText(cert.certNo)}</span>
                         </div>
                         <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>认证型号</span>
+                          <span className={styles.detailLabel}>{t('certificate.model')}</span>
                           <span className={styles.detailValue}>{highlightText(cert.model)}</span>
                         </div>
                         <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>认证标准</span>
+                          <span className={styles.detailLabel}>{t('certificate.standard')}</span>
                           <span className={styles.detailValue}>{cert.standard}</span>
                         </div>
                         <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>有效期至</span>
+                          <span className={styles.detailLabel}>{t('certificate.expiryDate')}</span>
                           <span className={styles.detailValue}>{cert.expiryDate}</span>
                         </div>
                       </div>
 
                       <div className={styles.certFooter}>
-                        <span className={styles.certIssuer}>发证机构: {cert.issuer}</span>
-                        <span className={styles.viewDetail}>查看详情 →</span>
+                        <span className={styles.certIssuer}>{t('certificate.issuer')}: {cert.issuer}</span>
+                        <span className={styles.viewDetail}>{t('certificate.view')} →</span>
                       </div>
                     </div>
 

@@ -92,7 +92,10 @@
       "expiring": "即将过期"
     },
     "noResults": "未找到相关证书",
-    "total": "共 {{count}} 个结果"
+    "total": "共 {{count}} 个结果",
+    "categories": {
+      "马术头盔": "马术头盔"
+    }
   },
   "certificate": {
     "title": "证书详情",
