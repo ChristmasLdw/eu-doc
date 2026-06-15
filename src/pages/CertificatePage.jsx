@@ -184,9 +184,15 @@ export default function CertificatePage() {
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>审核状态</span>
                     <span className={styles.infoValue}>
-                      {cert.reviewStatus === 'approved' ? '已审核通过' : '待审核'}
+                      {cert.reviewStatus === 'approved' ? '已审核通过' : cert.reviewStatus === 'rejected' ? '已拒绝' : '待审核'}
                     </span>
                   </div>
+                  {cert.remark && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>审核备注</span>
+                      <span className={styles.infoValue}>{cert.remark}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
