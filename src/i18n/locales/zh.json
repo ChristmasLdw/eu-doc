@@ -206,6 +206,7 @@
     },
     "certificatesPage": {
       "title": "证书管理",
+      "myUploads": "我的上传",
       "addNew": "新增证书",
       "search": "搜索证书编号、产品名称、公司...",
       "allStatus": "全部状态",

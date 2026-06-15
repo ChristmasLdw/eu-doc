@@ -120,7 +120,7 @@ export default function CertificatesPage() {
       };
       const sort = sortMapping[sortOrder] || { sortBy: 'created_at', sortOrder: 'DESC' };
 
-      const result = await api.getCertificates({
+      const params = {
         page,
         pageSize: PAGE_SIZE,
         search: searchQuery || undefined,
@@ -128,7 +128,14 @@ export default function CertificatesPage() {
         category: categoryFilter || undefined,
         ...sort,
         reviewStatus: reviewStatusFilter || undefined,
-      });
+      };
+
+      // 普通用户默认只看自己上传的证书
+      if (!isAdmin) {
+        params.myUploads = 'true';
+      }
+
+      const result = await api.getCertificates(params);
       setCertificates(result.data || []);
       setTotal(result.pagination?.total ?? (result.data || []).length);
     } catch (err) {
@@ -136,7 +143,7 @@ export default function CertificatesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, statusFilter, categoryFilter, sortOrder, reviewStatusFilter]);
+  }, [page, searchQuery, statusFilter, categoryFilter, sortOrder, reviewStatusFilter, isAdmin]);
 
   useEffect(() => {
     fetchCertificates();
@@ -278,7 +285,9 @@ export default function CertificatesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('admin.certificatesPage.title')}</h1>
+        <h1 className={styles.pageTitle}>
+          {isAdmin ? t('admin.certificatesPage.title') : t('admin.certificatesPage.myUploads')}
+        </h1>
         <button className={styles.addBtn} onClick={handleAdd}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />

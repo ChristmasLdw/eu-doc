@@ -62,6 +62,7 @@ const upload = multer({
  * - issuer: 按发证机构筛选
  * - standard: 按认证标准筛选
  * - companyId: 按企业 ID 筛选
+ * - myUploads: 只查看当前用户上传的证书（需要认证）
  * - sortBy: 排序字段（默认 created_at）
  * - sortOrder: 排序方向（ASC/DESC，默认 DESC）
  */
@@ -76,6 +77,7 @@ router.get('/', (req, res) => {
     issuer,
     standard,
     companyId,
+    myUploads,
     sortBy = 'created_at',
     sortOrder = 'DESC',
   } = req.query;
@@ -96,7 +98,42 @@ router.get('/', (req, res) => {
   const authHeader = req.headers.authorization;
   const hasToken = authHeader && authHeader.startsWith('Bearer ');
 
-  if (!hasToken || !reviewStatus) {
+  // 如果是查看"我的上传"，需要通过 audit_logs 追踪用户上传的证书
+  let userCertIds = [];
+  if (myUploads === 'true' && hasToken) {
+    try {
+      const jwt = require('jsonwebtoken');
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-in-production');
+
+      // 查找该用户创建的所有证书ID
+      userCertIds = db.prepare(`
+        SELECT DISTINCT target_id
+        FROM audit_logs
+        WHERE admin_id = ? AND action = 'create' AND target_type = 'certificate'
+      `).all(decoded.userId).map(row => row.target_id);
+
+      if (userCertIds.length > 0) {
+        const placeholders = userCertIds.map(() => '?').join(',');
+        conditions.push(`c.id IN (${placeholders})`);
+        params.push(...userCertIds);
+      } else {
+        // 用户还没有上传过证书，返回空列表
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            page: Number(page),
+            pageSize: Number(pageSize),
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+    } catch (error) {
+      return res.status(401).json({ success: false, message: '无效的认证令牌' });
+    }
+  } else if (!hasToken || !reviewStatus) {
     // 未登录或未指定 reviewStatus 时，只显示已审核通过的
     if (!reviewStatus) {
       conditions.push("review_status = 'approved'");

@@ -206,6 +206,7 @@
     },
     "certificatesPage": {
       "title": "Certificate Management",
+      "myUploads": "My Uploads",
       "addNew": "Add Certificate",
       "search": "Search certificate no., product, company...",
       "allStatus": "All Status",
