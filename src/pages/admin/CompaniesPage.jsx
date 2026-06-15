@@ -166,13 +166,13 @@ export default function CompaniesPage() {
             ) : (
               companies.map((company) => (
                 <tr key={company.id}>
-                  <td className={styles.nameCell}>{company.name}</td>
-                  <td>{company.country || '-'}</td>
-                  <td>{company.contact || '-'}</td>
-                  <td className={styles.contactCell}>
+                  <td data-label={t('admin.companiesPage.name')} className={styles.nameCell}>{company.name}</td>
+                  <td data-label={t('admin.companiesPage.country')}>{company.country || '-'}</td>
+                  <td data-label={t('admin.companiesPage.contact')}>{company.contact || '-'}</td>
+                  <td data-label={t('admin.companiesPage.contactInfo')} className={styles.contactCell}>
                     {company.phone || company.email || '-'}
                   </td>
-                  <td className={styles.actionCell}>
+                  <td data-label={t('admin.companiesPage.actions')} className={styles.actionCell}>
                     <button className={styles.editBtn} onClick={() => handleEdit(company)}>{t('admin.companiesPage.edit')}</button>
                     <button className={styles.deleteBtn} onClick={() => setDeleteTarget(company)}>{t('admin.companiesPage.delete')}</button>
                   </td>

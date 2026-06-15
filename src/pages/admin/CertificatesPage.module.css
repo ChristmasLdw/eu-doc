@@ -174,6 +174,13 @@
   white-space: nowrap;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .editBtn {
   padding: 4px 10px;
   background: rgba(59, 130, 246, 0.1);
@@ -553,7 +560,16 @@
 }
 
 /* ===== 响应式 ===== */
+/* ===== 响应式 ===== */
+@media (max-width: 1024px) {
+  /* 平板端：隐藏部分列 */
+  .tableWrapper {
+    overflow-x: auto;
+  }
+}
+
 @media (max-width: 768px) {
+  /* 移动端优化 */
   .toolbar {
     flex-direction: column;
   }
@@ -562,11 +578,108 @@
     max-width: 100%;
   }
 
+  .filters {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
   .formGrid {
     grid-template-columns: 1fr;
   }
 
   .modal {
     max-height: 95vh;
+    width: 95%;
+    padding: 20px;
+  }
+
+  .modalOverlay {
+    padding: 12px;
+  }
+
+  /* 表格移动端样式：卡片模式 */
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .table tr {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+  }
+
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border: none;
+  }
+
+  .table td:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* 操作按钮优化 */
+  .actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .editBtn,
+  .deleteBtn,
+  .reviewBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* 分页按钮缩小 */
+  .pageBtn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .pageInfo {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 超小屏幕优化 */
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .addBtn {
+    width: 100%;
+  }
+
+  .confirmModal {
+    padding: 16px;
   }
 }

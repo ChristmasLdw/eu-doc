@@ -327,7 +327,62 @@
 }
 
 @media (max-width: 640px) {
+  /* 移动端：统计卡片单列 */
   .statsGrid {
     grid-template-columns: 1fr;
+  }
+
+  /* 证书列表项优化 */
+  .certItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .certInfo {
+    width: 100%;
+  }
+
+  .certStatus {
+    width: 100%;
+    margin-left: 0;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  /* 统计卡片优化 */
+  .statCard {
+    padding: 16px;
+  }
+
+  .statIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .statNumber {
+    font-size: 24px;
+  }
+
+  /* 图表标签宽度调整 */
+  .chartLabel {
+    width: 80px;
+    font-size: 12px;
+  }
+
+  /* 日志列表优化 */
+  .logItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .logInfo {
+    width: 100%;
+  }
+
+  .logTime {
+    margin-left: 0;
+    font-size: 11px;
   }
 }

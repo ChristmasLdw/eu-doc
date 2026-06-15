@@ -383,21 +383,23 @@ export default function CertificatesPage() {
             ) : (
               certificates.map((cert) => (
                 <tr key={cert.id}>
-                  <td className={styles.certNo}>{cert.certNo}</td>
-                  <td>{cert.productName}</td>
-                  <td className={styles.companyCell}>{cert.companyName}</td>
-                  <td><StatusBadge status={cert.status} /></td>
-                  {isAdmin && <td>{renderReviewBadge(cert.reviewStatus)}</td>}
-                  <td className={styles.dateCell}>{cert.expiryDate ? cert.expiryDate.split('T')[0] : '-'}</td>
-                  <td className={styles.actionCell}>
-                    <button className={styles.editBtn} onClick={() => handleEdit(cert)}>{t('admin.certificatesPage.edit')}</button>
-                    <button className={styles.deleteBtn} onClick={() => setDeleteTarget(cert)}>{t('admin.certificatesPage.delete')}</button>
-                    {isAdmin && cert.reviewStatus === 'pending' && (
-                      <>
-                        <button className={styles.approveBtn} onClick={() => handleOpenReview(cert, 'approved')}>{t('admin.certificatesPage.approve')}</button>
-                        <button className={styles.rejectBtn} onClick={() => handleOpenReview(cert, 'rejected')}>{t('admin.certificatesPage.reject')}</button>
-                      </>
-                    )}
+                  <td data-label={t('admin.certificatesPage.certNo')} className={styles.certNo}>{cert.certNo}</td>
+                  <td data-label={t('admin.certificatesPage.productName')}>{cert.productName}</td>
+                  <td data-label={t('admin.certificatesPage.company')} className={styles.companyCell}>{cert.companyName}</td>
+                  <td data-label={t('admin.certificatesPage.status')}><StatusBadge status={cert.status} /></td>
+                  {isAdmin && <td data-label={t('admin.certificatesPage.reviewStatus')}>{renderReviewBadge(cert.reviewStatus)}</td>}
+                  <td data-label={t('admin.certificatesPage.expiryDate')} className={styles.dateCell}>{cert.expiryDate ? cert.expiryDate.split('T')[0] : '-'}</td>
+                  <td data-label={t('admin.certificatesPage.actions')} className={styles.actionCell}>
+                    <div className={styles.actions}>
+                      <button className={styles.editBtn} onClick={() => handleEdit(cert)}>{t('admin.certificatesPage.edit')}</button>
+                      <button className={styles.deleteBtn} onClick={() => setDeleteTarget(cert)}>{t('admin.certificatesPage.delete')}</button>
+                      {isAdmin && cert.reviewStatus === 'pending' && (
+                        <>
+                          <button className={styles.approveBtn} onClick={() => handleOpenReview(cert, 'approved')}>{t('admin.certificatesPage.approve')}</button>
+                          <button className={styles.rejectBtn} onClick={() => handleOpenReview(cert, 'rejected')}>{t('admin.certificatesPage.reject')}</button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

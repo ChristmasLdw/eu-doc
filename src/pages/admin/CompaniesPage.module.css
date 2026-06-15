@@ -342,8 +342,95 @@
 }
 
 /* ===== 响应式 ===== */
+/* ===== 响应式 ===== */
+@media (max-width: 1024px) {
+  .tableWrapper {
+    overflow-x: auto;
+  }
+}
+
 @media (max-width: 768px) {
   .formGrid {
     grid-template-columns: 1fr;
+  }
+
+  .modal {
+    max-height: 95vh;
+    width: 95%;
+    padding: 20px;
+  }
+
+  .modalOverlay {
+    padding: 12px;
+  }
+
+  /* 表格移动端卡片模式 */
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .table tr {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+  }
+
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border: none;
+  }
+
+  .table td:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* 操作按钮优化 */
+  .actionCell {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .editBtn,
+  .deleteBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .addBtn {
+    width: 100%;
+  }
+
+  .confirmModal {
+    padding: 16px;
   }
 }
