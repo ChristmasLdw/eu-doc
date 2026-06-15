@@ -137,3 +137,29 @@
 - 说明：
   - 所有管理后台页面均已支持完整的中英文切换。
   - 无需额外修改，多语言支持已在之前版本完成。
+
+### 2026-06-15 14:45:00 CST
+
+- 关联任务：EU-T002 / EU-T004
+- 关联版本：1.0.1
+- 工作内容：
+  - 根据“读后归档”规则，准备把根目录中已经被读取和吸收的旧工作文档移动到 `docs/archive/`。
+  - 不把旧工作文档全文复制进 `WORK_LOG.md`，避免重复内容继续浪费 token。
+  - 保留归档索引，后续需要追溯时再读取 archive。
+- 即将归档的旧工作文档：
+  - `WORK_PLAN_2026-06-15.md` -> `docs/archive/status-and-plans/`
+  - `WORK_SUMMARY_2026-06-15.md` -> `docs/archive/summaries/`
+  - `DAILY_SUMMARY_2026-06-14.md` -> `docs/archive/summaries/`
+  - `COMPLETION_REPORT_2026-06-15.md` -> `docs/archive/summaries/`
+  - `BUG_FIX_2026-06-15.md` -> `docs/archive/fixes/`
+  - `DEPLOYMENT_2026-06-15.md` -> `docs/archive/deployment/`
+  - `I18N_FIX_2026-06-14.md` -> `docs/archive/fixes/`
+  - `UPDATE_LOG_2026-06-14.md` -> `docs/archive/releases/`
+- 当前继续工作摘要：
+  - AI 限流读取规则已建立。
+  - 项目结构说明已建立。
+  - 文档已按正式文档、法律文档、历史归档分类。
+  - 统一工作流、TODO、工作日志已建立。
+  - 前端构建 `npm run build` 已验证通过。
+- 待完善：
+  - 需要用户确认后续是否处理 Git 中 `node_modules/` 和数据库文件的跟踪问题。
