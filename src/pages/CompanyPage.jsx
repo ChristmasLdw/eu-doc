@@ -26,12 +26,30 @@ export default function CompanyPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
 
+  // 排序选项
+  const sortOptions = [
+    { value: 'date-desc', label: t('company.sortByDateDesc') || '最新签发' },
+    { value: 'date-asc', label: t('company.sortByDateAsc') || '最早签发' },
+    { value: 'expiry-asc', label: t('company.sortByExpiryAsc') || '即将过期' },
+    { value: 'expiry-desc', label: t('company.sortByExpiryDesc') || '最晚过期' },
+    { value: 'name-asc', label: t('company.sortByNameAsc') || '名称A-Z' },
+    { value: 'name-desc', label: t('company.sortByNameDesc') || '名称Z-A' },
+  ];
+
   useEffect(() => {
     setLoading(true);
     setError(null);
     getCompany(id)
-      .then((data) => setCompany(data))
+      .then((data) => {
+        console.log('Company data received:', data);
+        console.log('Certificates:', data?.certificates);
+        if (data?.certificates?.[0]) {
+          console.log('First cert keys:', Object.keys(data.certificates[0]));
+        }
+        setCompany(data);
+      })
       .catch((err) => {
+        console.error('Error loading company:', err);
         setError(err.message || t('messages.networkError'));
         setCompany(null);
       })
@@ -163,15 +181,19 @@ export default function CompanyPage() {
           <div className={styles.companyInfo}>
             <div className={styles.companyHeader}>
               <div className={styles.companyIcon}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 21h18" />
-                  <path d="M5 21V7l8-4v18" />
-                  <path d="M19 21V11l-6-4" />
-                  <path d="M9 9v.01" />
-                  <path d="M9 12v.01" />
-                  <path d="M9 15v.01" />
-                  <path d="M9 18v.01" />
-                </svg>
+                {company.logoUrl ? (
+                  <img src={company.logoUrl} alt={company.name} className={styles.companyLogo} />
+                ) : (
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 21h18" />
+                    <path d="M5 21V7l8-4v18" />
+                    <path d="M19 21V11l-6-4" />
+                    <path d="M9 9v.01" />
+                    <path d="M9 12v.01" />
+                    <path d="M9 15v.01" />
+                    <path d="M9 18v.01" />
+                  </svg>
+                )}
               </div>
               <div className={styles.companyTitle}>
                 <h1 className={styles.companyName}>{company.name}</h1>

@@ -320,7 +320,13 @@ export function getCompany(id) {
     if (data && Array.isArray(data.certificates)) {
       data.certificates = data.certificates.map(mapCertificate);
     }
-    return keysToCamelCase(data);
+    const mapped = keysToCamelCase(data);
+    // 处理 logo_path -> logoUrl 映射
+    if (mapped.logoPath !== undefined) {
+      mapped.logoUrl = mapped.logoPath ? `${BASENAME}${mapped.logoPath}` : null;
+      delete mapped.logoPath;
+    }
+    return mapped;
   });
 }
 
