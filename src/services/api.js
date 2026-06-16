@@ -351,6 +351,16 @@ export function deleteCompany(id) {
   return request(`/companies/${id}`, { method: 'DELETE' });
 }
 
+/** 上传企业Logo */
+export function uploadCompanyLogo(id, file) {
+  const formData = new FormData();
+  formData.append('logo', file);
+  return request(`/companies/${id}/logo`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 // ===== 统计相关 API =====
 
 /** 获取统计总览（返回值已映射为 camelCase） */
