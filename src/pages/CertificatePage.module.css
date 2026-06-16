@@ -50,6 +50,32 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  gap: 16px;
+}
+
+.certTopLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.certTopRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.expiringWarning {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: #f59e0b;
+  font-weight: 500;
 }
 
 .certNo {
@@ -59,6 +85,68 @@
   background: rgba(255, 255, 255, 0.05);
   padding: 6px 12px;
   border-radius: var(--radius-sm);
+}
+
+.copyBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copyBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.copyBtn svg {
+  flex-shrink: 0;
+}
+
+/* 状态颜色 */
+.status_green {
+  color: var(--status-active);
+  font-weight: 500;
+}
+
+.status_yellow {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.status_red {
+  color: var(--status-expired);
+  font-weight: 500;
+}
+
+.status_gray {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* 审核状态颜色 */
+.review_green {
+  color: var(--status-active);
+  font-weight: 500;
+}
+
+.review_orange {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.review_red {
+  color: var(--status-expired);
+  font-weight: 500;
 }
 
 /* 标题区域 */

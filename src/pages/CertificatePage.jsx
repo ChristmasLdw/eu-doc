@@ -1,6 +1,12 @@
 /**
  * EU-DOC 证书详情页
- * 版本: 2.0.0
+ * 版本: 2.1.0
+ *
+ * 变更记录 (2.1.0):
+ * - 添加证书状态计算和过期倒计时
+ * - 添加可信度信息展示
+ * - 优化操作按钮（复制证书编号）
+ * - 增强状态徽章显示
  *
  * 变更记录 (2.0.0):
  * - 添加多语言支持
@@ -10,6 +16,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCertificate } from '../services/api';
+import { getCertificateStatus, formatDaysRemaining, getReviewStatusInfo } from '../utils/certificateStatus';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
 import styles from './CertificatePage.module.css';
@@ -22,6 +29,7 @@ export default function CertificatePage() {
   const [cert, setCert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -34,6 +42,24 @@ export default function CertificatePage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // 复制证书编号
+  const handleCopyCertNo = () => {
+    if (cert?.certNo) {
+      navigator.clipboard.writeText(cert.certNo).then(() => {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      });
+    }
+  };
+
+  // 分享链接
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      alert(t('certificate.linkCopied'));
+    });
+  };
 
   if (loading) {
     return (
@@ -95,6 +121,10 @@ export default function CertificatePage() {
     });
   };
 
+  // 计算证书状态
+  const certStatus = getCertificateStatus(cert.status, cert.expiryDate);
+  const reviewInfo = getReviewStatusInfo(cert.reviewStatus);
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -108,10 +138,41 @@ export default function CertificatePage() {
 
         {/* 证书主卡片 */}
         <div className={styles.certCard}>
-          {/* 顶部：状态 + 证书编号 */}
+          {/* 顶部：状态 + 证书编号 + 操作 */}
           <div className={styles.certTop}>
-            <StatusBadge status={cert.status} />
-            <span className={styles.certNo}>{cert.certNo}</span>
+            <div className={styles.certTopLeft}>
+              <StatusBadge status={cert.status} />
+              {certStatus.daysRemaining !== null && certStatus.status === 'expiring' && (
+                <span className={styles.expiringWarning}>
+                  ⚠️ {formatDaysRemaining(certStatus.daysRemaining, t)}
+                </span>
+              )}
+            </div>
+            <div className={styles.certTopRight}>
+              <span className={styles.certNo}>{cert.certNo}</span>
+              <button
+                className={styles.copyBtn}
+                onClick={handleCopyCertNo}
+                title={t('certificate.copyCertNo')}
+              >
+                {copySuccess ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>{t('certificate.certNoCopied')}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    <span>{t('certificate.copyCertNo')}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* 标题区域 */}
@@ -181,16 +242,43 @@ export default function CertificatePage() {
                     <span className={styles.infoLabel}>{t('certificate.expiryDate')}</span>
                     <span className={styles.infoValue}>{formatDate(cert.expiryDate)}</span>
                   </div>
+                  {certStatus.daysRemaining !== null && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>{t('certificate.status')}</span>
+                      <span className={`${styles.infoValue} ${styles[`status_${certStatus.statusColor}`]}`}>
+                        {t(`certificate.status.${certStatus.statusText}`)}
+                        {certStatus.daysRemaining > 0 && ` (${formatDaysRemaining(certStatus.daysRemaining, t)})`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 可信度信息卡片 */}
+              <div className={styles.infoCard}>
+                <div className={styles.cardHeader}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <span>{t('certificate.trustInfo')}</span>
+                </div>
+                <div className={styles.cardBody}>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>审核状态</span>
-                    <span className={styles.infoValue}>
-                      {cert.reviewStatus === 'approved' ? '已审核通过' : cert.reviewStatus === 'rejected' ? '已拒绝' : '待审核'}
+                    <span className={styles.infoLabel}>{t('certificate.reviewStatus')}</span>
+                    <span className={`${styles.infoValue} ${styles[`review_${reviewInfo.color}`]}`}>
+                      {reviewInfo.icon} {t(`certificate.${reviewInfo.text}`)}
                     </span>
                   </div>
                   {cert.remark && (
                     <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>审核备注</span>
+                      <span className={styles.infoLabel}>{t('admin.certificatesPage.reviewNote')}</span>
                       <span className={styles.infoValue}>{cert.remark}</span>
+                    </div>
+                  )}
+                  {cert.updatedAt && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>{t('certificate.lastUpdated')}</span>
+                      <span className={styles.infoValue}>{formatDate(cert.updatedAt)}</span>
                     </div>
                   )}
                 </div>
