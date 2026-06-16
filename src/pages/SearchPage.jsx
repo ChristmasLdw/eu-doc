@@ -318,6 +318,7 @@ export default function SearchPage() {
 
   // 当前激活的筛选条件数量（用于显示"清除筛选"按钮）
   const activeFilterCount = [activeCategory, activeStatus, activeIssuer, activeStandard].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   // 清除所有筛选
   const clearAllFilters = () => {
