@@ -226,6 +226,15 @@
     "remove": "移除文件",
     "uploadSuccess": "上传成功"
   },
+  "uploadStatus": {
+    "uploaded": "已上传",
+    "pendingReview": "待审核",
+    "approved": "审核通过",
+    "rejected": "审核拒绝",
+    "pendingMessage": "证书正在等待管理员审核，请耐心等待。",
+    "approvedMessage": "恭喜！您的证书已通过审核，现已发布。",
+    "rejectedMessage": "抱歉，您的证书未通过审核，请查看备注并重新提交。"
+  },
   "auth": {
     "loginTitle": "管理员登录",
     "registerTitle": "用户注册",

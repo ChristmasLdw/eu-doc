@@ -226,6 +226,15 @@
     "remove": "Remove File",
     "uploadSuccess": "Upload successful"
   },
+  "uploadStatus": {
+    "uploaded": "Uploaded",
+    "pendingReview": "Pending Review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "pendingMessage": "Your certificate is waiting for administrator review. Please be patient.",
+    "approvedMessage": "Congratulations! Your certificate has been approved and published.",
+    "rejectedMessage": "Sorry, your certificate was not approved. Please check the notes and resubmit."
+  },
   "auth": {
     "loginTitle": "Admin Login",
     "registerTitle": "User Registration",
