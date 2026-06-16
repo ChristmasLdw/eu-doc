@@ -229,8 +229,9 @@
   }
 
   .navLink {
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: 13px;
+    min-height: 36px; /* 增加触摸目标大小 */
   }
 
   /* 小屏幕上隐藏部分文字 */
@@ -240,23 +241,44 @@
   }
 
   .langBtn {
-    padding: 4px 8px;
+    padding: 6px 10px;
     font-size: 12px;
+    min-height: 32px; /* 增加触摸目标大小 */
   }
 
   .themeToggle {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px; /* 保证最小触摸目标 */
   }
 }
 
 @media (max-width: 640px) {
+  .navbar {
+    padding: 10px 0;
+  }
+
+  .container {
+    padding: 0 12px;
+  }
+
   .navLinks {
-    gap: 4px;
+    gap: 6px;
+    flex-wrap: wrap;
   }
 
   .navLink {
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* 在极小屏幕隐藏"关于我们"链接，节省空间 */
+  .navLink:last-of-type {
+    display: none;
+  }
+
+  .rightSection {
+    gap: 8px;
   }
 }
