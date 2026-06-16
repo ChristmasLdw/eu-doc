@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import * as api from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
+import FileUpload from '../../components/FileUpload';
 import styles from './CertificatesPage.module.css';
 
 // 每页条数
@@ -95,6 +96,9 @@ export default function CertificatesPage() {
   const [reviewStatus, setReviewStatus] = useState('approved');
   const [reviewRemark, setReviewRemark] = useState('');
   const [reviewLoading, setReviewLoading] = useState(false);
+
+  // 文件上传状态
+  const [uploadingCertId, setUploadingCertId] = useState(null);
 
   // 获取当前用户角色
   const { isAdmin } = useAdmin();
@@ -249,6 +253,22 @@ export default function CertificatesPage() {
       console.error('审核失败:', err);
     } finally {
       setReviewLoading(false);
+    }
+  };
+
+  // 文件上传处理
+  const handleFileUpload = async (certId, file) => {
+    setUploadingCertId(certId);
+    try {
+      await api.uploadCertificateFile(certId, file);
+      // 上传成功后刷新证书列表
+      await fetchCertificates();
+      return { success: true };
+    } catch (err) {
+      console.error('文件上传失败:', err);
+      throw new Error(t('upload.uploadFailed'));
+    } finally {
+      setUploadingCertId(null);
     }
   };
 
@@ -487,6 +507,19 @@ export default function CertificatesPage() {
                   <label>{t('admin.certificatesPage.formDescription')}</label>
                   <textarea value={formData.description} onChange={(e) => updateFormField('description', e.target.value)} rows={3} />
                 </div>
+
+                {/* 文件上传区域 */}
+                {editingCert && (
+                  <div className={`${styles.formField} ${styles.fullWidth}`}>
+                    <label>{t('admin.certificatesPage.certFile')}</label>
+                    <FileUpload
+                      accept=".pdf"
+                      maxSize={10 * 1024 * 1024}
+                      onUpload={(file) => handleFileUpload(editingCert.id, file)}
+                      existingFile={editingCert.fileUrl ? { url: editingCert.fileUrl, type: 'pdf' } : null}
+                    />
+                  </div>
+                )}
               </div>
 
               {formError && <div className={styles.formError}>{formError}</div>}
