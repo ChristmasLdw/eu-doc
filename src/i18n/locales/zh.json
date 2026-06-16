@@ -235,6 +235,15 @@
     "approvedMessage": "恭喜！您的证书已通过审核，现已发布。",
     "rejectedMessage": "抱歉，您的证书未通过审核，请查看备注并重新提交。"
   },
+  "duplicate": {
+    "title": "证书已存在",
+    "message": "系统检测到该证书编号已存在，请确认是否为重复上传。",
+    "existingCert": "已存在的证书信息",
+    "notice": "如果这是同一张证书的重复上传，建议您取消操作。如果是不同的证书但恰好编号相同，您可以继续上传并在备注中说明。",
+    "cancel": "取消上传",
+    "viewExisting": "查看已有证书",
+    "continueAnyway": "仍要继续"
+  },
   "auth": {
     "loginTitle": "管理员登录",
     "registerTitle": "用户注册",

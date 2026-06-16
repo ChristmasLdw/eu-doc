@@ -235,6 +235,15 @@
     "approvedMessage": "Congratulations! Your certificate has been approved and published.",
     "rejectedMessage": "Sorry, your certificate was not approved. Please check the notes and resubmit."
   },
+  "duplicate": {
+    "title": "Certificate Already Exists",
+    "message": "The system detected that this certificate number already exists. Please confirm if this is a duplicate upload.",
+    "existingCert": "Existing Certificate Information",
+    "notice": "If this is a duplicate upload of the same certificate, we recommend canceling the operation. If it's a different certificate with the same number, you can continue and explain in the remarks.",
+    "cancel": "Cancel Upload",
+    "viewExisting": "View Existing Certificate",
+    "continueAnyway": "Continue Anyway"
+  },
   "auth": {
     "loginTitle": "Admin Login",
     "registerTitle": "User Registration",

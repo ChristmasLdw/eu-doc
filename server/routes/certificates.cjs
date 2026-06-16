@@ -251,6 +251,32 @@ router.post('/', authMiddleware, (req, res) => {
     });
   }
 
+  // 检查证书编号是否已存在
+  const existingCert = db.prepare(`
+    SELECT c.*, comp.name as company_name
+    FROM certificates c
+    LEFT JOIN companies comp ON c.company_id = comp.id
+    WHERE c.cert_no = ?
+  `).get(cert_no);
+
+  if (existingCert) {
+    return res.status(409).json({
+      success: false,
+      message: '证书编号已存在',
+      duplicate: true,
+      existingCertificate: {
+        id: existingCert.id,
+        certNo: existingCert.cert_no,
+        productName: existingCert.product_name,
+        companyName: existingCert.company_name,
+        issueDate: existingCert.issue_date,
+        expiryDate: existingCert.expiry_date,
+        status: existingCert.status,
+        reviewStatus: existingCert.review_status,
+      }
+    });
+  }
+
   // 确定审核状态：管理员直接通过，普通用户待审核
   const reviewStatus = req.admin.role === 'admin' ? 'approved' : 'pending';
 
@@ -289,13 +315,11 @@ router.post('/', authMiddleware, (req, res) => {
       id: result.lastInsertRowid,
     });
   } catch (err) {
-    if (err.message.includes('UNIQUE')) {
-      return res.status(409).json({
-        success: false,
-        message: '证书编号已存在',
-      });
-    }
-    throw err;
+    console.error('创建证书失败:', err);
+    res.status(500).json({
+      success: false,
+      message: '创建证书失败',
+    });
   }
 });
 
