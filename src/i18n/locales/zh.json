@@ -195,6 +195,27 @@
     "notFound": "公司未找到",
     "notFoundText": "该公司不存在或已被删除"
   },
+  "company": {
+    "backButton": "返回",
+    "certCount": "证书数量",
+    "joinedDate": "入驻时间",
+    "certList": "证书列表",
+    "searchPlaceholder": "搜索产品名称、证书编号、型号...",
+    "certCountText": "份证书",
+    "sortByDateDesc": "最新签发",
+    "sortByDateAsc": "最早签发",
+    "sortByExpiryAsc": "即将过期",
+    "sortByExpiryDesc": "最晚过期",
+    "sortByNameAsc": "名称A-Z",
+    "sortByNameDesc": "名称Z-A",
+    "issueDate": "签发",
+    "expiryDate": "到期",
+    "noResults": "没有找到匹配的证书",
+    "noCerts": "暂无证书记录",
+    "clearSearch": "清除搜索",
+    "notFound": "公司未找到",
+    "notFoundText": "该公司不存在或已被删除。"
+  },
   "auth": {
     "loginTitle": "管理员登录",
     "registerTitle": "用户注册",

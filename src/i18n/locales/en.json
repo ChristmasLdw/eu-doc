@@ -195,6 +195,27 @@
     "notFound": "Company Not Found",
     "notFoundText": "The company does not exist or has been deleted"
   },
+  "company": {
+    "backButton": "Back",
+    "certCount": "Certificates",
+    "joinedDate": "Joined",
+    "certList": "Certificate List",
+    "searchPlaceholder": "Search product name, cert number, model...",
+    "certCountText": "certificates",
+    "sortByDateDesc": "Newest First",
+    "sortByDateAsc": "Oldest First",
+    "sortByExpiryAsc": "Expiring Soon",
+    "sortByExpiryDesc": "Latest Expiry",
+    "sortByNameAsc": "Name A-Z",
+    "sortByNameDesc": "Name Z-A",
+    "issueDate": "Issued",
+    "expiryDate": "Expires",
+    "noResults": "No matching certificates found",
+    "noCerts": "No certificates yet",
+    "clearSearch": "Clear Search",
+    "notFound": "Company Not Found",
+    "notFoundText": "This company does not exist or has been deleted."
+  },
   "auth": {
     "loginTitle": "Admin Login",
     "registerTitle": "User Registration",

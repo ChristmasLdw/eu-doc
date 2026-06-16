@@ -128,7 +128,7 @@ export default function CompanyPage() {
             </svg>
             <h2 className={styles.notFoundTitle}>{t('common.loadFailed')}</h2>
             <p className={styles.notFoundText}>{error}</p>
-            <button className={styles.notFoundLink} onClick={() => navigate(-1)}>返回上一页</button>
+            <button className={styles.notFoundLink} onClick={() => navigate(-1)}>{t('common.back')}</button>
           </div>
         </div>
       </div>
@@ -145,9 +145,9 @@ export default function CompanyPage() {
               <path d="m15 9-6 6" />
               <path d="m9 9 6 6" />
             </svg>
-            <h2 className={styles.notFoundTitle}>公司未找到</h2>
-            <p className={styles.notFoundText}>该公司不存在或已被删除。</p>
-            <Link to="/" className={styles.notFoundLink}>返回首页</Link>
+            <h2 className={styles.notFoundTitle}>{t('company.notFound') || '公司未找到'}</h2>
+            <p className={styles.notFoundText}>{t('company.notFoundText') || '该公司不存在或已被删除。'}</p>
+            <Link to="/" className={styles.notFoundLink}>{t('common.backToHome')}</Link>
           </div>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function CompanyPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m15 18-6-6 6-6" />
           </svg>
-          返回
+          {t('company.backButton')}
         </button>
 
         {/* 公司主卡片 */}
@@ -206,11 +206,11 @@ export default function CompanyPage() {
             <div className={styles.companyStats}>
               <div className={styles.statItem}>
                 <span className={styles.statNumber}>{company.certificates?.length || 0}</span>
-                <span className={styles.statLabel}>证书数量</span>
+                <span className={styles.statLabel}>{t('company.certCount')}</span>
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statNumber}>{formatDate(company.createdAt)}</span>
-                <span className={styles.statLabel}>入驻时间</span>
+                <span className={styles.statLabel}>{t('company.joinedDate')}</span>
               </div>
             </div>
           </div>
@@ -226,10 +226,10 @@ export default function CompanyPage() {
                   <line x1="16" y1="17" x2="8" y2="17" />
                   <polyline points="10 9 9 9 8 9" />
                 </svg>
-                证书列表
+                {t('company.certList')}
               </h2>
               <span className={styles.resultCount}>
-                {searchQuery ? `${filteredCertificates.length} / ${company.certificates?.length || 0}` : company.certificates?.length || 0} 份证书
+                {searchQuery ? `${filteredCertificates.length} / ${company.certificates?.length || 0}` : company.certificates?.length || 0} {t('company.certCountText')}
               </span>
             </div>
 
@@ -243,7 +243,7 @@ export default function CompanyPage() {
                 <input
                   type="text"
                   className={styles.searchInput}
-                  placeholder="搜索产品名称、证书编号、型号..."
+                  placeholder={t('company.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -289,10 +289,10 @@ export default function CompanyPage() {
                           <span className={styles.certTag}>{cert.standard}</span>
                         )}
                         {cert.issueDate && (
-                          <span className={styles.certDate}>签发: {cert.issueDate}</span>
+                          <span className={styles.certDate}>{t('company.issueDate')}: {cert.issueDate}</span>
                         )}
                         {cert.expiryDate && (
-                          <span className={styles.certDate}>到期: {cert.expiryDate}</span>
+                          <span className={styles.certDate}>{t('company.expiryDate')}: {cert.expiryDate}</span>
                         )}
                       </div>
                     </div>
@@ -310,10 +310,10 @@ export default function CompanyPage() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <p>{searchQuery ? '没有找到匹配的证书' : '暂无证书记录'}</p>
+                <p>{searchQuery ? t('company.noResults') : t('company.noCerts')}</p>
                 {searchQuery && (
                   <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>
-                    清除搜索
+                    {t('company.clearSearch')}
                   </button>
                 )}
               </div>
