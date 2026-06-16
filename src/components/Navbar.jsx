@@ -116,7 +116,7 @@ export default function Navbar() {
           {!admin ? (
             <Link
               to="/admin/login"
-              className={styles.loginBtn}
+              className={`${styles.navLink} ${styles.loginLink}`}
             >
               {t('auth.loginButton')}
             </Link>
