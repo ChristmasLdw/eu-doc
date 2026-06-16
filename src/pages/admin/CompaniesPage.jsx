@@ -1,6 +1,9 @@
 /**
  * EU-DOC 后台管理 - 企业管理页
- * 版本: 1.0.2
+ * 版本: 1.0.3
+ *
+ * 变更记录 (1.0.3):
+ * - 添加Logo上传功能
  *
  * 变更记录 (1.0.2):
  * - 添加完整的多语言支持
@@ -14,6 +17,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
+import FileUpload from '../../components/FileUpload';
 import styles from './CompaniesPage.module.css';
 
 // 空的企业表单
@@ -42,6 +46,9 @@ export default function CompaniesPage() {
   // 删除确认
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Logo上传状态
+  const [uploadingLogoFor, setUploadingLogoFor] = useState(null);
 
   // 获取企业列表
   const fetchCompanies = useCallback(async () => {
@@ -221,6 +228,20 @@ export default function CompaniesPage() {
                   <label>{t('admin.companiesPage.formWebsite')}</label>
                   <input type="url" value={formData.website} onChange={(e) => updateFormField('website', e.target.value)} />
                 </div>
+
+                {/* Logo上传区域 - 仅在编辑时显示 */}
+                {editingCompany && (
+                  <div className={`${styles.formField} ${styles.fullWidth}`}>
+                    <label>{t('admin.companiesPage.companyLogo')}</label>
+                    <FileUpload
+                      accept=".jpg,.jpeg,.png"
+                      maxSize={2 * 1024 * 1024}
+                      onUpload={(file) => handleLogoUpload(editingCompany.id, file)}
+                      existingFile={editingCompany.logoUrl ? { url: editingCompany.logoUrl, type: 'image' } : null}
+                    />
+                    <p className={styles.fieldHint}>{t('admin.companiesPage.logoHint')}</p>
+                  </div>
+                )}
               </div>
 
               {formError && <div className={styles.formError}>{formError}</div>}
