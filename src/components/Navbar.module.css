@@ -165,10 +165,14 @@
 }
 
 /* 登录链接 */
+/* 登录链接 - 保证足够留白和美观 */
 .loginLink {
+  min-width: fit-content;
+  padding: 8px 20px !important;
   background: var(--accent-gradient);
   color: white;
   border: none;
+  white-space: nowrap;
 }
 
 .loginLink:hover {
