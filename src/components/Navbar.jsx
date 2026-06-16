@@ -1,14 +1,14 @@
 /**
  * EU-DOC 导航栏组件
- * 版本: 2.0.0
+ * 版本: 2.1.0
  *
- * 变更记录 (2.0.0):
- * - 添加多语言支持
- * - 添加主题切换按钮
- * - 添加语言切换下拉菜单
- * - 适配明亮/暗黑主题
+ * 变更记录 (2.1.0):
+ * - 导航按钮图标化（首页、搜索、历史）
+ * - 合并语言切换为单按钮
+ * - 统一图标风格，简洁不喧宾夺主
+ * - 固定尺寸，避免语言切换导致布局变化
  *
- * 功能: 顶部固定导航栏，包含 Logo、导航链接、语言切换、主题切换
+ * 功能: 顶部固定导航栏，包含 Logo、图标化导航链接、语言切换、主题切换
  * 设计: 半透明背景 + 模糊效果（毛玻璃），滚动时显示底部边框
  */
 
@@ -43,63 +43,68 @@ export default function Navbar() {
           <span className={styles.logoText}>EU-DOC</span>
         </Link>
 
-        {/* 导航链接 */}
+        {/* 导航链接 - 图标化 */}
         <div className={styles.navLinks}>
           <Link
             to="/"
             className={`${styles.navLink} ${location.pathname === '/' ? styles.active : ''}`}
+            title={t('nav.home')}
           >
-            {t('nav.home')}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
           </Link>
           <Link
             to="/search"
             className={`${styles.navLink} ${location.pathname.startsWith('/search') ? styles.active : ''}`}
+            title={t('nav.search')}
           >
-            {t('nav.search')}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
           </Link>
           <Link
             to="/history"
             className={`${styles.navLink} ${location.pathname === '/history' ? styles.active : ''}`}
+            title={t('nav.history')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {t('nav.history')}
           </Link>
+        </div>
 
-          {/* 语言切换 */}
-          <div className={styles.languageSwitch}>
-            <button
-              className={`${styles.langBtn} ${i18n.language === 'zh' ? styles.active : ''}`}
-              onClick={() => changeLanguage('zh')}
-              title="中文"
-            >
-              中
-            </button>
-            <button
-              className={`${styles.langBtn} ${i18n.language === 'en' ? styles.active : ''}`}
-              onClick={() => changeLanguage('en')}
-              title="English"
-            >
-              EN
-            </button>
-          </div>
+        {/* 右侧工具栏 */}
+        <div className={styles.right}>
+          {/* 语言切换 - 单按钮切换 */}
+          <button
+            className={styles.toggleBtn}
+            onClick={() => changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
+            title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span className={styles.toggleLabel}>{i18n.language === 'zh' ? '中' : 'EN'}</span>
+          </button>
 
           {/* 主题切换 */}
           <button
-            className={styles.themeToggle}
+            className={styles.toggleBtn}
             onClick={toggleTheme}
-            title={theme === 'light' ? t('common.darkMode') : t('common.lightMode')}
+            title={theme === 'dark' ? t('common.lightMode') : t('common.darkMode')}
           >
-            {theme === 'light' ? (
-              // 月亮图标（暗黑模式）
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {theme === 'dark' ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             ) : (
-              // 太阳图标（明亮模式）
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5" />
                 <line x1="12" y1="1" x2="12" y2="3" />
                 <line x1="12" y1="21" x2="12" y2="23" />
@@ -113,46 +118,33 @@ export default function Navbar() {
             )}
           </button>
 
-          {/* 根据登录状态和角色显示不同的导航按钮 */}
-          {!admin ? (
+          {/* 用户相关 */}
+          {admin ? (
             <>
-              <Link
-                to="/admin/register"
-                className={`${styles.navLink} ${styles.registerLink}`}
-              >
-                {t('auth.registerButton')}
-              </Link>
-              <Link
-                to="/admin/login"
-                className={`${styles.navLink} ${styles.loginLink}`}
-              >
-                {t('auth.loginButton')}
-              </Link>
-            </>
-          ) : isAdmin ? (
-            <Link
-              to="/admin"
-              className={`${styles.navLink} ${styles.adminLink} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
-            >
-              {t('nav.admin')}
-            </Link>
-          ) : (
-            <Link
-              to="/admin"
-              className={`${styles.navLink} ${styles.userLink}`}
-            >
-              我的上传
-            </Link>
-          )}
+              {isAdmin ? (
+                <Link
+                  to="/admin"
+                  className={`${styles.navLink} ${styles.adminLink} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
+                >
+                  {t('nav.admin')}
+                </Link>
+              ) : (
+                <Link
+                  to="/admin"
+                  className={`${styles.navLink} ${styles.userLink}`}
+                >
+                  我的上传
+                </Link>
+              )}
 
-          {admin && (
-            <button
-              className={styles.logoutBtn}
-              onClick={logout}
-            >
-              {t('admin.logout')}
-            </button>
-          )}
+              <button
+                className={styles.logoutBtn}
+                onClick={logout}
+              >
+                {t('admin.logout')}
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     </nav>
