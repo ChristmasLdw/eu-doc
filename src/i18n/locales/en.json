@@ -56,6 +56,7 @@
   "search": {
     "title": "Certificate Search",
     "placeholder": "Search company, product, model, certificate...",
+    "placeholderHint": "Try \"Huawei\", \"EN 1384\" or certificate number",
     "clearFilters": "Clear Filters",
     "prevPage": "Previous",
     "nextPage": "Next",
@@ -70,6 +71,10 @@
     "searchHistory": "Search History",
     "clearHistory": "Clear",
     "noSuggestions": "No suggestions",
+    "searchTips": "Search Tips",
+    "searchTipsContent": "You can search: company name, product, model, cert number, standard",
+    "activeFilters": "Active Filters",
+    "filterCount": "{{count}} filters",
     "filters": {
       "all": "All",
       "allCategories": "All Categories",

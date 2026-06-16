@@ -114,26 +114,40 @@ export default function SearchPage() {
     const results = [];
     suggestionData.forEach((cert) => {
       const fields = [
+        { type: 'company', value: cert.companyName },
         { type: 'product', value: cert.productName },
         { type: 'model', value: cert.model },
-        { type: 'company', value: cert.companyName },
         { type: 'certNo', value: cert.certNo },
       ];
       fields.forEach(({ type, value }) => {
         if (value && value.toLowerCase().includes(q) && !seen.has(value)) {
+          // 计算匹配度：开头匹配 > 单词边界匹配 > 包含匹配
+          const valueLower = value.toLowerCase();
+          let matchScore = 0;
+          if (valueLower.startsWith(q)) {
+            matchScore = 3; // 开头匹配，最高优先级
+          } else if (valueLower.includes(' ' + q) || valueLower.includes('-' + q)) {
+            matchScore = 2; // 单词边界匹配
+          } else {
+            matchScore = 1; // 普通包含匹配
+          }
           seen.add(value);
-          results.push({ type, value });
+          results.push({ type, value, matchScore });
         }
       });
-      if (results.length >= 20) return;
+      if (results.length >= 30) return;
     });
-    // 排序：公司优先，其余按自然排序（数字从小到大，字母 A→Z）
+    // 排序：匹配度优先 > 类型优先（公司>产品>型号>证书号）> 自然排序
     const typeOrder = { company: 0, product: 1, model: 2, certNo: 3 };
     results.sort((a, b) => {
+      // 先按匹配度排序
+      if (a.matchScore !== b.matchScore) return b.matchScore - a.matchScore;
+      // 再按类型排序
       if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
+      // 最后按字母数字顺序排序
       return a.value.localeCompare(b.value, 'zh-CN', { numeric: true });
     });
-    return results;
+    return results.slice(0, 20); // 最多显示20条
   }, [query, suggestionData]);
 
   // 点击外部关闭建议下拉
@@ -376,6 +390,7 @@ export default function SearchPage() {
                 type="text"
                 className={styles.searchInput}
                 placeholder={t('search.placeholder')}
+                title={t('search.searchTipsContent')}
                 value={query}
                 onChange={(e) => { isUserTyping.current = true; setQuery(e.target.value); setShowSuggestions(true); }}
                 onFocus={() => { setShowSuggestions(true); }}
@@ -451,7 +466,18 @@ export default function SearchPage() {
 
                   {/* 无建议和无历史时的提示 */}
                   {query && suggestions.length === 0 && (
-                    <div className={styles.noSuggestions}>{t('search.noSuggestions')}</div>
+                    <div className={styles.noSuggestions}>
+                      <div>{t('search.noSuggestions')}</div>
+                      <div className={styles.searchTip}>{t('search.searchTipsContent')}</div>
+                    </div>
+                  )}
+
+                  {/* 空输入且无历史时显示搜索提示 */}
+                  {!query && searchHistory.length === 0 && (
+                    <div className={styles.noSuggestions}>
+                      <div className={styles.searchTipsTitle}>💡 {t('search.searchTips')}</div>
+                      <div className={styles.searchTip}>{t('search.searchTipsContent')}</div>
+                    </div>
                   )}
                 </div>
               )}
@@ -516,7 +542,57 @@ export default function SearchPage() {
           </div>
         </div>
 
-        {/* 结果信息栏：数量 + 排序 + 清除筛选 */}
+        {/* 活动筛选器标签显示 */}
+        {activeFilterCount > 0 && (
+          <div className={styles.activeFiltersBar}>
+            <span className={styles.activeFiltersLabel}>
+              {t('search.activeFilters')}:
+            </span>
+            <div className={styles.activeFilterTags}>
+              {activeCategory && (
+                <button
+                  className={styles.activeFilterTag}
+                  onClick={() => handleFilterChange(setActiveCategory, undefined)}
+                >
+                  {t(`search.categories.${activeCategory}`) || activeCategory}
+                  <span className={styles.removeFilter}>✕</span>
+                </button>
+              )}
+              {activeStatus && (
+                <button
+                  className={styles.activeFilterTag}
+                  onClick={() => handleFilterChange(setActiveStatus, undefined)}
+                >
+                  {t(`search.status.${activeStatus}`)}
+                  <span className={styles.removeFilter}>✕</span>
+                </button>
+              )}
+              {activeIssuer && (
+                <button
+                  className={styles.activeFilterTag}
+                  onClick={() => handleFilterChange(setActiveIssuer, undefined)}
+                >
+                  {activeIssuer}
+                  <span className={styles.removeFilter}>✕</span>
+                </button>
+              )}
+              {activeStandard && (
+                <button
+                  className={styles.activeFilterTag}
+                  onClick={() => handleFilterChange(setActiveStandard, undefined)}
+                >
+                  {activeStandard}
+                  <span className={styles.removeFilter}>✕</span>
+                </button>
+              )}
+              <button className={styles.clearAllFiltersBtn} onClick={clearAllFilters}>
+                {t('search.clearAllFilters')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 结果信息栏：数量 + 排序 */}
         <div className={styles.resultInfo}>
           <div className={styles.resultLeft}>
             <span className={styles.resultCount}>
@@ -534,11 +610,6 @@ export default function SearchPage() {
                   )}</>
               )}
             </span>
-            {activeFilterCount > 0 && (
-              <button className={styles.clearFilters} onClick={clearAllFilters}>
-                {t('search.clearFilters')} ({activeFilterCount})
-              </button>
-            )}
           </div>
           <select
             className={styles.sortSelect}
@@ -662,13 +733,21 @@ export default function SearchPage() {
               <path d="m21 21-4.3-4.3" />
               <path d="M8 11h6" />
             </svg>
-            <h3 className={styles.emptyTitle}>未找到匹配的证书</h3>
-            <p className={styles.emptyText}>
-              请尝试使用不同的关键词，或调整筛选条件
-            </p>
-            <button className={styles.emptyClearBtn} onClick={clearAllFilters}>
-              清除所有筛选条件
-            </button>
+            <h3 className={styles.emptyTitle}>{t('search.noResults')}</h3>
+            <p className={styles.emptyText}>{t('search.tryDifferent')}</p>
+            {activeFilterCount > 0 ? (
+              <button className={styles.emptyClearBtn} onClick={clearAllFilters}>
+                {t('search.clearAllFilters')}
+              </button>
+            ) : (
+              <div className={styles.emptySearchTips}>
+                <p className={styles.emptyTipsTitle}>💡 {t('search.searchTips')}:</p>
+                <ul className={styles.emptyTipsList}>
+                  <li>{t('search.placeholderHint')}</li>
+                  <li>{t('search.searchTipsContent')}</li>
+                </ul>
+              </div>
+            )}
           </div>
         ) : null}
       </div>

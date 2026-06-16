@@ -56,6 +56,7 @@
   "search": {
     "title": "证书搜索",
     "placeholder": "搜索公司、产品、型号、证书编号...",
+    "placeholderHint": "试试\"华为\"、\"EN 1384\"或证书编号",
     "clearFilters": "清除筛选",
     "prevPage": "上一页",
     "nextPage": "下一页",
@@ -70,6 +71,10 @@
     "searchHistory": "搜索历史",
     "clearHistory": "清空",
     "noSuggestions": "无匹配建议",
+    "searchTips": "搜索提示",
+    "searchTipsContent": "可以搜索：公司名、产品名、型号、证书编号、认证标准",
+    "activeFilters": "已选筛选",
+    "filterCount": "{{count}} 项筛选",
     "filters": {
       "all": "全部",
       "allCategories": "全部分类",
