@@ -193,7 +193,16 @@ export default function CertificatePage() {
           {/* 标题区域 */}
           <div className={styles.certTitleSection}>
             <h1 className={styles.certTitle}>{cert.productName}</h1>
-            <p className={styles.certCompany}>{cert.companyName}</p>
+            {cert.companyId ? (
+              <Link to={`/company/${cert.companyId}`} className={styles.certCompanyLink}>
+                {cert.companyName}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </Link>
+            ) : (
+              <p className={styles.certCompany}>{cert.companyName}</p>
+            )}
           </div>
 
           {/* 主内容区域 - 左右布局 */}

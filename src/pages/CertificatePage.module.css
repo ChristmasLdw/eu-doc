@@ -167,6 +167,32 @@
   color: var(--text-secondary);
 }
 
+.certCompanyLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 4px 0;
+}
+
+.certCompanyLink:hover {
+  color: var(--accent-blue);
+}
+
+.certCompanyLink svg {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+}
+
+.certCompanyLink:hover svg {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 /* ===== 主内容区域 - 左右布局 ===== */
 .mainContent {
   display: flex;
