@@ -306,3 +306,33 @@
   - 前端构建 `npm run build` 已验证通过。
 - 待完善：
   - 需要用户确认后续是否处理 Git 中 `node_modules/` 和数据库文件的跟踪问题。
+
+## 2026-06-16
+
+### 2026-06-16 23:17:08 CST
+
+- 关联任务：EU-T026、EU-T027、EU-T028
+- 关联版本：v1.6.1
+- 工作内容：
+  - 检查当前 Git 状态：本地领先 GitHub 41 次提交，说明只有本地备份，GitHub 云端备份不是最新。
+  - 检查 `.version`，发现仍停留在 `v1.0.1`，与实际工作进度不一致。
+  - 检查根目录 Markdown，发现多个重复总结、报告、计划文件仍在根目录，容易导致 AI 默认读取过多内容。
+  - 修正 `WORKFLOW.md`，明确版本号、Git commit、GitHub push、部署前检查之间的闭环规则。
+  - 修正 `AGENTS.md`、`CURRENT_STATUS.md`、`TODO.md`，让 AI 以后优先读取少量入口文件。
+  - 将重复历史报告归档到 `docs/archive/` 对应目录。
+- 完成情况：待复查
+- 待完善：
+  - 需要完成 Git 备份卫生处理：从 Git 跟踪中移除 `node_modules/`。
+  - 需要用户确认或执行 GitHub push，让云端备份追上本地备份。
+
+### 2026-06-16 23:13:54 CST
+
+- 关联任务：EU-T027
+- 关联版本：v1.6.1
+- 工作内容：
+  - 已执行 `git rm -r --cached node_modules`，只停止 Git 跟踪依赖文件，不删除本地 `node_modules`。
+  - 验证本地 `node_modules` 文件夹仍存在。
+  - 验证 Git 当前已不再跟踪 `node_modules/*`。
+- 完成情况：已完成
+- 待完善：
+  - 需要创建 Git commit 并推送 GitHub 后，云端仓库才真正完成清理。

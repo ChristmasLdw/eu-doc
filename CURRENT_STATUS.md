@@ -1,6 +1,7 @@
 # eu-doc 当前状态
 
-最后更新：2026-06-15
+最后更新：2026-06-16 23:17:08 CST
+当前版本：v1.6.1
 
 ## 项目简介
 
@@ -24,6 +25,12 @@
 2. `CURRENT_STATUS.md`
 3. 当前问题对应的 2 到 5 个源码文件
 
+当用户说“继续工作”、检查版本、检查备份、总结当天工作时，再读取：
+
+- `WORKFLOW.md`
+- `TODO.md`
+- `WORK_LOG.md`
+
 ## 常见问题入口
 
 - 搜索页：`src/pages/SearchPage.jsx` + `src/pages/SearchPage.module.css`
@@ -38,9 +45,13 @@
 - 后端入口：`server/index.cjs`
 - 数据库逻辑：`server/db.cjs`
 
-## 当前已知 token 消耗风险
+## 当前已知风险
 
-不要默认读取：
+- 本地 Git 曾经领先 GitHub 多次提交；每天结束和部署前必须确认 push。
+- Git 历史中曾跟踪 `node_modules/`，应从 Git 跟踪中移除，只保留本地依赖文件。
+- `.version` 曾停留在旧版本，之后必须跟随阶段性修改同步更新。
+
+## 默认不要读取
 
 - `node_modules/`
 - `server/node_modules/`
@@ -48,20 +59,5 @@
 - `server/uploads/`
 - `server/data/`
 - 数据库文件
+- `docs/archive/`
 - 历史总结、部署报告、完成报告类 Markdown
-
-## 搜索页下拉栏问题提示
-
-如果用户提到“下拉栏背景透明度”“筛选下拉”“排序下拉”“搜索建议下拉”，优先查看：
-
-- `src/pages/SearchPage.jsx`
-- `src/pages/SearchPage.module.css`
-- `src/styles/global.css`
-
-不要扫描后端和历史文档。
-
-## 后续建议
-
-1. 先使用本文件和 `AGENTS.md` 约束 AI 读取范围。
-2. 再确认 `docs/archive/ARCHIVE_PLAN.md`。
-3. 用户确认后，才考虑移动历史文档到 `docs/archive/`。
