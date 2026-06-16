@@ -250,6 +250,18 @@
     "clearConfirm": "Are you sure you want to clear all viewing history?",
     "remove": "Remove"
   },
+  "history": {
+    "title": "Browsing History",
+    "subtitle": "Recently viewed certificates",
+    "clearAll": "Clear All",
+    "clearConfirm": "Are you sure you want to clear all browsing history?",
+    "remove": "Remove",
+    "empty": "No browsing history",
+    "emptyHint": "Visited certificates will be recorded here automatically",
+    "goHome": "Go to Home",
+    "issueDate": "Issued",
+    "viewedAt": "Viewed at"
+  },
   "auth": {
     "loginTitle": "Admin Login",
     "registerTitle": "User Registration",

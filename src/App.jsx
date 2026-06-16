@@ -34,6 +34,7 @@ import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import CertificatePage from './pages/CertificatePage';
 import CompanyPage from './pages/CompanyPage';
+import HistoryPage from './pages/HistoryPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import LoginPage from './pages/admin/LoginPage';
@@ -69,6 +70,9 @@ function App() {
 
         {/* 搜索结果页 */}
         <Route path="/search" element={<SearchPage />} />
+
+        {/* 浏览历史页 */}
+        <Route path="/history" element={<HistoryPage />} />
 
         {/*
           证书详情页

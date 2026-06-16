@@ -250,6 +250,18 @@
     "clearConfirm": "确定要清除所有浏览记录吗？",
     "remove": "移除"
   },
+  "history": {
+    "title": "浏览历史",
+    "subtitle": "最近访问的证书记录",
+    "clearAll": "清除全部",
+    "clearConfirm": "确定要清除所有浏览历史吗？",
+    "remove": "移除",
+    "empty": "暂无浏览记录",
+    "emptyHint": "访问证书详情页后会自动记录在这里",
+    "goHome": "返回首页",
+    "issueDate": "签发",
+    "viewedAt": "访问时间"
+  },
   "auth": {
     "loginTitle": "管理员登录",
     "registerTitle": "用户注册",
