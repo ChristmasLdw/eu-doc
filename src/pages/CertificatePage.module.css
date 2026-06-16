@@ -345,7 +345,14 @@
   gap: 16px;
 }
 
+.fileActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .fileCard {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -356,6 +363,7 @@
   transition: all 0.2s ease;
   text-decoration: none;
   color: inherit;
+  min-width: 280px;
 }
 
 .fileCard:hover {
@@ -397,6 +405,28 @@
   color: var(--text-muted);
 }
 
+.viewButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.viewButton:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
 .downloadButton {
   display: inline-flex;
   align-items: center;
@@ -418,10 +448,196 @@
   opacity: 0.9;
 }
 
+.shareButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.shareButton:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.05);
+}
+
 .fileNote {
   font-size: 12px;
   color: var(--text-muted);
   font-style: italic;
+}
+
+/* ===== 数据质量提示卡片 ===== */
+.dataQualityCard {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(251, 146, 60, 0.1);
+  border: 1px solid rgba(251, 146, 60, 0.2);
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+}
+
+.qualityIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.qualityContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.qualityText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.reportBtn {
+  align-self: flex-start;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  border-radius: var(--radius-sm);
+  color: #fb923c;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reportBtn:hover {
+  background: rgba(251, 146, 60, 0.1);
+  border-color: #fb923c;
+}
+
+/* ===== 报告错误模态框 ===== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modalHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modalClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalClose:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.modalBody > p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.reportOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.reportOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reportOption:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-blue);
+}
+
+.reportOption svg {
+  color: var(--accent-blue);
+  flex-shrink: 0;
+}
+
+.reportNotice {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  padding: 12px;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
 }
 
 /* ===== 404 状态 ===== */
@@ -527,14 +743,42 @@
     text-align: left;
   }
 
+  .fileActions {
+    flex-direction: column;
+  }
+
   .fileCard {
+    min-width: 0;
     flex-direction: column;
     align-items: stretch;
     text-align: center;
   }
 
-  .downloadButton {
+  .downloadButton,
+  .shareButton {
     justify-content: center;
+    width: 100%;
+  }
+
+  .dataQualityCard {
+    padding: 12px;
+  }
+
+  .reportBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal {
+    margin: 20px;
+  }
+
+  .modalHeader {
+    padding: 16px;
+  }
+
+  .modalBody {
+    padding: 16px;
   }
 }
 

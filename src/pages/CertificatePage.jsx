@@ -30,6 +30,7 @@ export default function CertificatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -59,6 +60,20 @@ export default function CertificatePage() {
     navigator.clipboard.writeText(url).then(() => {
       alert(t('certificate.linkCopied'));
     });
+  };
+
+  // 下载证书文件
+  const handleDownload = (e) => {
+    e.preventDefault();
+    if (cert?.fileUrl) {
+      const link = document.createElement('a');
+      link.href = cert.fileUrl;
+      link.download = `${cert.certNo}_cert.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (loading) {
@@ -264,6 +279,12 @@ export default function CertificatePage() {
                 </div>
                 <div className={styles.cardBody}>
                   <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>{t('certificate.dataSource')}</span>
+                    <span className={styles.infoValue}>
+                      {cert.uploadedBy ? t('certificate.userUploaded') : t('certificate.systemData')}
+                    </span>
+                  </div>
+                  <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>{t('certificate.reviewStatus')}</span>
                     <span className={`${styles.infoValue} ${styles[`review_${reviewInfo.color}`]}`}>
                       {reviewInfo.icon} {t(`certificate.${reviewInfo.text}`)}
@@ -281,6 +302,20 @@ export default function CertificatePage() {
                       <span className={styles.infoValue}>{formatDate(cert.updatedAt)}</span>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* 数据质量提示 */}
+              <div className={styles.dataQualityCard}>
+                <div className={styles.qualityIcon}>ℹ️</div>
+                <div className={styles.qualityContent}>
+                  <p className={styles.qualityText}>{t('certificate.dataQualityNotice')}</p>
+                  <button
+                    className={styles.reportBtn}
+                    onClick={() => setShowReportModal(true)}
+                  >
+                    {t('certificate.reportError')}
+                  </button>
                 </div>
               </div>
             </div>
@@ -312,36 +347,62 @@ export default function CertificatePage() {
 
           {/* 证书文件区域 */}
           <div className={styles.fileSection}>
-            <h3 className={styles.sectionTitle}>证书文件</h3>
+            <h3 className={styles.sectionTitle}>{t('certificate.certFile')}</h3>
             {cert.fileUrl ? (
-              <a
-                href={cert.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.fileCard}
-              >
-                <div className={styles.fileIcon}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                    <polyline points="10 9 9 9 8 9" />
-                  </svg>
-                </div>
-                <div className={styles.fileInfo}>
-                  <span className={styles.fileName}>{cert.certNo}_cert.pdf</span>
-                  <span className={styles.fileSize}>PDF 文档 · 点击查看或下载</span>
-                </div>
-                <span className={styles.downloadButton}>
+              <div className={styles.fileActions}>
+                <a
+                  href={cert.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.fileCard}
+                >
+                  <div className={styles.fileIcon}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </div>
+                  <div className={styles.fileInfo}>
+                    <span className={styles.fileName}>{cert.certNo}_cert.pdf</span>
+                    <span className={styles.fileSize}>{t('certificate.pdfDocument')}</span>
+                  </div>
+                  <span className={styles.viewButton}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h6v6" />
+                      <path d="M10 14 21 3" />
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    </svg>
+                    {t('certificate.viewFile')}
+                  </span>
+                </a>
+                <button
+                  className={styles.downloadButton}
+                  onClick={handleDownload}
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
-                  查看
-                </span>
-              </a>
+                  {t('certificate.download')}
+                </button>
+                <button
+                  className={styles.shareButton}
+                  onClick={handleShare}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  {t('certificate.share')}
+                </button>
+              </div>
             ) : (
               <div className={styles.fileCard}>
                 <div className={styles.fileIcon}>
@@ -351,13 +412,59 @@ export default function CertificatePage() {
                   </svg>
                 </div>
                 <div className={styles.fileInfo}>
-                  <span className={styles.fileName}>证书文件暂未上传</span>
-                  <span className={styles.fileSize}>该证书的 PDF 文件正在审核中</span>
+                  <span className={styles.fileName}>{t('certificate.fileNotUploaded')}</span>
+                  <span className={styles.fileSize}>{t('certificate.fileUnderReview')}</span>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* 报告错误模态框 */}
+        {showReportModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowReportModal(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3>{t('certificate.reportErrorTitle')}</h3>
+                <button
+                  className={styles.modalClose}
+                  onClick={() => setShowReportModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <p>{t('certificate.reportErrorDesc')}</p>
+                <div className={styles.reportOptions}>
+                  <button className={styles.reportOption}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                      <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                    </svg>
+                    <span>{t('certificate.wrongInfo')}</span>
+                  </button>
+                  <button className={styles.reportOption}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>{t('certificate.outdatedInfo')}</span>
+                  </button>
+                  <button className={styles.reportOption}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <line x1="12" y1="9" x2="12" y2="13" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    <span>{t('certificate.duplicateEntry')}</span>
+                  </button>
+                </div>
+                <p className={styles.reportNotice}>{t('certificate.reportNotice')}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 页脚 */}
         <footer className={styles.footer}>
