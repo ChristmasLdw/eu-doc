@@ -1,6 +1,6 @@
 # eu-doc TODO
 
-最后更新：2026-06-16 14:30:00 CST
+最后更新：2026-06-16 15:15:00 CST
 
 本文件只保留当前任务、未完成任务和最近三天重要任务。较早完成任务应归档到 `docs/archive/status-and-plans/` 或 `docs/archive/summaries/`。
 
