@@ -216,6 +216,16 @@
     "notFound": "Company Not Found",
     "notFoundText": "This company does not exist or has been deleted."
   },
+  "upload": {
+    "dragOrClick": "Drag file here, or click to select",
+    "supportedFormats": "Supported formats: {{formats}}, max {{maxSize}}",
+    "uploading": "Uploading...",
+    "uploadFailed": "Upload failed",
+    "invalidFileType": "Invalid file type, only {{accept}} supported",
+    "fileTooLarge": "File too large, max {{maxSize}}MB",
+    "remove": "Remove File",
+    "uploadSuccess": "Upload successful"
+  },
   "auth": {
     "loginTitle": "Admin Login",
     "registerTitle": "User Registration",

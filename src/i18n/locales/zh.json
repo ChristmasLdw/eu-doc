@@ -216,6 +216,16 @@
     "notFound": "公司未找到",
     "notFoundText": "该公司不存在或已被删除。"
   },
+  "upload": {
+    "dragOrClick": "拖拽文件到此处，或点击选择文件",
+    "supportedFormats": "支持格式：{{formats}}，最大 {{maxSize}}",
+    "uploading": "上传中...",
+    "uploadFailed": "上传失败",
+    "invalidFileType": "文件格式不支持，仅支持 {{accept}}",
+    "fileTooLarge": "文件太大，最大支持 {{maxSize}}MB",
+    "remove": "移除文件",
+    "uploadSuccess": "上传成功"
+  },
   "auth": {
     "loginTitle": "管理员登录",
     "registerTitle": "用户注册",
