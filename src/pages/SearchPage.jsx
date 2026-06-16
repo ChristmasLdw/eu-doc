@@ -20,6 +20,7 @@ import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../u
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
+import RecentViews from '../components/RecentViews';
 import styles from './SearchPage.module.css';
 
 // 每页显示条数
@@ -591,6 +592,9 @@ export default function SearchPage() {
             </div>
           </div>
         )}
+
+        {/* 最近查看 - 仅在没有搜索查询时显示 */}
+        {!query && !hasActiveFilters && <RecentViews />}
 
         {/* 结果信息栏：数量 + 排序 */}
         <div className={styles.resultInfo}>

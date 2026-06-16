@@ -244,6 +244,12 @@
     "viewExisting": "View Existing Certificate",
     "continueAnyway": "Continue Anyway"
   },
+  "recentViews": {
+    "title": "Recently Viewed",
+    "clearAll": "Clear All",
+    "clearConfirm": "Are you sure you want to clear all viewing history?",
+    "remove": "Remove"
+  },
   "auth": {
     "loginTitle": "Admin Login",
     "registerTitle": "User Registration",

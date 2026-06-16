@@ -244,6 +244,12 @@
     "viewExisting": "查看已有证书",
     "continueAnyway": "仍要继续"
   },
+  "recentViews": {
+    "title": "最近查看",
+    "clearAll": "清除全部",
+    "clearConfirm": "确定要清除所有浏览记录吗？",
+    "remove": "移除"
+  },
   "auth": {
     "loginTitle": "管理员登录",
     "registerTitle": "用户注册",

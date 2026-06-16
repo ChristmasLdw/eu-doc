@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCertificate } from '../services/api';
 import { getCertificateStatus, formatDaysRemaining, getReviewStatusInfo } from '../utils/certificateStatus';
+import { addRecentView } from '../utils/recentViews';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
 import styles from './CertificatePage.module.css';
@@ -36,7 +37,11 @@ export default function CertificatePage() {
     setLoading(true);
     setError(null);
     getCertificate(id)
-      .then((data) => setCert(data))
+      .then((data) => {
+        setCert(data);
+        // 添加到最近查看记录
+        addRecentView(data);
+      })
       .catch((err) => {
         setError(err.message || t('messages.networkError'));
         setCert(null);
