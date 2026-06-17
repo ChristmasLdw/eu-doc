@@ -78,6 +78,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0; /* 防止导航链接区域被压缩 */
 }
 
 .navLink {
@@ -88,6 +89,7 @@
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
+  white-space: nowrap; /* 防止文字换行 */
 }
 
 .navLink:hover {
@@ -137,8 +139,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px; /* 固定宽度 */
   padding: 0;
   background: var(--bg-input);
   border: none;
@@ -146,6 +149,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0; /* 防止被挤压 */
 }
 
 .themeToggle:hover {
@@ -156,6 +160,9 @@
 /* 管理后台链接 */
 .adminLink {
   border: 1px solid var(--border-color);
+  min-width: 80px; /* 固定最小宽度 */
+  white-space: nowrap; /* 防止文字换行 */
+  flex-shrink: 0; /* 防止被挤压 */
 }
 
 .adminLink:hover {
@@ -167,12 +174,13 @@
 /* 登录链接 */
 /* 登录链接 - 保证足够留白和美观 */
 .loginLink {
-  min-width: fit-content;
+  min-width: 64px; /* 固定最小宽度 */
   padding: 8px 20px !important;
   background: var(--accent-gradient);
   color: white;
   border: none;
-  white-space: nowrap;
+  white-space: nowrap; /* 防止文字换行 */
+  flex-shrink: 0; /* 防止被挤压 */
 }
 
 .loginLink:hover {
@@ -194,6 +202,9 @@
 /* 普通用户链接 */
 .userLink {
   border: 1px solid var(--border-color);
+  min-width: 88px; /* 固定最小宽度，适应"我的上传" */
+  white-space: nowrap; /* 防止文字换行 */
+  flex-shrink: 0; /* 防止被挤压 */
 }
 
 .userLink:hover {
@@ -205,6 +216,7 @@
 /* 退出按钮 */
 .logoutBtn {
   padding: 8px 16px;
+  min-width: 64px; /* 固定最小宽度 */
   background: none;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -214,6 +226,8 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap; /* 防止文字换行 */
+  flex-shrink: 0; /* 防止被挤压 */
 }
 
 .logoutBtn:hover {
@@ -294,7 +308,9 @@
   justify-content: center;
   width: 40px;
   height: 40px;
+  min-width: 40px; /* 固定宽度 */
   padding: 0;
+  flex-shrink: 0; /* 防止被挤压 */
 }
 
 .navLinks .navLink svg {
@@ -305,9 +321,11 @@
 .langToggle {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 40px;
-  padding: 0 12px;
+  min-width: 60px; /* 固定最小宽度，防止"中文"分行 */
+  padding: 0 14px;
   margin-left: 16px;
   background: transparent;
   border: 1px solid var(--border-color);
@@ -318,6 +336,7 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap; /* 防止文字换行 */
 }
 
 .langToggle:hover {
