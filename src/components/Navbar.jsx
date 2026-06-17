@@ -76,15 +76,6 @@ export default function Navbar() {
             </svg>
           </Link>
 
-          {/* 语言切换 - 显示另一种语言名称 */}
-          <button
-            className={styles.langToggle}
-            onClick={() => changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-            title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
-          >
-            {i18n.language === 'zh' ? 'ENG' : '中文'}
-          </button>
-
           {/* 主题切换 - 显示当前主题图标 */}
           <button
             className={styles.themeToggle}
@@ -110,6 +101,15 @@ export default function Navbar() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
+          </button>
+
+          {/* 语言切换 - 显示另一种语言名称 */}
+          <button
+            className={styles.langToggle}
+            onClick={() => changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
+            title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
+          >
+            {i18n.language === 'zh' ? 'ENG' : '中文'}
           </button>
 
           {/* 根据登录状态和角色显示不同的导航按钮 */}
