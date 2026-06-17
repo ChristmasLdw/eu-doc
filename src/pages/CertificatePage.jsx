@@ -15,7 +15,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCertificate } from '../services/api';
+import { getCertificate, submitReport } from '../services/api';
 import { getCertificateStatus, formatDaysRemaining, getReviewStatusInfo } from '../utils/certificateStatus';
 import { addRecentView } from '../utils/recentViews';
 import StatusBadge from '../components/StatusBadge';
@@ -32,6 +32,11 @@ export default function CertificatePage() {
   const [error, setError] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [reportType, setReportType] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reporterEmail, setReporterEmail] = useState('');
+  const [reporterName, setReporterName] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -78,6 +83,30 @@ export default function CertificatePage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    }
+  };
+
+  // 提交错误报告
+  const handleSubmitReport = async () => {
+    if (!reportType) {
+      alert(t('certificate.reportErrorDesc'));
+      return;
+    }
+
+    setReportSubmitting(true);
+    try {
+      await submitReport(id, reportType, reportDescription, reporterEmail, reporterName);
+      alert(t('certificate.reportSubmitSuccess'));
+      setShowReportModal(false);
+      // 重置表单
+      setReportType('');
+      setReportDescription('');
+      setReporterEmail('');
+      setReporterName('');
+    } catch (err) {
+      alert(t('certificate.reportSubmitFailed'));
+    } finally {
+      setReportSubmitting(false);
     }
   };
 
@@ -450,14 +479,20 @@ export default function CertificatePage() {
               <div className={styles.modalBody}>
                 <p>{t('certificate.reportErrorDesc')}</p>
                 <div className={styles.reportOptions}>
-                  <button className={styles.reportOption}>
+                  <button
+                    className={`${styles.reportOption} ${reportType === 'wrong_info' ? styles.selected : ''}`}
+                    onClick={() => setReportType('wrong_info')}
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
                       <path d="M22 12A10 10 0 0 0 12 2v10z" />
                     </svg>
                     <span>{t('certificate.wrongInfo')}</span>
                   </button>
-                  <button className={styles.reportOption}>
+                  <button
+                    className={`${styles.reportOption} ${reportType === 'outdated_info' ? styles.selected : ''}`}
+                    onClick={() => setReportType('outdated_info')}
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="12" y1="8" x2="12" y2="12" />
@@ -465,7 +500,10 @@ export default function CertificatePage() {
                     </svg>
                     <span>{t('certificate.outdatedInfo')}</span>
                   </button>
-                  <button className={styles.reportOption}>
+                  <button
+                    className={`${styles.reportOption} ${reportType === 'duplicate_entry' ? styles.selected : ''}`}
+                    onClick={() => setReportType('duplicate_entry')}
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                       <line x1="12" y1="9" x2="12" y2="13" />
@@ -473,7 +511,71 @@ export default function CertificatePage() {
                     </svg>
                     <span>{t('certificate.duplicateEntry')}</span>
                   </button>
+                  <button
+                    className={`${styles.reportOption} ${reportType === 'other' ? styles.selected : ''}`}
+                    onClick={() => setReportType('other')}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    <span>{t('certificate.otherIssue')}</span>
+                  </button>
                 </div>
+
+                <div className={styles.reportForm}>
+                  <label className={styles.formLabel}>
+                    {t('certificate.reportDescription')}
+                    <textarea
+                      className={styles.formTextarea}
+                      placeholder={t('certificate.reportDescPlaceholder')}
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      rows="3"
+                    />
+                  </label>
+
+                  <label className={styles.formLabel}>
+                    {t('certificate.reporterEmail')}
+                    <input
+                      type="email"
+                      className={styles.formInput}
+                      placeholder={t('certificate.reporterEmailPlaceholder')}
+                      value={reporterEmail}
+                      onChange={(e) => setReporterEmail(e.target.value)}
+                    />
+                  </label>
+
+                  <label className={styles.formLabel}>
+                    {t('certificate.reporterName')}
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      placeholder={t('certificate.reporterNamePlaceholder')}
+                      value={reporterName}
+                      onChange={(e) => setReporterName(e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button
+                    className={styles.cancelButton}
+                    onClick={() => setShowReportModal(false)}
+                    disabled={reportSubmitting}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    className={styles.submitButton}
+                    onClick={handleSubmitReport}
+                    disabled={!reportType || reportSubmitting}
+                  >
+                    {reportSubmitting ? t('common.loading') : t('certificate.submitReport')}
+                  </button>
+                </div>
+
                 <p className={styles.reportNotice}>{t('certificate.reportNotice')}</p>
               </div>
             </div>

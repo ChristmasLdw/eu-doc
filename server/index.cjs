@@ -71,6 +71,7 @@ app.use('/api/auth', require('./routes/auth.cjs'));
 app.use('/api/certificates', require('./routes/certificates.cjs'));
 app.use('/api/companies', require('./routes/companies.cjs'));
 app.use('/api/stats', require('./routes/stats.cjs'));
+app.use('/api/reports', require('./routes/reports.cjs'));
 
 /**
  * 健康检查接口

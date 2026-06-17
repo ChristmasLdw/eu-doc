@@ -45,6 +45,7 @@ import DashboardPage from './pages/admin/DashboardPage';
 import CertificatesPage from './pages/admin/CertificatesPage';
 import CompaniesPage from './pages/admin/CompaniesPage';
 import LogsPage from './pages/admin/LogsPage';
+import ReportsPage from './pages/admin/ReportsPage';
 import { useAdmin } from './contexts/AdminContext';
 
 function App() {
@@ -115,6 +116,8 @@ function App() {
           <Route path="certificates" element={<CertificatesPage />} />
           {/* 企业管理 */}
           <Route path="companies" element={<CompaniesPage />} />
+          {/* 错误报告管理 */}
+          <Route path="reports" element={<ReportsPage />} />
           {/* 操作日志 */}
           <Route path="logs" element={<LogsPage />} />
         </Route>

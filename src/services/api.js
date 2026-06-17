@@ -385,3 +385,57 @@ export function getUserStats() {
     return mapped;
   });
 }
+
+// ===== 证书错误报告 API =====
+
+/** 提交证书错误报告 */
+export function submitReport(certId, reportType, description, reporterEmail, reporterName) {
+  return request('/reports', {
+    method: 'POST',
+    body: JSON.stringify({
+      certId,
+      reportType,
+      description,
+      reporterEmail,
+      reporterName,
+    }),
+  });
+}
+
+/** 获取报告列表（管理员） */
+export function getReports(params = {}) {
+  const query = new URLSearchParams();
+  if (params.status) query.set('status', params.status);
+  if (params.certId) query.set('certId', params.certId);
+  if (params.page) query.set('page', params.page);
+  if (params.pageSize) query.set('pageSize', params.pageSize);
+  const qs = query.toString();
+  return request(`/reports${qs ? `?${qs}` : ''}`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) {
+      response.data = response.data.map(keysToCamelCase);
+    }
+    if (response && response.pagination) {
+      response.pagination = keysToCamelCase(response.pagination);
+    }
+    return response;
+  });
+}
+
+/** 获取单个报告详情（管理员） */
+export function getReport(id) {
+  return request(`/reports/${id}`).then(keysToCamelCase);
+}
+
+/** 更新报告状态（管理员） */
+export function updateReportStatus(id, status, adminResponse) {
+  return request(`/reports/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, adminResponse }),
+  });
+}
+
+/** 检查重复证书 */
+export function checkDuplicates(certId) {
+  return request(`/reports/check-duplicates/${certId}`).then(keysToCamelCase);
+}
+

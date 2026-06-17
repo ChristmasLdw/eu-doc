@@ -16,7 +16,9 @@ package-lock.json
 docs/archive/
 *SUMMARY*.md
 *REPORT*.md
+# Ignore historical status files, but keep CURRENT_STATUS.md readable.
 *STATUS*.md
+!CURRENT_STATUS.md
 *SUCCESS*.md
 *DEPLOYMENT*.md
 *UPDATE*.md

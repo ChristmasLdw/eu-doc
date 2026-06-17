@@ -109,6 +109,21 @@ function initTables() {
       ip_address TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- 证书错误报告表
+    CREATE TABLE IF NOT EXISTS certificate_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cert_id INTEGER NOT NULL,
+      report_type TEXT NOT NULL,
+      description TEXT,
+      reporter_email TEXT,
+      reporter_name TEXT,
+      status TEXT DEFAULT 'pending',
+      admin_response TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (cert_id) REFERENCES certificates(id)
+    );
   `);
 }
 
