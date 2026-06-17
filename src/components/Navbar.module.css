@@ -172,26 +172,33 @@
 }
 
 /* 登录链接 */
-/* 登录链接 - 保证足够留白和美观 */
+/* 登录链接 - 覆盖所有 navLink 样式 */
 .loginLink {
-  width: 72px;
-  height: 40px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+  height: 40px !important;
   padding: 0 !important;
-  background: var(--accent-gradient);
-  color: white;
-  border: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  border-radius: var(--radius-sm);
+  margin: 0 !important;
+  background: var(--accent-gradient) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
 }
 
 .loginLink:hover {
-  opacity: 0.9;
-  color: white;
+  opacity: 0.9 !important;
+  color: white !important;
+  background: var(--accent-gradient) !important;
 }
 
 /* 注册链接 */
@@ -307,19 +314,23 @@
   }
 }
 
-/* 图标化导航链接 */
-.navLinks .navLink {
+/* 图标化导航链接 - 仅应用于前三个图标按钮 */
+.navLinks a[href="/"],
+.navLinks a[href="/search"],
+.navLinks a[href="/history"] {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  min-width: 40px; /* 固定宽度 */
+  min-width: 40px;
   padding: 0;
-  flex-shrink: 0; /* 防止被挤压 */
+  flex-shrink: 0;
 }
 
-.navLinks .navLink svg {
+.navLinks a[href="/"] svg,
+.navLinks a[href="/search"] svg,
+.navLinks a[href="/history"] svg {
   flex-shrink: 0;
 }
 
@@ -329,9 +340,12 @@
   align-items: center;
   justify-content: center;
   height: 40px;
-  width: 72px; /* 固定外框宽度 */
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
   padding: 0;
-  margin-left: 8px; /* 减小左边距 */
+  margin: 0;
+  margin-left: 8px;
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
