@@ -79,8 +79,8 @@
   flex-shrink: 0;
 }
 
-/* ===== 统一的图标按钮系统 ===== */
-.iconButton {
+/* ===== 方向按钮（首页/搜索/历史） ===== */
+.navButton {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,7 +88,7 @@
   height: 40px;
   min-width: 40px;
   padding: 0;
-  background: var(--bg-input);
+  background: transparent; /* 透明背景 */
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
@@ -98,19 +98,98 @@
   text-decoration: none;
 }
 
-.iconButton:hover {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
+.navButton:hover {
+  background: var(--bg-hover);
 }
 
-.iconButton.active {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
+.navButton.active {
+  background: var(--bg-input); /* active显示背景，不高亮图标颜色 */
+  color: var(--text-secondary);
 }
 
-.iconButton svg {
+.navButton svg {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
+}
+
+/* ===== 功能按钮（主题/语言切换） ===== */
+.functionButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  background: var(--bg-input); /* 带背景 */
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.functionButton:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.functionButton svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* 语言下拉菜单 */
+.languageDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  z-index: 1000;
+}
+
+[data-theme="dark"] .languageDropdown {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.languageOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.languageOption:hover {
+  background: var(--bg-hover);
+}
+
+.languageOption.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+.languageOption .flag {
+  font-size: 18px;
   flex-shrink: 0;
 }
 

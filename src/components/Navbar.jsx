@@ -13,6 +13,7 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -23,11 +24,24 @@ export default function Navbar() {
   const { admin, isAdmin, logout } = useAdmin();
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
   // 切换语言
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
+    setShowLanguageMenu(false);
   };
+
+  // 点击外部关闭语言菜单
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showLanguageMenu && !event.target.closest(`.${styles.functionButton}`)) {
+        setShowLanguageMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showLanguageMenu]);
 
   return (
     <nav className={styles.navbar}>
@@ -43,11 +57,11 @@ export default function Navbar() {
           <span className={styles.logoText}>EU-DOC</span>
         </Link>
 
-        {/* 导航链接 - 统一使用 iconButton 样式 */}
+        {/* 导航链接 - 方向按钮 */}
         <div className={styles.navLinks}>
           <Link
             to="/"
-            className={`${styles.iconButton} ${location.pathname === '/' ? styles.active : ''}`}
+            className={`${styles.navButton} ${location.pathname === '/' ? styles.active : ''}`}
             title={t('nav.home')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,7 +71,7 @@ export default function Navbar() {
           </Link>
           <Link
             to="/search"
-            className={`${styles.iconButton} ${location.pathname.startsWith('/search') ? styles.active : ''}`}
+            className={`${styles.navButton} ${location.pathname.startsWith('/search') ? styles.active : ''}`}
             title={t('nav.search')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -67,7 +81,7 @@ export default function Navbar() {
           </Link>
           <Link
             to="/history"
-            className={`${styles.iconButton} ${location.pathname === '/history' ? styles.active : ''}`}
+            className={`${styles.navButton} ${location.pathname === '/history' ? styles.active : ''}`}
             title={t('nav.history')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -76,9 +90,9 @@ export default function Navbar() {
             </svg>
           </Link>
 
-          {/* 主题切换 - 使用 iconButton 样式 */}
+          {/* 主题切换 - 功能按钮 */}
           <button
-            className={styles.iconButton}
+            className={styles.functionButton}
             onClick={toggleTheme}
             title={theme === 'light' ? t('common.darkMode') : t('common.lightMode')}
           >
@@ -101,13 +115,35 @@ export default function Navbar() {
             )}
           </button>
 
-          {/* 语言切换 - 使用 textButton 样式 */}
+          {/* 语言切换 - 功能按钮（地球图标+下拉菜单） */}
           <button
-            className={styles.textButton}
-            onClick={() => changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-            title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
+            className={styles.functionButton}
+            onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+            title={t('common.language')}
           >
-            {i18n.language === 'zh' ? 'ENG' : '中文'}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            {showLanguageMenu && (
+              <div className={styles.languageDropdown}>
+                <button
+                  className={`${styles.languageOption} ${i18n.language === 'zh' ? styles.active : ''}`}
+                  onClick={() => changeLanguage('zh')}
+                >
+                  <span className={styles.flag}>🇨🇳</span>
+                  <span>简体中文</span>
+                </button>
+                <button
+                  className={`${styles.languageOption} ${i18n.language === 'en' ? styles.active : ''}`}
+                  onClick={() => changeLanguage('en')}
+                >
+                  <span className={styles.flag}>🇺🇸</span>
+                  <span>English</span>
+                </button>
+              </div>
+            )}
           </button>
 
           {/* 根据登录状态和角色显示不同的导航按钮 */}
