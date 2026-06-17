@@ -550,6 +550,10 @@
 .actionButton.favorited:hover {
   background: rgba(251, 191, 36, 0.15);
 }
+
+.shareButton {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
   padding: 10px 20px;
   background: transparent;
