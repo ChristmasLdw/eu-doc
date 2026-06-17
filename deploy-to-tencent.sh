@@ -46,7 +46,6 @@ rsync -avz --progress \
   --exclude '*.db-shm' \
   --exclude '*.db-wal' \
   --exclude '.DS_Store' \
-  --delete-excluded \
   server/ ${SERVER_USER}@${SERVER_IP}:${SERVER_PATH}/server/
 
 # 4. 在服务器上安装/更新依赖
