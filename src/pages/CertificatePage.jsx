@@ -38,6 +38,12 @@ export default function CertificatePage() {
   const [reporterName, setReporterName] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
+  // 点赞和收藏状态
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [favorited, setFavorited] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -46,6 +52,8 @@ export default function CertificatePage() {
         setCert(data);
         // 添加到最近查看记录
         addRecentView(data);
+        // 加载点赞和收藏状态
+        loadInteractionData(id);
       })
       .catch((err) => {
         setError(err.message || t('messages.networkError'));
@@ -53,6 +61,80 @@ export default function CertificatePage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // 加载点赞和收藏数据
+  const loadInteractionData = (certId) => {
+    // 从 localStorage 获取用户的点赞和收藏记录
+    const likes = JSON.parse(localStorage.getItem('cert_likes') || '{}');
+    const favorites = JSON.parse(localStorage.getItem('cert_favorites') || '{}');
+    const likeCounts = JSON.parse(localStorage.getItem('cert_like_counts') || '{}');
+    const favoriteCounts = JSON.parse(localStorage.getItem('cert_favorite_counts') || '{}');
+
+    setLiked(likes[certId] || false);
+    setFavorited(favorites[certId] || false);
+    setLikeCount(likeCounts[certId] || 0);
+    setFavoriteCount(favoriteCounts[certId] || 0);
+  };
+
+  // 点赞功能
+  const handleLike = () => {
+    const likes = JSON.parse(localStorage.getItem('cert_likes') || '{}');
+    const likeCounts = JSON.parse(localStorage.getItem('cert_like_counts') || '{}');
+
+    if (liked) {
+      // 取消点赞
+      delete likes[id];
+      likeCounts[id] = Math.max((likeCounts[id] || 0) - 1, 0);
+      setLiked(false);
+      setLikeCount(likeCounts[id]);
+    } else {
+      // 点赞
+      likes[id] = true;
+      likeCounts[id] = (likeCounts[id] || 0) + 1;
+      setLiked(true);
+      setLikeCount(likeCounts[id]);
+    }
+
+    localStorage.setItem('cert_likes', JSON.stringify(likes));
+    localStorage.setItem('cert_like_counts', JSON.stringify(likeCounts));
+  };
+
+  // 收藏功能
+  const handleFavorite = () => {
+    const favorites = JSON.parse(localStorage.getItem('cert_favorites') || '{}');
+    const favoriteCounts = JSON.parse(localStorage.getItem('cert_favorite_counts') || '{}');
+
+    if (favorited) {
+      // 取消收藏
+      delete favorites[id];
+      favoriteCounts[id] = Math.max((favoriteCounts[id] || 0) - 1, 0);
+      setFavorited(false);
+      setFavoriteCount(favoriteCounts[id]);
+    } else {
+      // 收藏
+      favorites[id] = true;
+      favoriteCounts[id] = (favoriteCounts[id] || 0) + 1;
+      setFavorited(true);
+      setFavoriteCount(favoriteCounts[id]);
+
+      // 保存证书信息到收藏列表
+      const favList = JSON.parse(localStorage.getItem('favorite_certificates') || '[]');
+      if (cert && !favList.find(item => item.id === cert.id)) {
+        favList.unshift({
+          id: cert.id,
+          certNo: cert.certNo,
+          productName: cert.productName,
+          companyName: cert.companyName,
+          thumbnailPath: cert.thumbnailPath,
+          timestamp: Date.now()
+        });
+        localStorage.setItem('favorite_certificates', JSON.stringify(favList));
+      }
+    }
+
+    localStorage.setItem('cert_favorites', JSON.stringify(favorites));
+    localStorage.setItem('cert_favorite_counts', JSON.stringify(favoriteCounts));
+  };
 
   // 复制证书编号
   const handleCopyCertNo = () => {
@@ -66,10 +148,7 @@ export default function CertificatePage() {
 
   // 分享链接
   const handleShare = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      alert(t('certificate.linkCopied'));
-    });
+    navigate(`/share/${id}`);
   };
 
   // 下载证书文件
@@ -421,6 +500,26 @@ export default function CertificatePage() {
                     {t('certificate.viewFile')}
                   </span>
                 </a>
+                <button
+                  className={`${styles.actionButton} ${liked ? styles.liked : ''}`}
+                  onClick={handleLike}
+                  title="点赞"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  {likeCount > 0 ? likeCount : '点赞'}
+                </button>
+                <button
+                  className={`${styles.actionButton} ${favorited ? styles.favorited : ''}`}
+                  onClick={handleFavorite}
+                  title="收藏"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={favorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {favorited ? '已收藏' : '收藏'}
+                </button>
                 <button
                   className={styles.downloadButton}
                   onClick={handleDownload}
