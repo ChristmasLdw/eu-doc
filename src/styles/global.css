@@ -92,6 +92,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* 强制始终显示垂直滚动条，防止页面在有/无滚动条时跳动 */
+  overflow-y: scroll;
 }
 
 body {
