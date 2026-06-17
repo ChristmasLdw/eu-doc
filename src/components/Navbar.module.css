@@ -174,13 +174,16 @@
 /* 登录链接 */
 /* 登录链接 - 保证足够留白和美观 */
 .loginLink {
-  min-width: 72px; /* 增加宽度，与语言切换按钮对齐 */
-  padding: 8px 20px !important;
+  width: 72px; /* 固定宽度，与语言切换按钮一致 */
+  padding: 8px 0 !important;
   background: var(--accent-gradient);
   color: white;
   border: none;
   white-space: nowrap; /* 防止文字换行 */
   flex-shrink: 0; /* 防止被挤压 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .loginLink:hover {
@@ -324,8 +327,8 @@
   justify-content: center;
   gap: 6px;
   height: 40px;
-  min-width: 56px; /* 缩小宽度，与登录按钮对齐 */
-  padding: 0 12px;
+  width: 72px; /* 固定宽度，与登录按钮一致 */
+  padding: 0;
   margin-left: 16px;
   background: transparent;
   border: 1px solid var(--border-color);
@@ -337,6 +340,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap; /* 防止文字换行 */
+  flex-shrink: 0;
 }
 
 .langToggle:hover {
