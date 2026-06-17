@@ -1,11 +1,11 @@
 /**
  * 导航栏样式 - CSS Modules
- * 版本: 2.0.0
+ * 版本: 3.0.0
  *
- * 变更记录 (2.0.0):
- * - 添加语言切换按钮样式
- * - 添加主题切换按钮样式
- * - 优化响应式设计
+ * 变更记录 (3.0.0):
+ * - 统一按钮系统：iconButton 用于图标按钮，textButton 用于文字按钮
+ * - 所有图标按钮：40x40px，统一背景和hover效果
+ * - 文字按钮：60px宽x36px高，独立样式系统
  */
 
 .navbar {
@@ -14,7 +14,6 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  /* 毛玻璃效果: 半透明背景 + 模糊 */
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -22,7 +21,6 @@
   transition: all 0.3s ease;
 }
 
-/* 暗黑模式下的导航栏 */
 [data-theme="dark"] .navbar {
   background: rgba(10, 15, 30, 0.7);
 }
@@ -37,7 +35,7 @@
   justify-content: space-between;
 }
 
-/* Logo 样式 */
+/* ===== Logo ===== */
 .logo {
   display: flex;
   align-items: center;
@@ -73,75 +71,22 @@
   background-clip: text;
 }
 
-/* 导航链接 */
+/* ===== 导航链接容器 ===== */
 .navLinks {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0; /* 防止导航链接区域被压缩 */
+  flex-shrink: 0;
 }
 
-.navLink {
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  white-space: nowrap; /* 防止文字换行 */
-}
-
-.navLink:hover {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
-}
-
-.active {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
-}
-
-/* 语言切换 */
-.languageSwitch {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--bg-input);
-  border-radius: var(--radius-sm);
-}
-
-.langBtn {
-  padding: 4px 12px;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.langBtn:hover {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
-}
-
-.langBtn.active {
-  color: white;
-  background: var(--accent-gradient);
-}
-
-/* 主题切换按钮 */
-.themeToggle {
+/* ===== 统一的图标按钮系统 ===== */
+.iconButton {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  min-width: 40px; /* 固定宽度 */
+  min-width: 40px;
   padding: 0;
   background: var(--bg-input);
   border: none;
@@ -149,78 +94,81 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
-  flex-shrink: 0; /* 防止被挤压 */
+  flex-shrink: 0;
+  text-decoration: none;
 }
 
-.themeToggle:hover {
+.iconButton:hover {
   color: var(--text-primary);
   background: var(--bg-card-hover);
 }
 
-/* 管理后台链接 */
-.adminLink {
-  border: 1px solid var(--border-color);
-  min-width: 80px; /* 固定最小宽度 */
-  white-space: nowrap; /* 防止文字换行 */
-  flex-shrink: 0; /* 防止被挤压 */
+.iconButton.active {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
 }
 
-.adminLink:hover {
+.iconButton svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ===== 文字按钮系统 ===== */
+.textButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.textButton:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+/* 登录按钮 */
+.textButton.loginButton {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.textButton.loginButton:hover {
+  opacity: 0.9;
+  color: white;
+  background: var(--accent-gradient);
+}
+
+/* 管理后台按钮 */
+.textButton.adminButton {
+  width: 80px;
+}
+
+.textButton.adminButton:hover {
   border-color: var(--accent-blue);
   background: rgba(59, 130, 246, 0.1);
   color: var(--accent-blue);
 }
 
-/* 登录链接 */
-/* 登录链接 - 覆盖所有 navLink 样式 */
-.loginLink {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 60px !important;
-  min-width: 60px !important;
-  max-width: 60px !important;
-  height: 40px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: var(--accent-gradient) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: var(--radius-sm) !important;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-  box-sizing: border-box !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  text-decoration: none !important;
-}
-
-.loginLink:hover {
-  opacity: 0.9 !important;
-  color: white !important;
-  background: var(--accent-gradient) !important;
-}
-
-/* 注册链接 */
-.registerLink {
-  border: 1px solid var(--border-color);
-}
-
-.registerLink:hover {
-  border-color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--accent-blue);
-}
-
-/* 普通用户链接 */
-.userLink {
-  border: 1px solid var(--border-color);
-  min-width: 88px; /* 固定最小宽度，适应"我的上传" */
-  white-space: nowrap; /* 防止文字换行 */
-  flex-shrink: 0; /* 防止被挤压 */
-}
-
-.userLink:hover {
+.textButton.adminButton.active {
   border-color: var(--accent-blue);
   background: rgba(59, 130, 246, 0.1);
   color: var(--accent-blue);
@@ -229,7 +177,7 @@
 /* 退出按钮 */
 .logoutBtn {
   padding: 8px 16px;
-  min-width: 64px; /* 固定最小宽度 */
+  min-width: 64px;
   background: none;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -239,8 +187,8 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap; /* 防止文字换行 */
-  flex-shrink: 0; /* 防止被挤压 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .logoutBtn:hover {
@@ -249,7 +197,7 @@
   color: #f87171;
 }
 
-/* 响应式：小屏幕 */
+/* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .container {
     padding: 0 16px;
@@ -259,28 +207,14 @@
     font-size: 18px;
   }
 
-  .navLink {
-    padding: 8px 12px;
-    font-size: 13px;
-    min-height: 36px; /* 增加触摸目标大小 */
-  }
-
-  /* 小屏幕上隐藏部分文字 */
-  .languageSwitch {
-    gap: 2px;
-    padding: 2px;
-  }
-
-  .langBtn {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-height: 32px; /* 增加触摸目标大小 */
-  }
-
-  .themeToggle {
+  .iconButton {
     width: 36px;
     height: 36px;
-    min-width: 36px; /* 保证最小触摸目标 */
+    min-width: 36px;
+  }
+
+  .textButton {
+    font-size: 12px;
   }
 }
 
@@ -297,71 +231,4 @@
     gap: 6px;
     flex-wrap: wrap;
   }
-
-  .navLink {
-    padding: 8px 12px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  /* 在极小屏幕隐藏"关于我们"链接，节省空间 */
-  .navLink:last-of-type {
-    display: none;
-  }
-
-  .rightSection {
-    gap: 8px;
-  }
-}
-
-/* 图标化导航链接 - 仅应用于前三个图标按钮 */
-.navLinks a[href="/"],
-.navLinks a[href="/search"],
-.navLinks a[href="/history"] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.navLinks a[href="/"] svg,
-.navLinks a[href="/search"] svg,
-.navLinks a[href="/history"] svg {
-  flex-shrink: 0;
-}
-
-/* 语言切换单按钮 */
-.langToggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  width: 60px;
-  min-width: 60px;
-  max-width: 60px;
-  padding: 0;
-  margin: 0;
-  margin-left: 8px;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.langToggle:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-hover);
-  color: var(--text-primary);
 }

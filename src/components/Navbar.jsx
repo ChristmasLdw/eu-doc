@@ -43,11 +43,11 @@ export default function Navbar() {
           <span className={styles.logoText}>EU-DOC</span>
         </Link>
 
-        {/* 导航链接 - 改为图标 */}
+        {/* 导航链接 - 统一使用 iconButton 样式 */}
         <div className={styles.navLinks}>
           <Link
             to="/"
-            className={`${styles.navLink} ${location.pathname === '/' ? styles.active : ''}`}
+            className={`${styles.iconButton} ${location.pathname === '/' ? styles.active : ''}`}
             title={t('nav.home')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,7 +57,7 @@ export default function Navbar() {
           </Link>
           <Link
             to="/search"
-            className={`${styles.navLink} ${location.pathname.startsWith('/search') ? styles.active : ''}`}
+            className={`${styles.iconButton} ${location.pathname.startsWith('/search') ? styles.active : ''}`}
             title={t('nav.search')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -67,7 +67,7 @@ export default function Navbar() {
           </Link>
           <Link
             to="/history"
-            className={`${styles.navLink} ${location.pathname === '/history' ? styles.active : ''}`}
+            className={`${styles.iconButton} ${location.pathname === '/history' ? styles.active : ''}`}
             title={t('nav.history')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -76,15 +76,14 @@ export default function Navbar() {
             </svg>
           </Link>
 
-          {/* 主题切换 - 显示当前主题图标 */}
+          {/* 主题切换 - 使用 iconButton 样式 */}
           <button
-            className={styles.themeToggle}
+            className={styles.iconButton}
             onClick={toggleTheme}
             title={theme === 'light' ? t('common.darkMode') : t('common.lightMode')}
           >
             {theme === 'light' ? (
-              // 太阳图标（明亮模式）
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5" />
                 <line x1="12" y1="1" x2="12" y2="3" />
                 <line x1="12" y1="21" x2="12" y2="23" />
@@ -96,16 +95,15 @@ export default function Navbar() {
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
               </svg>
             ) : (
-              // 月亮图标（暗黑模式）
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
           </button>
 
-          {/* 语言切换 - 显示另一种语言名称 */}
+          {/* 语言切换 - 使用 textButton 样式 */}
           <button
-            className={styles.langToggle}
+            className={styles.textButton}
             onClick={() => changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
             title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
           >
@@ -116,21 +114,21 @@ export default function Navbar() {
           {!admin ? (
             <Link
               to="/admin/login"
-              className={`${styles.navLink} ${styles.loginLink}`}
+              className={`${styles.textButton} ${styles.loginButton}`}
             >
               {t('auth.loginButton')}
             </Link>
           ) : isAdmin ? (
             <Link
               to="/admin"
-              className={`${styles.navLink} ${styles.adminLink} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
+              className={`${styles.textButton} ${styles.adminButton} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
             >
               {t('nav.admin')}
             </Link>
           ) : (
             <Link
               to="/admin"
-              className={`${styles.navLink} ${styles.userLink}`}
+              className={`${styles.textButton} ${styles.adminButton}`}
             >
               我的上传
             </Link>
