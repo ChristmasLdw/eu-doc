@@ -606,4 +606,143 @@ router.post('/import', authMiddleware, (req, res) => {
   });
 });
 
+/**
+ * POST /api/certificates/upload
+ * 新建证书并上传PDF文件（需认证）
+ *
+ * 使用 multipart/form-data 格式
+ * - pdf: PDF文件
+ * - cert_no: 证书编号
+ * - company_name: 企业名称
+ * - product_name: 产品名称
+ * - category: 产品类别
+ * - model: 产品型号
+ * - standard: 认证标准
+ * - issuer: 发证机构
+ * - issue_date: 签发日期
+ * - expiry_date: 有效期至
+ * - source_url: 来源链接
+ */
+router.post('/upload', authMiddleware, upload.single('pdf'), async (req, res) => {
+  try {
+    // 验证必填字段
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: '请上传PDF文件'
+      });
+    }
+
+    const { cert_no, company_name, product_name } = req.body;
+    if (!cert_no || !company_name || !product_name) {
+      // 删除已上传的文件
+      require('fs').unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        message: '证书编号、企业名称和产品名称为必填项'
+      });
+    }
+
+    // 检查证书编号是否已存在
+    const existingCert = db.prepare('SELECT id FROM certificates WHERE cert_no = ?').get(cert_no);
+    if (existingCert) {
+      require('fs').unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        message: '证书编号已存在'
+      });
+    }
+
+    // 处理企业关联
+    const insertCompany = db.prepare('INSERT OR IGNORE INTO companies (name, name_en) VALUES (?, ?)');
+    const getCompany = db.prepare('SELECT id FROM companies WHERE name = ?');
+
+    insertCompany.run(company_name, company_name);
+    const company = getCompany.get(company_name);
+    const companyId = company ? company.id : null;
+
+    // 移动文件到证书目录
+    const fs = require('fs');
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'certificates');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const fileName = `${cert_no}_cert.pdf`;
+    const targetPath = path.join(uploadsDir, fileName);
+    fs.renameSync(req.file.path, targetPath);
+
+    // 生成缩略图
+    let thumbnailPath = null;
+    try {
+      const thumbnailsDir = path.join(__dirname, '..', 'uploads', 'certificates', 'thumbnails');
+      if (!fs.existsSync(thumbnailsDir)) {
+        fs.mkdirSync(thumbnailsDir, { recursive: true });
+      }
+      thumbnailPath = await generateThumbnail(targetPath, cert_no);
+    } catch (err) {
+      console.error('缩略图生成失败:', err);
+      // 缩略图生成失败不影响证书创建
+    }
+
+    // 插入证书记录
+    const reviewStatus = req.admin.role === 'admin' ? 'approved' : 'pending';
+    const result = db.prepare(`
+      INSERT INTO certificates (
+        cert_no, company_id, product_name, category, model, standard,
+        issuer, issue_date, expiry_date, status, source_url,
+        file_path, thumbnail_path, review_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      cert_no,
+      companyId,
+      product_name,
+      req.body.category || null,
+      req.body.model || null,
+      req.body.standard || null,
+      req.body.issuer || null,
+      req.body.issue_date || null,
+      req.body.expiry_date || null,
+      'active',
+      req.body.source_url || null,
+      `/certificates/${fileName}`,
+      thumbnailPath ? `/certificates/thumbnails/${path.basename(thumbnailPath)}` : null,
+      reviewStatus
+    );
+
+    // 记录审计日志
+    db.prepare(
+      'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(
+      req.admin.id,
+      'upload',
+      'certificate',
+      result.lastInsertRowid,
+      JSON.stringify({ cert_no, product_name }),
+      req.ip
+    );
+
+    res.json({
+      success: true,
+      message: reviewStatus === 'approved' ? '证书上传成功' : '证书上传成功，等待管理员审核',
+      data: {
+        id: result.lastInsertRowid,
+        cert_no,
+        review_status: reviewStatus
+      }
+    });
+
+  } catch (error) {
+    console.error('证书上传错误:', error);
+    // 清理已上传的文件
+    if (req.file && require('fs').existsSync(req.file.path)) {
+      require('fs').unlinkSync(req.file.path);
+    }
+    res.status(500).json({
+      success: false,
+      message: '证书上传失败：' + error.message
+    });
+  }
+});
+
 module.exports = router;
