@@ -33,6 +33,7 @@ import AdminRoute from './components/AdminRoute';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import CertificatePage from './pages/CertificatePage';
+import SharePage from './pages/SharePage';
 import CompanyPage from './pages/CompanyPage';
 import HistoryPage from './pages/HistoryPage';
 import TermsPage from './pages/TermsPage';
@@ -82,6 +83,9 @@ function App() {
           例如 /certificate/CERT-001 会匹配到这里，params.id = 'CERT-001'
         */}
         <Route path="/certificate/:id" element={<CertificatePage />} />
+
+        {/* 证书分享页 */}
+        <Route path="/share/:id" element={<SharePage />} />
 
         {/* 公司详情页 */}
         <Route path="/company/:id" element={<CompanyPage />} />
