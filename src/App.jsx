@@ -42,6 +42,7 @@ import RegisterPage from './pages/admin/RegisterPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminLayoutSimple from './pages/admin/AdminLayoutSimple';
 import DashboardPage from './pages/admin/DashboardPage';
+import UploadPage from './pages/admin/UploadPage';
 import CertificatesPage from './pages/admin/CertificatesPage';
 import CompaniesPage from './pages/admin/CompaniesPage';
 import LogsPage from './pages/admin/LogsPage';
@@ -112,6 +113,8 @@ function App() {
         >
           {/* 默认子路由：仪表盘 */}
           <Route index element={<DashboardPage />} />
+          {/* 证书上传 */}
+          <Route path="upload" element={<UploadPage />} />
           {/* 证书管理 */}
           <Route path="certificates" element={<CertificatesPage />} />
           {/* 企业管理 */}

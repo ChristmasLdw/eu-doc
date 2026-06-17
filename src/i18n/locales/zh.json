@@ -296,6 +296,7 @@
   },
   "admin": {
     "dashboard": "仪表盘",
+    "upload": "上传证书",
     "certificates": "证书管理",
     "companies": "企业管理",
     "reports": "错误报告",
