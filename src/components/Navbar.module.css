@@ -174,7 +174,7 @@
 /* 登录链接 */
 /* 登录链接 - 保证足够留白和美观 */
 .loginLink {
-  min-width: 64px; /* 固定最小宽度 */
+  min-width: 72px; /* 增加宽度，与语言切换按钮对齐 */
   padding: 8px 20px !important;
   background: var(--accent-gradient);
   color: white;
@@ -324,8 +324,8 @@
   justify-content: center;
   gap: 6px;
   height: 40px;
-  min-width: 60px; /* 固定最小宽度，防止"中文"分行 */
-  padding: 0 14px;
+  min-width: 56px; /* 缩小宽度，与登录按钮对齐 */
+  padding: 0 12px;
   margin-left: 16px;
   background: transparent;
   border: 1px solid var(--border-color);
