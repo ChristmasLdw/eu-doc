@@ -174,9 +174,9 @@
 /* 登录链接 */
 /* 登录链接 - 保证足够留白和美观 */
 .loginLink {
-  width: 72px; /* 固定外框宽度 */
+  width: 72px;
   height: 40px;
-  padding: 0 16px !important;
+  padding: 0 !important;
   background: var(--accent-gradient);
   color: white;
   border: none;
@@ -185,7 +185,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box; /* 确保width包含边框和padding */
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
 }
 
 .loginLink:hover {
@@ -327,11 +328,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   height: 40px;
   width: 72px; /* 固定外框宽度 */
-  padding: 0 12px;
-  margin-left: 16px;
+  padding: 0;
+  margin-left: 8px; /* 减小左边距 */
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -343,7 +343,7 @@
   transition: all 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
-  box-sizing: border-box; /* 确保width包含边框和padding */
+  box-sizing: border-box;
 }
 
 .langToggle:hover {
