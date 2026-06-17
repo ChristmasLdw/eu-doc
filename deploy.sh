@@ -1,6 +1,12 @@
 #!/bin/bash
-# EU-DOC 自动部署脚本
+# ⚠️ EU-DOC 全新服务器初始化部署脚本 ⚠️
+#
+# 警告：本脚本用于全新服务器的首次部署，会安装环境和初始化项目
+#
+# 日常更新部署请使用：./deploy-to-tencent.sh
+#
 # 使用方法: ./deploy.sh [server-ip] [ssh-user] [domain]
+# 示例: ./deploy.sh 1.2.3.4 root yourdomain.com
 
 set -e
 

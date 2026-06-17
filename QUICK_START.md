@@ -59,9 +59,47 @@ git push origin main
 
 ---
 
-### 2️⃣ 部署到腾讯云服务器
+### 2️⃣ 日常更新部署到腾讯云服务器
 
-#### 快速部署流程（详见 docs/DEPLOYMENT_GUIDE.md）
+#### 使用自动部署脚本（推荐）
+
+**重要说明**：
+- ⚠️ 日常更新请使用 `./deploy-to-tencent.sh`
+- ⚠️ `./deploy.sh` 仅用于全新服务器初始化，不要用于日常更新
+- ✅ 自动排除 node_modules、数据库、上传文件
+- ✅ 不会覆盖线上数据
+
+```bash
+# 日常代码更新部署
+./deploy-to-tencent.sh
+```
+
+该脚本会自动完成：
+1. 构建前端 (`npm run build`)
+2. 同步前端文件到服务器
+3. 同步后端代码（排除敏感文件）
+4. 在服务器上重新安装依赖（原生模块重新编译）
+5. 重启PM2服务
+6. 验证部署结果
+
+**不会同步的文件**：
+- `node_modules/` - 依赖包（会在服务器上重新安装）
+- `data/` - 数据库文件（保护线上数据）
+- `uploads/` - 上传文件（保护用户数据）
+- `.env` - 环境配置（保护敏感信息）
+
+---
+
+### 3️⃣ 全新服务器初始化部署（仅首次）
+
+如果是全新服务器，使用初始化脚本：
+
+```bash
+# 仅首次部署使用
+./deploy.sh [server-ip] [ssh-user] [domain]
+```
+
+#### 快速部署流程（首次部署）
 
 **步骤总览**：
 ```bash
@@ -116,27 +154,23 @@ DATABASE_PATH=./data/eu-doc.db
 CORS_ORIGIN=https://yourdomain.com
 ```
 
-#### 需要上传的文件
-```bash
-# 数据库文件
-server/data/eu-doc.db
+#### 首次部署需要手动上传的文件
 
-# 缩略图文件（29张）
-server/uploads/certificates/thumbnails/*.png
-```
+**⚠️ 重要：仅首次部署需要，日常更新不要上传这些文件！**
 
-**上传方法**：
 ```bash
-# 方法1: scp 上传
+# 仅首次部署时上传数据库（包含初始数据）
 scp server/data/eu-doc.db root@your-server:/var/www/eu-doc/server/data/
-scp -r server/uploads root@your-server:/var/www/eu-doc/server/
 
-# 方法2: 在服务器上用 Git 克隆后，只上传数据文件
+# 仅首次部署时上传证书缩略图
+scp -r server/uploads/certificates/thumbnails root@your-server:/var/www/eu-doc/server/uploads/certificates/
+
+# ⚠️ 之后的日常更新不要再上传这些文件，会覆盖线上数据！
 ```
 
 ---
 
-### 3️⃣ 部署后测试
+### 4️⃣ 部署后测试
 
 #### 测试清单
 ```bash
