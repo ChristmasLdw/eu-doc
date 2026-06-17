@@ -381,7 +381,7 @@ export default function CertificatePage() {
                   </div>
                   {certStatus.daysRemaining !== null && (
                     <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>{t('certificate.status')}</span>
+                      <span className={styles.infoLabel}>{t('certificate.statusLabel')}</span>
                       <span className={`${styles.infoValue} ${styles[`status_${certStatus.statusColor}`]}`}>
                         {t(`certificate.status.${certStatus.statusText}`)}
                         {certStatus.daysRemaining > 0 && ` (${formatDaysRemaining(certStatus.daysRemaining, t)})`}

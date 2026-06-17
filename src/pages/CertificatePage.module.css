@@ -112,6 +112,38 @@
   flex-shrink: 0;
 }
 
+/* 信息行样式 */
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.5;
+}
+
 /* 状态颜色 */
 .status_green {
   color: var(--status-active);
@@ -256,7 +288,9 @@
   color: var(--text-primary);
   font-weight: 500;
   text-align: right;
-  word-break: break-all;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.6;
 }
 
 /* 认证型号标签 */
@@ -368,10 +402,24 @@
 .fileSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
 }
 
 .fileActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
   display: flex;
   gap: 12px;
   flex-wrap: wrap;

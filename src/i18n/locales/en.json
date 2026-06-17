@@ -133,7 +133,7 @@
     "issueDate": "Issue Date",
     "expiryDate": "Expiry Date",
     "standard": "Standard",
-    "status": "Status",
+    "statusLabel": "Status",
     "category": "Category",
     "downloadPDF": "Download PDF",
     "share": "Share Link",

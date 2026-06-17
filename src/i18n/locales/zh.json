@@ -144,7 +144,7 @@
     "issueDate": "发证日期",
     "expiryDate": "过期日期",
     "standard": "认证标准",
-    "status": "状态",
+    "statusLabel": "状态",
     "category": "类别",
     "downloadPDF": "下载 PDF",
     "share": "分享链接",
