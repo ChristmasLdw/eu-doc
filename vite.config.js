@@ -16,6 +16,16 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc/, '')
       },
+      '/eu-doc/manuals': {
+        target: 'http://localhost:3007',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/eu-doc/, '')
+      },
+      '/eu-doc/declarations': {
+        target: 'http://localhost:3007',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/eu-doc/, '')
+      },
       '/eu-doc/uploads': {
         target: 'http://localhost:3007',
         changeOrigin: true,

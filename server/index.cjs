@@ -62,6 +62,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // 添加 /certificates 路径映射到 uploads/certificates
 app.use('/certificates', express.static(path.join(__dirname, 'uploads/certificates')));
+// 添加 /manuals 路径映射到 uploads/manuals
+app.use('/manuals', express.static(path.join(__dirname, 'uploads/manuals')));
+// 添加 /declarations 路径映射到 uploads/declarations
+app.use('/declarations', express.static(path.join(__dirname, 'uploads/declarations')));
 
 /**
  * API 路由注册

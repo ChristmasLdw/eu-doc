@@ -35,7 +35,11 @@ export default function Navbar() {
   // 点击外部关闭语言菜单
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showLanguageMenu && !event.target.closest(`.${styles.functionButton}`)) {
+      // 检查点击是否在语言切换按钮或下拉框内部
+      const languageButton = event.target.closest(`.${styles.functionButton}`);
+      const languageDropdown = event.target.closest(`.${styles.languageDropdown}`);
+
+      if (showLanguageMenu && !languageButton && !languageDropdown) {
         setShowLanguageMenu(false);
       }
     };
@@ -116,16 +120,18 @@ export default function Navbar() {
           </button>
 
           {/* 语言切换 - 功能按钮（地球图标+下拉菜单） */}
-          <button
-            className={styles.functionButton}
-            onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-            title={t('common.language')}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
+          <div style={{ position: 'relative' }}>
+            <button
+              className={styles.functionButton}
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              title={t('common.language')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+            </button>
             {showLanguageMenu && (
               <div className={styles.languageDropdown}>
                 <button
@@ -144,7 +150,7 @@ export default function Navbar() {
                 </button>
               </div>
             )}
-          </button>
+          </div>
 
           {/* 根据登录状态和角色显示不同的导航按钮 */}
           {!admin ? (
@@ -154,29 +160,26 @@ export default function Navbar() {
             >
               {t('auth.loginButton')}
             </Link>
-          ) : isAdmin ? (
-            <Link
-              to="/admin"
-              className={`${styles.textButton} ${styles.adminButton} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
-            >
-              {t('nav.admin')}
-            </Link>
           ) : (
-            <Link
-              to="/admin"
-              className={`${styles.textButton} ${styles.adminButton}`}
-            >
-              我的上传
-            </Link>
-          )}
-
-          {admin && (
-            <button
-              className={styles.logoutBtn}
-              onClick={logout}
-            >
-              {t('admin.logout')}
-            </button>
+            <>
+              <Link
+                to="/admin"
+                className={`${styles.textButton} ${styles.adminButton} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
+              >
+                {isAdmin ? t('nav.admin') : '我的上传'}
+              </Link>
+              <button
+                className={styles.logoutBtn}
+                onClick={logout}
+                title={t('admin.logout')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </>
           )}
         </div>
       </div>

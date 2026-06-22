@@ -32,3 +32,12 @@ DAILY_SUMMARY*.md
 COMPLETION*.md
 MAJOR_UPDATE*.md
 VERSION_*.md
+
+# Token cleanup archives; read only when explicitly requested.
+docs/archive/code-backups/
+docs/archive/work-logs/
+docs/archive/todo/
+WORK_LOG_*.md
+*.backup
+*.backup-*
+*.pre-thumbnail-backup

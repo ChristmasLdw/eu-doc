@@ -22,11 +22,40 @@
 const { Router } = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { db } = require('../db.cjs');
 const { generateThumbnail } = require('../utils/pdfThumbnail.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 
 const router = Router();
+
+function getDeclarationVersions(certNo) {
+  const dir = path.join(__dirname, '..', 'uploads', 'declarations');
+  if (!certNo || !fs.existsSync(dir)) return [];
+
+  const escaped = certNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`^${escaped}_doc(?:_([a-z0-9]+))?\\.(png|jpe?g|webp)$`, 'i');
+
+  const versions = fs.readdirSync(dir)
+    .map((filename) => {
+      const match = filename.match(pattern);
+      if (!match) return null;
+      const language = (match[1] || 'en').toUpperCase();
+      return {
+        language,
+        path: `/declarations/${filename}`,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.language === 'EN' ? -1 : b.language === 'EN' ? 1 : a.language.localeCompare(b.language)));
+
+  return Object.values(versions.reduce((result, version) => {
+    if (!result[version.language] || version.path.includes(`_doc_${version.language.toLowerCase()}.`)) {
+      result[version.language] = version;
+    }
+    return result;
+  }, {}));
+}
 
 /**
  * 文件上传配置（multer）
@@ -222,6 +251,8 @@ router.get('/:id', (req, res) => {
       message: '证书不存在',
     });
   }
+
+  cert.declaration_versions = getDeclarationVersions(cert.cert_no);
 
   res.json({ success: true, data: cert });
 });

@@ -2,6 +2,23 @@
 
 本文件记录最近三天工作日志、每日总结和下一步计划。超过三天的内容应归档到 `docs/archive/summaries/` 或 `docs/archive/status-and-plans/`。
 
+## 2026-06-22
+
+### 2026-06-22 14:50:00 CST
+
+- 关联任务：规划整理 / 接手前准备
+- 关联版本：v2.0.0-planning
+- 工作内容：
+  - 将旧的已完成 TODO 和 v1.9.1 前用户体验类任务归档到 `docs/archive/status-and-plans/TODO_2026-06-17_v1.9.1_archived_2026-06-22.md`。
+  - 精简 `TODO.md`，当前只保留三阶段产品与技术规划、当前最高优先级和后续 AI 工作注意事项。
+  - 更新 `CURRENT_STATUS.md`，明确项目长期定位为产品合规资料平台，架构方向从 `企业 -> 证书` 升级为 `企业 -> 产品 -> 文档`。
+  - 将 `.version` 更新为 `v2.0.0-planning`，表示进入平台化地基改造准备阶段。
+- 完成情况：已完成
+- 下一步建议：
+  - 先制定 `eu-doc 数据模型升级与迁移方案`，不要直接开始页面改造。
+  - 重点围绕 `products / documents / categories / tags / users / company_members / upload_confirmations` 设计兼容式迁移。
+
+
 ## 2026-06-17
 
 ### 2026-06-17 13:00:00 CST
@@ -396,3 +413,17 @@
 - 完成情况：已完成
 - 待完善：
   - 需要创建 Git commit 并推送 GitHub 后，云端仓库才真正完成清理。
+
+## 2026-06-22 15:11:22 CST - 收尾备份：v2.0.0-planning
+
+- 关联版本：v2.0.0-planning
+- 工作类型：备份 / 新一轮工作前稳定点
+- 完成内容：
+  - 执行前端构建验证，结果通过。
+  - 创建本机数据备份包：`backups/eu-doc-data-v2.0.0-planning-20260622-151109.tar.gz`。
+  - 数据备份包包含：`server/data` 和 `server/uploads`。
+  - 准备将当前代码、工作流文档、归档整理和 DoC 相关改动提交到 Git。
+- 注意事项：
+  - 数据库和上传文件不提交到 GitHub。
+  - GitHub 只备份代码、文档和可追踪配置。
+  - 下一轮工作开始前，AI 默认只读 `AGENTS.md`、`CURRENT_STATUS.md`、`TODO.md`。

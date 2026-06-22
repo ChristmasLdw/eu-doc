@@ -30,6 +30,7 @@ export default function CertificatePage() {
   const [cert, setCert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('certificate'); // 'certificate' 或 'manual'
   const [copySuccess, setCopySuccess] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('');
@@ -37,6 +38,10 @@ export default function CertificatePage() {
   const [reporterEmail, setReporterEmail] = useState('');
   const [reporterName, setReporterName] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrlCopied, setShareUrlCopied] = useState(false);
+  const [declarationAvailable, setDeclarationAvailable] = useState(null);
+  const [selectedDeclarationLanguage, setSelectedDeclarationLanguage] = useState('EN');
 
   // 点赞和收藏状态
   const [liked, setLiked] = useState(false);
@@ -61,6 +66,24 @@ export default function CertificatePage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    const versions = cert?.declarationVersions || [];
+    const hasSelectedLanguage = versions.some((version) => version.language === selectedDeclarationLanguage);
+    const activeVersion = hasSelectedLanguage
+      ? versions.find((version) => version.language === selectedDeclarationLanguage)
+      : versions[0];
+    const declarationUrl = activeVersion?.url || cert?.declarationUrl || cert?.docUrl;
+    if (!declarationUrl) {
+      setDeclarationAvailable(null);
+      return;
+    }
+
+    setDeclarationAvailable(null);
+    fetch(declarationUrl, { method: 'HEAD' })
+      .then((response) => setDeclarationAvailable(response.ok))
+      .catch(() => setDeclarationAvailable(false));
+  }, [cert?.declarationUrl, cert?.docUrl, cert?.declarationVersions, selectedDeclarationLanguage]);
 
   // 加载点赞和收藏数据
   const loadInteractionData = (certId) => {
@@ -148,7 +171,22 @@ export default function CertificatePage() {
 
   // 分享链接
   const handleShare = () => {
-    navigate(`/share/${id}`);
+    setShowShareModal(true);
+  };
+
+  // 复制分享链接
+  const handleCopyShareUrl = () => {
+    const shareUrl = `${window.location.origin}/certificate/${id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShareUrlCopied(true);
+      setTimeout(() => setShareUrlCopied(false), 2000);
+    });
+  };
+
+  // 生成二维码分享链接
+  const getQRCodeUrl = () => {
+    const shareUrl = `${window.location.origin}/certificate/${id}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`;
   };
 
   // 下载证书文件
@@ -252,6 +290,13 @@ export default function CertificatePage() {
   // 计算证书状态
   const certStatus = getCertificateStatus(cert.status, cert.expiryDate);
   const reviewInfo = getReviewStatusInfo(cert.reviewStatus);
+  const declarationVersions = cert.declarationVersions || [];
+  const hasSelectedLanguage = declarationVersions.some((version) => version.language === selectedDeclarationLanguage);
+  const selectedDeclarationVersion = hasSelectedLanguage
+    ? declarationVersions.find((version) => version.language === selectedDeclarationLanguage)
+    : declarationVersions[0];
+  const declarationUrl = selectedDeclarationVersion?.url || cert.declarationUrl || cert.docUrl;
+  const isDeclarationImage = /\.(png|jpe?g|webp|gif)(?:$|\?)/i.test(declarationUrl || '');
 
   return (
     <div className={styles.page}>
@@ -300,6 +345,28 @@ export default function CertificatePage() {
                   </>
                 )}
               </button>
+              <button
+                className={`${styles.iconBtn} ${favorited ? styles.favorited : ''}`}
+                onClick={handleFavorite}
+                title={i18n.language === 'zh' ? '收藏' : 'Favorite'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={favorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </button>
+              <button
+                className={styles.iconBtn}
+                onClick={handleShare}
+                title={i18n.language === 'zh' ? '分享' : 'Share'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -318,7 +385,35 @@ export default function CertificatePage() {
             )}
           </div>
 
-          {/* 主内容区域 - 左右布局 */}
+          {/* 标签页切换 */}
+          {cert.manualUrl && (
+            <div className={styles.tabNav}>
+              <button
+                className={`${styles.tabButton} ${activeTab === 'certificate' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('certificate')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                {t('certificate.certificateTab')}
+              </button>
+              <button
+                className={`${styles.tabButton} ${activeTab === 'manual' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('manual')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                {t('certificate.manualTab')}
+              </button>
+            </div>
+          )}
+
+          {/* 证书详情内容 - 默认显示或当选中证书 tab 时显示 */}
+          {activeTab === 'certificate' && (
+          <>
           <div className={styles.mainContent}>
             {/* 左侧：信息卡片 */}
             <div className={styles.infoCards}>
@@ -429,138 +524,183 @@ export default function CertificatePage() {
 
               {/* 数据质量提示 */}
               <div className={styles.dataQualityCard}>
-                <div className={styles.qualityIcon}>ℹ️</div>
+                <div className={styles.qualityIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
                 <div className={styles.qualityContent}>
+                  <h4 className={styles.qualityTitle}>{t('certificate.dataQualityTitle')}</h4>
                   <p className={styles.qualityText}>{t('certificate.dataQualityNotice')}</p>
                   <button
                     className={styles.reportBtn}
                     onClick={() => setShowReportModal(true)}
                   >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <line x1="12" y1="9" x2="12" y2="13" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
                     {t('certificate.reportError')}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* 右侧：缩略图 */}
-            {cert.thumbnailUrl && (
+            {/* 右侧：证书和 DoC 缩略图 */}
+            {(cert.thumbnailUrl || declarationUrl) && (
+              <div className={styles.previewColumn}>
+                {cert.thumbnailUrl && (
+                  <a
+                    href={cert.fileUrl || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.thumbnailSection}
+                  >
+                    <div className={styles.thumbnailHeader}>
+                      <span>{t('certificate.certFile')}</span>
+                    </div>
+                    <div className={styles.thumbnailWrapper}>
+                      <LazyImage
+                        src={cert.thumbnailUrl}
+                        alt={`${cert.productName} 证书预览`}
+                        className={styles.thumbnailImg}
+                      />
+                    </div>
+                    <div className={styles.thumbnailOverlay}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 3h6v6" />
+                        <path d="M10 14 21 3" />
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      </svg>
+                      <span>{i18n.language === 'zh' ? '点击查看原文件' : 'Open original file'}</span>
+                    </div>
+                  </a>
+                )}
+
+                {declarationUrl && (
+                  <a
+                    href={declarationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${styles.thumbnailSection} ${styles.declarationPreview}`}
+                  >
+                    <div className={styles.thumbnailHeader}>
+                      <span>{t('certificate.docFile')}</span>
+                      {(declarationVersions.length > 0 || selectedDeclarationVersion) && (
+                        <div className={styles.languageSwitcher}>
+                          {(declarationVersions.length > 0 ? declarationVersions : [{ language: 'EN', url: declarationUrl }]).map((version) => (
+                            <button
+                              key={`${version.language}-${version.url}`}
+                              type="button"
+                              className={`${styles.languageButton} ${version.language === (selectedDeclarationVersion?.language || 'EN') ? styles.languageActive : ''}`}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setSelectedDeclarationLanguage(version.language);
+                              }}
+                            >
+                              {version.language}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {declarationAvailable ? (
+                      <div className={`${styles.thumbnailWrapper} ${styles.docThumbnailWrapper}`}>
+                        {isDeclarationImage ? (
+                          <LazyImage
+                            src={declarationUrl}
+                            alt={t('certificate.docFile')}
+                            className={styles.docThumbnailImg}
+                          />
+                        ) : (
+                          <iframe
+                            src={`${declarationUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                            title={t('certificate.docFile')}
+                            className={styles.docThumbnailFrame}
+                            loading="lazy"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className={`${styles.thumbnailWrapper} ${styles.docThumbnailWrapper}`}>
+                        <div className={styles.docUnavailable}>
+                          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <path d="M9 15h6" />
+                            <path d="M9 18h4" />
+                          </svg>
+                          <strong>{t('certificate.docFile')}</strong>
+                          <span>{declarationAvailable === false ? t('certificate.fileUnderReview') : t('certificate.pdfDocument')}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className={styles.thumbnailOverlay}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 3h6v6" />
+                        <path d="M10 14 21 3" />
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      </svg>
+                      <span>{i18n.language === 'zh' ? '点击查看声明' : 'Open declaration'}</span>
+                    </div>
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+          </>
+        )}
+
+        {/* 说明书内容 */}
+        {activeTab === 'manual' && cert.manualUrl && (
+          <div className={styles.manualContent}>
+            <div className={styles.manualHeader}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              <h2>{t('certificate.userManual')}</h2>
+            </div>
+            <div className={styles.pdfViewer}>
+              <iframe
+                src={cert.manualUrl}
+                title={t('certificate.userManual')}
+                className={styles.pdfFrame}
+              />
+            </div>
+            <div className={styles.manualActions}>
               <a
-                href={cert.fileUrl || '#'}
+                href={cert.manualUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={styles.thumbnailSection}
+                className={styles.manualButton}
               >
-                <LazyImage
-                  src={cert.thumbnailUrl}
-                  alt={`${cert.productName} 证书预览`}
-                  className={styles.thumbnailImg}
-                />
-                <div className={styles.thumbnailOverlay}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 3h6v6" />
-                    <path d="M10 14 21 3" />
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  </svg>
-                  <span>点击放大查看</span>
-                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 3h6v6" />
+                  <path d="M10 14 21 3" />
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                </svg>
+                {t('certificate.openInNewTab')}
               </a>
-            )}
+              <a
+                href={cert.manualUrl}
+                download
+                className={styles.manualButton}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                {t('certificate.download')}
+              </a>
+            </div>
           </div>
-
-          {/* 证书文件区域 */}
-          <div className={styles.fileSection}>
-            <h3 className={styles.sectionTitle}>{t('certificate.certFile')}</h3>
-            {cert.fileUrl ? (
-              <div className={styles.fileActions}>
-                <a
-                  href={cert.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.fileCard}
-                >
-                  <div className={styles.fileIcon}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
-                    </svg>
-                  </div>
-                  <div className={styles.fileInfo}>
-                    <span className={styles.fileName}>{cert.certNo}_cert.pdf</span>
-                    <span className={styles.fileSize}>{t('certificate.pdfDocument')}</span>
-                  </div>
-                  <span className={styles.viewButton}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h6v6" />
-                      <path d="M10 14 21 3" />
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    </svg>
-                    {t('certificate.viewFile')}
-                  </span>
-                </a>
-                <button
-                  className={`${styles.actionButton} ${liked ? styles.liked : ''}`}
-                  onClick={handleLike}
-                  title="点赞"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                  {likeCount > 0 ? likeCount : '点赞'}
-                </button>
-                <button
-                  className={`${styles.actionButton} ${favorited ? styles.favorited : ''}`}
-                  onClick={handleFavorite}
-                  title="收藏"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill={favorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
-                  {favorited ? '已收藏' : '收藏'}
-                </button>
-                <button
-                  className={styles.downloadButton}
-                  onClick={handleDownload}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  {t('certificate.download')}
-                </button>
-                <button
-                  className={styles.shareButton}
-                  onClick={handleShare}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                  </svg>
-                  {t('certificate.share')}
-                </button>
-              </div>
-            ) : (
-              <div className={styles.fileCard}>
-                <div className={styles.fileIcon}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                </div>
-                <div className={styles.fileInfo}>
-                  <span className={styles.fileName}>{t('certificate.fileNotUploaded')}</span>
-                  <span className={styles.fileSize}>{t('certificate.fileUnderReview')}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* 报告错误模态框 */}
         {showReportModal && (
@@ -680,6 +820,123 @@ export default function CertificatePage() {
             </div>
           </div>
         )}
+
+        {/* 分享模态框 */}
+        {showShareModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowShareModal(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3>{i18n.language === 'zh' ? '分享证书' : 'Share Certificate'}</h3>
+                <button
+                  className={styles.modalClose}
+                  onClick={() => setShowShareModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <p className={styles.shareDesc}>
+                  {i18n.language === 'zh'
+                    ? '分享此证书给您的客户或合作伙伴'
+                    : 'Share this certificate with your clients or partners'}
+                </p>
+
+                {/* 分享链接 */}
+                <div className={styles.shareSection}>
+                  <label className={styles.shareLabel}>
+                    {i18n.language === 'zh' ? '分享链接' : 'Share Link'}
+                  </label>
+                  <div className={styles.shareUrlBox}>
+                    <input
+                      type="text"
+                      className={styles.shareUrlInput}
+                      value={`${window.location.origin}/certificate/${id}`}
+                      readOnly
+                    />
+                    <button
+                      className={styles.copyUrlBtn}
+                      onClick={handleCopyShareUrl}
+                    >
+                      {shareUrlCopied ? (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span>{i18n.language === 'zh' ? '已复制' : 'Copied'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                          <span>{i18n.language === 'zh' ? '复制链接' : 'Copy Link'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 二维码 */}
+                <div className={styles.shareSection}>
+                  <label className={styles.shareLabel}>
+                    {i18n.language === 'zh' ? '扫码查看' : 'Scan QR Code'}
+                  </label>
+                  <div className={styles.qrCodeBox}>
+                    <img
+                      src={getQRCodeUrl()}
+                      alt="QR Code"
+                      className={styles.qrCodeImg}
+                    />
+                    <p className={styles.qrCodeHint}>
+                      {i18n.language === 'zh'
+                        ? '使用手机扫描二维码查看证书'
+                        : 'Scan with your phone to view certificate'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 社交媒体分享 */}
+                <div className={styles.shareSection}>
+                  <label className={styles.shareLabel}>
+                    {i18n.language === 'zh' ? '快速分享' : 'Quick Share'}
+                  </label>
+                  <div className={styles.socialShareBtns}>
+                    <button
+                      className={styles.socialBtn}
+                      onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.origin + '/certificate/' + id)}&text=${encodeURIComponent(cert.productName + ' - ' + cert.companyName)}`, '_blank')}
+                      title="Twitter"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                      </svg>
+                    </button>
+                    <button
+                      className={styles.socialBtn}
+                      onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin + '/certificate/' + id)}`, '_blank')}
+                      title="LinkedIn"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      </svg>
+                    </button>
+                    <button
+                      className={styles.socialBtn}
+                      onClick={() => window.open(`mailto:?subject=${encodeURIComponent(cert.productName + ' - ' + cert.companyName)}&body=${encodeURIComponent('查看证书: ' + window.location.origin + '/certificate/' + id)}`, '_blank')}
+                      title="Email"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
 
         {/* 页脚 */}
         <footer className={styles.footer}>

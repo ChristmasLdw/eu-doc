@@ -61,9 +61,10 @@
   /* 背景色 */
   --bg-primary: #0a0f1e;
   --bg-secondary: #111827;
-  --bg-card: rgba(255, 255, 255, 0.05);
-  --bg-card-hover: rgba(255, 255, 255, 0.08);
-  --bg-input: rgba(255, 255, 255, 0.08);
+  --bg-card: rgba(30, 41, 59, 0.98);
+  --bg-card-hover: rgba(51, 65, 85, 0.98);
+  --bg-input: rgba(51, 65, 85, 0.95);
+  --bg-hover: rgba(51, 65, 85, 0.8);
 
   /* 文字色 */
   --text-primary: #f1f5f9;
@@ -75,7 +76,7 @@
   --border-hover: rgba(255, 255, 255, 0.2);
 
   /* 阴影 */
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.15);
 
   /* 背景装饰 */

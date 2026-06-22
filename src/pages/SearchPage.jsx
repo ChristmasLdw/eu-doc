@@ -394,7 +394,12 @@ export default function SearchPage() {
                 title={t('search.searchTipsContent')}
                 value={query}
                 onChange={(e) => { isUserTyping.current = true; setQuery(e.target.value); setShowSuggestions(true); }}
-                onFocus={() => { setShowSuggestions(true); }}
+                onFocus={() => {
+                  // 只在有输入内容时显示建议，否则不显示历史记录
+                  if (query.trim()) {
+                    setShowSuggestions(true);
+                  }
+                }}
                 autoFocus
               />
               {query && (

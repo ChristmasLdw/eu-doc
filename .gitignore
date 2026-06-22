@@ -46,3 +46,6 @@ coverage/
 # 临时文件
 *.tmp
 .cache/
+
+# 本机数据备份包（数据库和上传文件），不提交 Git
+backups/

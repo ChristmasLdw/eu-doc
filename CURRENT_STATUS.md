@@ -1,11 +1,69 @@
 # eu-doc 当前状态
 
-最后更新：2026-06-16 23:40:00 CST
-当前版本：v1.6.1
+最后更新：2026-06-22 CST
+当前版本：v2.0.0-planning
+当前阶段：第一阶段（个人测试 / 本地开发 / 平台化地基改造准备）
 
-## 项目简介
+## 项目长期定位
 
-`eu-doc` 是 EU 文档/证书管理与展示工具。
+`eu-doc` 不是单企业展示站，目标是逐步发展为面向全球企业、消费者、采购商、经销商和审批机构的产品合规资料平台。
+
+核心资料类型：
+
+- 产品认证证书
+- DoC 声明文件
+- 产品使用说明书
+- 检测报告
+- 其他合规资料
+
+长期架构方向必须从：
+
+```text
+企业 -> 证书
+```
+
+升级为：
+
+```text
+企业 -> 产品 -> 文档
+```
+
+其中：
+
+```text
+文档 = 证书 + DoC + 说明书 + 检测报告 + 其他合规资料
+```
+
+## 当前开发策略
+
+项目按三阶段推进：
+
+1. **第一阶段：个人测试 / 本地开发**
+   - 用户在本机模拟真实企业录入资料。
+   - 重点不是商业化，而是打好平台化地基。
+   - 必须验证完整流程：注册/登录 -> 创建企业 -> 认证 -> 创建产品 -> 上传证书/DoC/说明书 -> 前台搜索和展示 -> 举报/反馈。
+
+2. **第二阶段：测试服务器 + 小域名 + 10-20 家企业小范围测试**
+   - 允许真实企业注册、认证和上传资料。
+   - 允许外部用户访问小域名。
+   - 重点验证真实企业使用体验、上传流程、搜索展示、稳定性和备份。
+
+3. **第三阶段：正式服务器 / 正式域名 / 推广商业化**
+   - 面向更多企业和全球用户。
+   - 再逐步开启收费、支付、套餐、OCR、API、CDN、数据分析等能力。
+
+## 当前最高优先级
+
+后续 AI 接手时，应优先处理：
+
+1. 设计数据模型升级与迁移方案。
+2. 从 `企业 -> 证书` 升级为 `企业 -> 产品 -> 文档`。
+3. 建立或规划 `products / documents / categories / tags / users / company_members` 等基础结构。
+4. 建立企业认证、上传确认、免责声明、审计日志等责任链。
+5. 完成环境变量配置，避免域名、API、上传目录、数据库路径写死。
+6. 建立基础备份与恢复方案。
+
+## 当前项目基础
 
 技术栈：
 
@@ -14,43 +72,60 @@
 - 后端：Express
 - 数据库：SQLite
 - 文件上传：`server/uploads/`
+- 国际化：i18next
 
-## 当前工作原则
+当前已有能力：
 
-为了减少 token 消耗，AI 每次不要从头扫描整个项目。
+- 首页、搜索页、证书详情页、企业页、分享页、历史页
+- 管理后台、上传页面、证书管理、企业管理、日志和报告页面
+- 证书上传、审核、举报、分享、点赞、收藏等 demo 功能
+- 基础中英文支持
 
-默认先读：
+当前结构风险：
+
+- 核心仍偏向 `certificates`，还不是完整的 `products + documents` 平台架构。
+- `admins` 表适合 demo，不适合长期平台用户体系。
+- 分类仍偏向单一 `category` 字段，需要升级为分类表和标签表。
+- 第二阶段真实企业上传前，必须补齐企业认证、成员权限、上传责任确认和备份。
+
+## 每次开始工作的必读文件
+
+AI 每次处理本项目时，默认只先读：
 
 1. `AGENTS.md`
 2. `CURRENT_STATUS.md`
-3. 当前问题对应的 2 到 5 个源码文件
+3. `TODO.md`
+4. 与当前任务最相关的少量源码文件
 
-当用户说“继续工作”、检查版本、检查备份、总结当天工作时，再读取：
+如果用户要求继续开发、规划下一步、执行 TODO、检查进度，再读取：
 
 - `WORKFLOW.md`
-- `TODO.md`
 - `WORK_LOG.md`
 
-## 常见问题入口
+## 旧 TODO 归档
 
-- 搜索页：`src/pages/SearchPage.jsx` + `src/pages/SearchPage.module.css`
-- 首页：`src/pages/HomePage.jsx` + `src/pages/HomePage.module.css`
-- 证书详情页：`src/pages/CertificatePage.jsx` + `src/pages/CertificatePage.module.css`
-- 企业页面：`src/pages/CompanyPage.jsx` + `src/pages/CompanyPage.module.css`
-- 导航栏：`src/components/Navbar.jsx` + `src/components/Navbar.module.css`
-- 全局主题：`src/styles/global.css` + `src/contexts/ThemeContext.jsx`
-- 多语言：`src/i18n/index.js` + `src/i18n/locales/zh.json` + `src/i18n/locales/en.json`
-- 管理后台：`src/pages/admin/`
-- API：`src/services/api.js` + `server/routes/`
-- 后端入口：`server/index.cjs`
-- 数据库逻辑：`server/db.cjs`
+完整历史 TODO 已归档到：
 
-## 当前备份与版本状态
+```text
+docs/archive/todo/TODO_FULL_BEFORE_2026-06-22_TOKEN_CLEANUP.md
+```
 
-- 当前本地 Git 与 GitHub 已同步。
-- `node_modules/` 已停止 Git 跟踪，本地依赖文件仍保留。
-- 当前版本以 `.version` 为准：`v1.6.1`。
-- 后续每天结束、部署前、重要功能完成后，仍需确认 commit 和 push。
+默认不要读取归档文件，除非用户要求追溯历史版本或已完成功能。
+
+## token 节省整理状态
+
+已完成：
+
+- 根目录 `TODO.md` 已精简为短版当前任务。
+- 旧工作日志已移动到 `docs/archive/work-logs/`。
+- 历史代码备份文件已移动到 `docs/archive/code-backups/`。
+
+AI 默认不要读取：
+
+- `docs/archive/todo/`
+- `docs/archive/work-logs/`
+- `docs/archive/code-backups/`
+- `WORK_LOG.md`，除非用户要求总结、查日志、查版本或查备份。
 
 ## 默认不要读取
 
@@ -62,3 +137,21 @@
 - 数据库文件
 - `docs/archive/`
 - 历史总结、部署报告、完成报告类 Markdown
+
+## 下一步建议
+
+下一步不要直接改页面，建议先输出并确认：
+
+```text
+eu-doc 数据模型升级与迁移方案
+```
+
+该方案必须包括：
+
+1. 新表结构。
+2. 旧数据如何迁移。
+3. 哪些旧字段保留。
+4. 哪些页面先不动。
+5. 哪些 API 先兼容旧结构。
+6. 第一阶段最小改动路径。
+7. 每一步如何验证没有破坏现有功能。

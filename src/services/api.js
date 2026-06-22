@@ -149,18 +149,44 @@ function keysToCamelCase(obj) {
 // 获取应用的 basename（与 vite.config.js 的 base 和 BrowserRouter 的 basename 一致）
 const BASENAME = '/eu-doc';
 
+function withBasename(path) {
+  if (!path || !path.startsWith('/') || path.startsWith(`${BASENAME}/`)) return path;
+  return `${BASENAME}${path}`;
+}
+
+function normalizeStandard(standard) {
+  if (standard === 'CE EN 1384') return 'CE EN 1384:2023';
+  if (standard === 'UKCA EN 1384') return 'UKCA EN 1384:2023';
+  return standard;
+}
+
 function mapCertificate(cert) {
   if (!cert) return null;
   const mapped = keysToCamelCase(cert);
-  // 后端字段 file_path/thumbnail_path 对应前端 fileUrl/thumbnailUrl
+  mapped.standard = normalizeStandard(mapped.standard);
+  // 后端字段 file_path/thumbnail_path/manual_path/declaration_path 对应前端 fileUrl/thumbnailUrl/manualUrl/declarationUrl
   // 需要添加 basename 前缀，因为部署在 /eu-doc/ 子路径下
   if (mapped.filePath !== undefined) {
-    mapped.fileUrl = mapped.filePath ? `${BASENAME}${mapped.filePath}` : null;
+    mapped.fileUrl = withBasename(mapped.filePath);
     delete mapped.filePath;
   }
   if (mapped.thumbnailPath !== undefined) {
-    mapped.thumbnailUrl = mapped.thumbnailPath ? `${BASENAME}${mapped.thumbnailPath}` : null;
+    mapped.thumbnailUrl = withBasename(mapped.thumbnailPath);
     delete mapped.thumbnailPath;
+  }
+  if (mapped.manualPath !== undefined) {
+    mapped.manualUrl = withBasename(mapped.manualPath);
+    delete mapped.manualPath;
+  }
+  if (mapped.declarationPath !== undefined) {
+    mapped.declarationUrl = withBasename(mapped.declarationPath);
+    delete mapped.declarationPath;
+  }
+  if (Array.isArray(mapped.declarationVersions)) {
+    mapped.declarationVersions = mapped.declarationVersions.map((version) => ({
+      ...version,
+      url: withBasename(version.path || version.url),
+    }));
   }
   return mapped;
 }
@@ -438,4 +464,3 @@ export function updateReportStatus(id, status, adminResponse) {
 export function checkDuplicates(certId) {
   return request(`/reports/check-duplicates/${certId}`).then(keysToCamelCase);
 }
-
