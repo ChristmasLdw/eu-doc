@@ -2,6 +2,20 @@
 
 本文件记录最近三天工作日志、每日总结和下一步计划。超过三天的内容应归档到 `docs/archive/summaries/` 或 `docs/archive/status-and-plans/`。
 
+## 2026-06-22 16:30:00 CST - Mimo 接手前备份：v2.1.0
+
+- 关联版本：v2.1.0
+- 工作类型：版本统一 / 接手前备份
+- 完成内容：
+  - 将版本号从 `v2.0.0-five-steps-complete` 统一为纯数字语义版本 `v2.1.0`。
+  - `v2.1.0` 表示五个工作步骤完成后的稳定交接点。
+  - 已创建接手前备份目录：`/Users/christmasldw/christmasldw-projects/eu-doc/backups/v2.1.0-mimo-handoff-20260622-170210`。
+  - 备份包含代码/文档包、数据库/上传文件包、Git 状态和未提交差异快照。
+- 下一步建议：
+  - Mimo 接手后先读取 `AGENTS.md`、`CURRENT_STATUS.md`、`TODO.md`。
+  - 先做浏览器验收和产品管理页面验证，不要直接继续大规模新增 API。
+
+
 ## 2026-06-22
 
 ### 2026-06-22 14:50:00 CST

@@ -38,6 +38,8 @@ import CompanyPage from './pages/CompanyPage';
 import HistoryPage from './pages/HistoryPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import ProductsPage from './pages/ProductsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -76,6 +78,10 @@ function App() {
 
         {/* 浏览历史页 */}
         <Route path="/history" element={<HistoryPage />} />
+
+        {/* 产品管理页面 - v2.0 新增 */}
+        <Route path="/products" element={<ProductsPage />} />
+        <Route path="/products/:id" element={<ProductDetailPage />} />
 
         {/*
           证书详情页

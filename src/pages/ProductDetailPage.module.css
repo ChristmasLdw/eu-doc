@@ -1,0 +1,316 @@
+/* EU-DOC v2.0 - 产品详情页样式 */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.backButton {
+  padding: 0.75rem 1.5rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+}
+
+.backButton:hover {
+  background: #e5e7eb;
+  transform: translateX(-4px);
+}
+
+/* 产品信息卡片 */
+.productCard {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.productHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.productName {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.productModel {
+  font-size: 1.125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.statusBadge {
+  padding: 0.5rem 1.25rem;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* 产品信息 */
+.productInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.infoRow:hover {
+  background: #f3f4f6;
+}
+
+.infoLabel {
+  min-width: 120px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-right: 1rem;
+}
+
+.infoValue {
+  flex: 1;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+/* 标签 */
+.tagsSection {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #f3f4f6;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tag {
+  padding: 0.5rem 1rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tag:hover {
+  background: #bfdbfe;
+  transform: translateY(-2px);
+}
+
+/* 文档列表 */
+.documentsSection {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.emptyDocuments {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+}
+
+.emptyDocuments p {
+  font-size: 1.25rem;
+}
+
+.documentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.documentCard {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.documentCard:hover {
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateX(4px);
+}
+
+.docIcon {
+  font-size: 2rem;
+  margin-right: 1.25rem;
+}
+
+.docInfo {
+  flex: 1;
+}
+
+.docTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.docMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.docType {
+  padding: 0.25rem 0.75rem;
+  background: #e0e7ff;
+  color: #4338ca;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.docCertNo {
+  color: #6b7280;
+}
+
+.docDate {
+  color: #9ca3af;
+}
+
+.docArrow {
+  font-size: 1.5rem;
+  color: #9ca3af;
+  margin-left: 1rem;
+  transition: all 0.2s;
+}
+
+.documentCard:hover .docArrow {
+  color: #3b82f6;
+  transform: translateX(4px);
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 错误状态 */
+.error {
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #991b1b;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+.error p {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .productCard,
+  .documentsSection {
+    padding: 1.5rem;
+  }
+
+  .productHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .productName {
+    font-size: 1.5rem;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .infoLabel {
+    min-width: auto;
+  }
+
+  .documentCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .docIcon {
+    margin-right: 0;
+  }
+
+  .docArrow {
+    display: none;
+  }
+
+  .docMeta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

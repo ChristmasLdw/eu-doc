@@ -1,6 +1,10 @@
 /**
  * EU-DOC 后端服务 - SQLite 数据库初始化模块
- * 版本: 1.0.2
+ * 版本: 2.0.0
+ *
+ * 变更记录 (2.0.0):
+ * - 检测数据库版本，v2.0 不再执行旧的初始化逻辑
+ * - v2.0 使用新的表结构：documents + certificate_metadata + products
  *
  * 变更记录 (1.0.2):
  * - admins 表新增 role 字段（admin/user），支持普通用户注册
@@ -9,8 +13,8 @@
  *
  * 职责:
  * - 创建 SQLite 数据库连接（better-sqlite3 同步 API）
- * - 初始化所有数据表（admins, companies, certificates, audit_logs）
- * - 从前端 mockData.js 导入现有 46 条证书数据
+ * - 初始化所有数据表（v1.x: admins, companies, certificates; v2.0: users, documents, products）
+ * - 从前端 mockData.js 导入现有证书数据（仅 v1.x）
  * - 创建默认管理员账号（admin / admin123）
  *
  * 为什么选择 better-sqlite3 而不是 sqlite3?
@@ -282,10 +286,37 @@ function importMockData() {
 
 /**
  * 数据库初始化入口
- * 按顺序执行：建表 -> 创建默认管理员 -> 导入 mock 数据
+ * 按顺序执行：检测版本 -> 建表 -> 创建默认管理员 -> 导入 mock 数据（仅 v1.x）
  */
 function initDatabase() {
   console.log('  [数据库] 初始化 SQLite...');
+
+  // 检测数据库版本
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+  const tableNames = tables.map(t => t.name);
+
+  // 如果存在 documents 和 certificate_metadata 表，说明是 v2.0
+  const isV2 = tableNames.includes('documents') && tableNames.includes('certificate_metadata');
+
+  if (isV2) {
+    console.log('  [数据库] 检测到 v2.0 数据结构，跳过旧版本初始化');
+
+    // v2.0: 只检查是否需要创建默认用户
+    const userCount = db.prepare('SELECT COUNT(*) as cnt FROM users').get();
+    if (userCount.cnt === 0) {
+      const hash = bcrypt.hashSync('admin123', 10);
+      db.prepare('INSERT INTO users (email, password_hash, display_name, platform_role, status) VALUES (?, ?, ?, ?, ?)')
+        .run('admin@local', hash, 'admin', 'platform_admin', 'active');
+      console.log('\x1b[33m%s\x1b[0m', '  [安全提示] 默认管理员已创建: admin@local / admin123');
+      console.log('\x1b[33m%s\x1b[0m', '  [安全提示] 请首次登录后立即修改密码！\n');
+    }
+
+    console.log('  [数据库] v2.0 初始化完成\n');
+    return;
+  }
+
+  // v1.x 初始化逻辑
+  console.log('  [数据库] 检测到 v1.x 数据结构，执行旧版本初始化');
   initTables();
   migrateAdminsTable();
   initDefaultAdmin();

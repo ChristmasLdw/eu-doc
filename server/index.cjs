@@ -57,6 +57,12 @@ app.use(cors({
 // 将请求体中的 JSON 字符串自动解析为 JavaScript 对象，挂载到 req.body 上
 app.use(express.json({ limit: '10mb' }));
 
+// 请求日志中间件（开发环境）
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 // 静态文件服务
 // 让前端可以直接通过 URL 访问上传的文件（如 /uploads/xxx.pdf）
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -72,10 +78,16 @@ app.use('/declarations', express.static(path.join(__dirname, 'uploads/declaratio
  * 所有 API 路由统一挂载在 /api 前缀下
  */
 app.use('/api/auth', require('./routes/auth.cjs'));
-app.use('/api/certificates', require('./routes/certificates.cjs'));
+app.use('/api/certificates', require('./routes/certificates.cjs'));  // v2.0 完整版本
 app.use('/api/companies', require('./routes/companies.cjs'));
 app.use('/api/stats', require('./routes/stats.cjs'));
 app.use('/api/reports', require('./routes/reports.cjs'));
+
+// v2.0 新 API
+app.use('/api/v2/products', require('./routes/products.cjs'));
+app.use('/api/v2/documents', require('./routes/documents.cjs'));
+app.use('/api/v2/categories', require('./routes/categories.cjs'));
+app.use('/api/v2/tags', require('./routes/tags.cjs'));
 
 /**
  * 健康检查接口
@@ -107,6 +119,7 @@ app.use('/api', (req, res) => {
  */
 app.use((err, req, res, _next) => {
   console.error(`[错误] ${err.message}`);
+  console.error(err.stack);
 
   // multer 文件大小超限错误
   if (err.code === 'LIMIT_FILE_SIZE') {
