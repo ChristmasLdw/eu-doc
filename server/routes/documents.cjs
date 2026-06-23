@@ -4,16 +4,48 @@
  * 路由:
  * - GET    /api/v2/documents           - 获取文档列表
  * - GET    /api/v2/documents/:id       - 获取文档详情
- * - POST   /api/v2/documents           - 创建文档（需认证）
+ * - POST   /api/v2/documents           - 创建文档（需认证，支持文件上传）
  * - PUT    /api/v2/documents/:id       - 更新文档（需认证）
  * - DELETE /api/v2/documents/:id       - 删除文档（需认证）
  */
 
 const { Router } = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 
 const router = Router();
+
+// 配置文件上传
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/documents');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+    cb(null, filename);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('只支持 PDF、JPG、PNG 格式的文件'));
+    }
+  }
+});
 
 // GET /api/v2/documents - 获取文档列表
 router.get('/', (req, res) => {
@@ -180,15 +212,34 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST /api/v2/documents - 创建文档
-router.post('/', authMiddleware, (req, res) => {
+// POST /api/v2/documents - 创建文档（支持文件上传）
+router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   const {
-    company_id, product_id, document_type, title, language = 'en',
-    file_path, status = 'active'
+    product_id, document_type, title, language = 'en',
+    cert_no, standard, issuer, issue_date, expiry_date,
+    confirmed_authentic, confirmed_authorized, accepted_disclaimer
   } = req.body;
+
+  // 上传确认校验（必须勾选所有确认项）
+  if (!confirmed_authentic || !confirmed_authorized || !accepted_disclaimer) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(400).json({
+      success: false,
+      message: '请确认所有声明事项后再上传',
+    });
+  }
+
+  // 从产品获取企业ID
+  let company_id = req.body.company_id;
+  if (!company_id && product_id) {
+    const product = db.prepare('SELECT company_id FROM products WHERE id = ?').get(product_id);
+    if (product) company_id = product.company_id;
+  }
 
   // 必填字段校验
   if (!company_id || !product_id || !document_type || !title) {
+    // 删除已上传的文件
+    if (req.file) fs.unlinkSync(req.file.path);
     return res.status(400).json({
       success: false,
       message: '企业ID、产品ID、文档类型和标题为必填项',
@@ -198,6 +249,7 @@ router.post('/', authMiddleware, (req, res) => {
   // 文档类型校验
   const validTypes = ['certificate', 'declaration_of_conformity', 'manual', 'test_report', 'other'];
   if (!validTypes.includes(document_type)) {
+    if (req.file) fs.unlinkSync(req.file.path);
     return res.status(400).json({
       success: false,
       message: '无效的文档类型',
@@ -207,38 +259,77 @@ router.post('/', authMiddleware, (req, res) => {
   // 确定审核状态：管理员直接通过，普通用户待审核
   const reviewStatus = req.admin.role === 'admin' ? 'approved' : 'pending';
 
+  // 处理文件路径
+  let file_path = null;
+  let file_size = null;
+  let mime_type = null;
+  if (req.file) {
+    file_path = `/documents/${req.file.filename}`;
+    file_size = req.file.size;
+    mime_type = req.file.mimetype;
+  }
+
   try {
     const result = db.prepare(`
       INSERT INTO documents (
         company_id, product_id, document_type, title, language,
-        file_path, status, review_status, uploaded_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        file_path, file_size, mime_type, status, review_status, uploaded_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       company_id,
       product_id,
       document_type,
       title,
       language,
-      file_path || null,
-      status,
+      file_path,
+      file_size,
+      mime_type,
+      'active',
       reviewStatus,
       req.admin.id
     );
+
+    const documentId = result.lastInsertRowid;
+
+    // 如果是证书类型，创建证书元数据
+    if (document_type === 'certificate' && cert_no) {
+      db.prepare(`
+        INSERT INTO certificate_metadata (document_id, cert_no, standard, issuer, issue_date, expiry_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(documentId, cert_no, standard || null, issuer || null, issue_date || null, expiry_date || null);
+    }
 
     // 记录审计日志
     db.prepare(
       'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(
-      req.admin.id, 'create', 'document', result.lastInsertRowid,
+      req.admin.id, 'create', 'document', documentId,
       JSON.stringify({ document_type, title, review_status: reviewStatus }), req.ip
+    );
+
+    // 记录上传确认
+    db.prepare(`
+      INSERT INTO upload_confirmations (document_id, user_id, company_id, confirmed_authentic, confirmed_authorized, accepted_disclaimer, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      documentId,
+      req.admin.id,
+      company_id,
+      confirmed_authentic ? 1 : 0,
+      confirmed_authorized ? 1 : 0,
+      accepted_disclaimer ? 1 : 0,
+      req.ip,
+      req.headers['user-agent'] || null
     );
 
     res.status(201).json({
       success: true,
       message: reviewStatus === 'pending' ? '文档已提交，等待管理员审核' : '文档创建成功',
-      id: result.lastInsertRowid,
+      id: documentId,
     });
   } catch (error) {
+    // 删除已上传的文件
+    if (req.file) fs.unlinkSync(req.file.path);
     console.error('创建文档失败:', error);
     res.status(500).json({
       success: false,

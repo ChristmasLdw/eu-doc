@@ -194,8 +194,9 @@ function mapCertificate(cert) {
 // ===== 认证相关 API =====
 
 /** 用户注册（注册成功后自动登录，返回 token 和用户信息） */
-export function register(username, password, companyName) {
-  const body = { username, password };
+export function register(email, password, displayName, companyName) {
+  const body = { email, password };
+  if (displayName) body.display_name = displayName;
   if (companyName) body.company_name = companyName;
   return request('/auth/register', {
     method: 'POST',
@@ -203,11 +204,11 @@ export function register(username, password, companyName) {
   });
 }
 
-/** 用户登录 */
-export function login(username, password) {
+/** 用户登录（支持邮箱或用户名） */
+export function login(emailOrUsername, password) {
   return request('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username: emailOrUsername, password }),
   });
 }
 

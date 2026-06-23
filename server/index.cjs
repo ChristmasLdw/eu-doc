@@ -72,6 +72,8 @@ app.use('/certificates', express.static(path.join(__dirname, 'uploads/certificat
 app.use('/manuals', express.static(path.join(__dirname, 'uploads/manuals')));
 // 添加 /declarations 路径映射到 uploads/declarations
 app.use('/declarations', express.static(path.join(__dirname, 'uploads/declarations')));
+// 添加 /documents 路径映射到 uploads/documents
+app.use('/documents', express.static(path.join(__dirname, 'uploads/documents')));
 
 /**
  * API 路由注册
@@ -88,6 +90,7 @@ app.use('/api/v2/products', require('./routes/products.cjs'));
 app.use('/api/v2/documents', require('./routes/documents.cjs'));
 app.use('/api/v2/categories', require('./routes/categories.cjs'));
 app.use('/api/v2/tags', require('./routes/tags.cjs'));
+app.use('/api/v2/company-members', require('./routes/company-members.cjs'));
 
 /**
  * 健康检查接口

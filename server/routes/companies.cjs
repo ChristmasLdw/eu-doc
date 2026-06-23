@@ -79,7 +79,7 @@ router.get('/', (req, res) => {
   const offset = (Number(page) - 1) * Number(pageSize);
   const companies = db.prepare(`
     SELECT c.*,
-      (SELECT COUNT(*) FROM certificates WHERE company_id = c.id) as cert_count
+      (SELECT COUNT(*) FROM documents d WHERE d.company_id = c.id AND d.document_type = 'certificate') as cert_count
     FROM companies c
     ${whereClause}
     ORDER BY c.created_at DESC
@@ -113,10 +113,25 @@ router.get('/:id', (req, res) => {
     });
   }
 
-  // 查询该企业下的所有证书
-  const certificates = db.prepare(
-    'SELECT id, cert_no, product_name, category, model, standard, issuer, status, issue_date, expiry_date, file_path, thumbnail_path FROM certificates WHERE company_id = ? ORDER BY created_at DESC'
-  ).all(company.id);
+  // 查询该企业下的所有证书（v2.0: 从documents+certificate_metadata+products查询）
+  const certificates = db.prepare(`
+    SELECT 
+      d.id,
+      cm.cert_no as certNo,
+      p.name as productName,
+      p.model,
+      cm.standard,
+      cm.issuer,
+      d.status,
+      cm.issue_date as issueDate,
+      cm.expiry_date as expiryDate,
+      d.file_path as filePath
+    FROM documents d
+    LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+    LEFT JOIN products p ON d.product_id = p.id
+    WHERE d.company_id = ? AND d.document_type = 'certificate'
+    ORDER BY d.created_at DESC
+  `).all(company.id);
 
   res.json({
     success: true,
@@ -235,7 +250,7 @@ router.delete('/:id', authMiddleware, (req, res) => {
   }
 
   // 检查是否有关联证书
-  const certCount = db.prepare('SELECT COUNT(*) as cnt FROM certificates WHERE company_id = ?').get(company.id);
+  const certCount = db.prepare("SELECT COUNT(*) as cnt FROM documents WHERE company_id = ? AND document_type = 'certificate'").get(company.id);
 
   if (certCount.cnt > 0) {
     return res.status(409).json({

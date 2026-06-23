@@ -29,6 +29,7 @@
 
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import AdminRoute from './components/AdminRoute';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
@@ -38,6 +39,10 @@ import CompanyPage from './pages/CompanyPage';
 import HistoryPage from './pages/HistoryPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import DisclaimerPage from './pages/DisclaimerPage';
+import EnterpriseAgreementPage from './pages/EnterpriseAgreementPage';
+import ContactPage from './pages/ContactPage';
+import GuidePage from './pages/GuidePage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import LoginPage from './pages/admin/LoginPage';
@@ -50,6 +55,15 @@ import CertificatesPage from './pages/admin/CertificatesPage';
 import CompaniesPage from './pages/admin/CompaniesPage';
 import LogsPage from './pages/admin/LogsPage';
 import ReportsPage from './pages/admin/ReportsPage';
+import AdminProductsPage from './pages/admin/ProductsPage';
+import ProductCreatePage from './pages/admin/ProductCreatePage';
+import ProductEditPage from './pages/admin/ProductEditPage';
+import DocumentUploadPage from './pages/admin/DocumentUploadPage';
+import DocumentsPage from './pages/admin/DocumentsPage';
+import CompanyMembersPage from './pages/admin/CompanyMembersPage';
+import BatchUploadPage from './pages/admin/BatchUploadPage';
+import MyCompanyPage from './pages/admin/MyCompanyPage';
+import TeamMembersPage from './pages/admin/TeamMembersPage';
 import { useAdmin } from './contexts/AdminContext';
 
 function App() {
@@ -99,6 +113,10 @@ function App() {
         {/* 法律文档页面 */}
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/disclaimer" element={<DisclaimerPage />} />
+        <Route path="/enterprise-agreement" element={<EnterpriseAgreementPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/guide" element={<GuidePage />} />
 
         {/* ===== 后台管理路由 ===== */}
         {/* 登录页 - 不需要登录保护 */}
@@ -129,12 +147,28 @@ function App() {
           <Route path="certificates" element={<CertificatesPage />} />
           {/* 企业管理 */}
           <Route path="companies" element={<CompaniesPage />} />
+          {/* 产品管理 */}
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="products/create" element={<ProductCreatePage />} />
+          <Route path="products/edit/:id" element={<ProductEditPage />} />
+          <Route path="products/:productId/upload" element={<DocumentUploadPage />} />
+          {/* 文档管理 */}
+          <Route path="documents" element={<DocumentsPage />} />
+          {/* 批量上传 */}
+          <Route path="batch-upload" element={<BatchUploadPage />} />
+          {/* 我的企业 */}
+          <Route path="company" element={<MyCompanyPage />} />
+          {/* 团队成员 */}
+          <Route path="members" element={<TeamMembersPage />} />
           {/* 错误报告管理 */}
           <Route path="reports" element={<ReportsPage />} />
           {/* 操作日志 */}
           <Route path="logs" element={<LogsPage />} />
         </Route>
       </Routes>
+
+      {/* 公共页脚 - 除了登录/注册页面和后台管理页面 */}
+      {!isLoginOrRegister && !location.pathname.startsWith('/admin') && <Footer />}
     </>
   );
 }

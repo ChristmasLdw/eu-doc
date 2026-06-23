@@ -14,7 +14,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { categories } from '../data/mockData';
 import { getCertificates, getStats, getCompanies } from '../services/api';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
@@ -66,6 +65,9 @@ export default function SearchPage() {
 
   // 搜索建议数据源（从 API 获取，缓存在前端用于实时过滤）
   const [suggestionData, setSuggestionData] = useState([]);
+
+  // 分类列表（从 API 获取）
+  const [categories, setCategories] = useState([]);
 
   // 发证机构和认证标准列表（从 API 统计数据获取）
   const [issuers, setIssuers] = useState([]);
@@ -678,7 +680,7 @@ export default function SearchPage() {
             <div className={styles.resultList}>
               {results.map((cert) => (
                 <Link
-                  to={`/certificate/${cert.id}`}
+                  to={cert.productId ? `/products/${cert.productId}` : `/certificate/${cert.id}`}
                   key={cert.id}
                   className={styles.certCard}
                 >

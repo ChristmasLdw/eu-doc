@@ -9,10 +9,10 @@
  */
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
-import { getStats, getCertificates, getCompanies } from '../services/api';
+import { getCertificates } from '../services/api';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
@@ -22,35 +22,11 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // 统计数据（从 API 获取）
-  const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // 公司列表
-  const [companies, setCompanies] = useState([]);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
-
   // 搜索建议数据源
   const [suggestionData, setSuggestionData] = useState([]);
 
   // 组件挂载时获取数据
   useEffect(() => {
-    // 获取统计数据
-    getStats()
-      .then((data) => setStats(data))
-      .catch(() => {})
-      .finally(() => setStatsLoading(false));
-
-    // 获取公司列表
-    getCompanies({ pageSize: 20 })
-      .then((result) => {
-        if (result && Array.isArray(result.data)) {
-          setCompanies(result.data);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setCompaniesLoading(false));
-
     // 获取搜索建议数据源（按id升序，优先显示有缩略图的早期证书）
     getCertificates({ pageSize: 100, sortBy: 'id', sortOrder: 'ASC' })
       .then((result) => {
@@ -193,80 +169,6 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 已入驻企业板块 */}
-      <section className={styles.companiesSection}>
-        <div className={styles.companiesContainer}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>{t('company.certificates')}</h2>
-            <p className={styles.sectionSubtitle}>{t('home.subtitle')}</p>
-          </div>
-
-          {companiesLoading ? (
-            <div className={styles.loading}>{t('common.loading')}</div>
-          ) : companies.length > 0 ? (
-            <div className={styles.companyGrid}>
-              {companies.map((company) => (
-                <Link
-                  key={company.id}
-                  to={`/company/${company.id}`}
-                  className={styles.companyCard}
-                >
-                  <div className={styles.companyIcon}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 21h18" />
-                      <path d="M5 21V7l8-4v18" />
-                      <path d="M19 21V11l-6-4" />
-                      <path d="M9 9v.01" />
-                      <path d="M9 12v.01" />
-                      <path d="M9 15v.01" />
-                      <path d="M9 18v.01" />
-                    </svg>
-                  </div>
-                  <h3 className={styles.companyName}>{company.name}</h3>
-                  <div className={styles.companyCertCount}>
-                    <span className={styles.certCount}>{company.certCount || 0}</span>
-                    <span className={styles.certLabel}>{t('company.certificates')}</span>
-                  </div>
-                  <div className={styles.companyArrow}>→</div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>{t('search.noResults')}</div>
-          )}
-        </div>
-      </section>
-
-      {/* 统计信息区域 */}
-      <section className={styles.statsSection}>
-        <div className={styles.statsContainer}>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>
-              {statsLoading ? '--' : (stats?.total ?? '--')}
-            </div>
-            <div className={styles.statLabel}>{t('home.stats.certificates')}</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>
-              {statsLoading ? '--' : (stats?.active ?? '--')}
-            </div>
-            <div className={styles.statLabel}>{t('search.status.active')}</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>
-              {statsLoading ? '--' : (stats?.companies ?? '--')}
-            </div>
-            <div className={styles.statLabel}>{t('home.stats.companies')}</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>
-              {statsLoading ? '--' : (stats?.searches ?? '--')}
-            </div>
-            <div className={styles.statLabel}>{t('home.stats.searches')}</div>
           </div>
         </div>
       </section>

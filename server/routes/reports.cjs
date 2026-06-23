@@ -1,18 +1,11 @@
 /**
  * EU-DOC 后端服务 - 证书错误报告路由
- * 版本: 1.0.0
+ * 版本: 2.0.0
  *
  * 功能:
  * - 用户报告证书信息错误
  * - 管理员查看和处理错误报告
  * - 支持多种报告类型：信息错误、过期信息、重复条目
- *
- * 路由:
- * - POST   /           - 提交错误报告（公开）
- * - GET    /           - 获取报告列表（需管理员权限）
- * - GET    /:id        - 获取单个报告详情（需管理员权限）
- * - PUT    /:id/status - 更新报告状态（需管理员权限）
- * - GET    /check-duplicates/:certId - 检查重复证书（公开）
  */
 
 const { Router } = require('express');
@@ -24,19 +17,11 @@ const router = Router();
 /**
  * POST /api/reports
  * 提交证书错误报告（公开接口）
- *
- * Body:
- * - certId: 证书ID
- * - reportType: 报告类型（wrong_info/outdated_info/duplicate_entry/other）
- * - description: 详细描述
- * - reporterEmail: 报告人邮箱（可选）
- * - reporterName: 报告人姓名（可选）
  */
 router.post('/', (req, res) => {
   try {
     const { certId, reportType, description, reporterEmail, reporterName } = req.body;
 
-    // 参数验证
     if (!certId || !reportType) {
       return res.status(400).json({
         success: false,
@@ -44,7 +29,6 @@ router.post('/', (req, res) => {
       });
     }
 
-    // 验证报告类型
     const validTypes = ['wrong_info', 'outdated_info', 'duplicate_entry', 'other'];
     if (!validTypes.includes(reportType)) {
       return res.status(400).json({
@@ -53,8 +37,8 @@ router.post('/', (req, res) => {
       });
     }
 
-    // 检查证书是否存在
-    const cert = db.prepare('SELECT id FROM certificates WHERE id = ?').get(certId);
+    // 检查证书是否存在（v2.0: 从documents表查询）
+    const cert = db.prepare("SELECT id FROM documents WHERE id = ? AND document_type = 'certificate'").get(certId);
     if (!cert) {
       return res.status(404).json({
         success: false,
@@ -62,7 +46,6 @@ router.post('/', (req, res) => {
       });
     }
 
-    // 插入报告
     const stmt = db.prepare(`
       INSERT INTO certificate_reports (
         cert_id, report_type, description, reporter_email, reporter_name, status
@@ -88,19 +71,12 @@ router.post('/', (req, res) => {
 /**
  * GET /api/reports
  * 获取报告列表（管理员）
- *
- * Query:
- * - status: 按状态筛选（pending/processing/resolved/rejected）
- * - certId: 按证书ID筛选
- * - page: 页码
- * - pageSize: 每页条数
  */
 router.get('/', requireAdmin, (req, res) => {
   try {
     const { status, certId, page = 1, pageSize = 20 } = req.query;
     const offset = (page - 1) * pageSize;
 
-    // 构建查询条件
     const conditions = [];
     const params = [];
 
@@ -116,31 +92,29 @@ router.get('/', requireAdmin, (req, res) => {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    // 获取总数
-    const countStmt = db.prepare(`
+    const { total } = db.prepare(`
       SELECT COUNT(*) as total
       FROM certificate_reports r
       ${whereClause}
-    `);
-    const { total } = countStmt.get(...params);
+    `).get(...params);
 
-    // 获取列表（关联证书信息）
-    const listStmt = db.prepare(`
+    // v2.0: 从documents+certificate_metadata+products查询
+    const reports = db.prepare(`
       SELECT
         r.*,
-        c.cert_no,
-        c.product_name,
-        c.company_id,
+        cm.cert_no,
+        p.name as product_name,
+        d.company_id,
         comp.name as company_name
       FROM certificate_reports r
-      LEFT JOIN certificates c ON r.cert_id = c.id
-      LEFT JOIN companies comp ON c.company_id = comp.id
+      LEFT JOIN documents d ON r.cert_id = d.id
+      LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+      LEFT JOIN products p ON d.product_id = p.id
+      LEFT JOIN companies comp ON d.company_id = comp.id
       ${whereClause}
       ORDER BY r.created_at DESC
       LIMIT ? OFFSET ?
-    `);
-
-    const reports = listStmt.all(...params, pageSize, offset);
+    `).all(...params, pageSize, offset);
 
     res.json({
       success: true,
@@ -169,25 +143,24 @@ router.get('/:id', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
 
-    const stmt = db.prepare(`
+    const report = db.prepare(`
       SELECT
         r.*,
-        c.cert_no,
-        c.product_name,
-        c.category,
-        c.model,
-        c.issuer,
-        c.issue_date,
-        c.expiry_date,
-        c.company_id,
+        cm.cert_no,
+        p.name as product_name,
+        p.model,
+        cm.issuer,
+        cm.issue_date,
+        cm.expiry_date,
+        d.company_id,
         comp.name as company_name
       FROM certificate_reports r
-      LEFT JOIN certificates c ON r.cert_id = c.id
-      LEFT JOIN companies comp ON c.company_id = comp.id
+      LEFT JOIN documents d ON r.cert_id = d.id
+      LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+      LEFT JOIN products p ON d.product_id = p.id
+      LEFT JOIN companies comp ON d.company_id = comp.id
       WHERE r.id = ?
-    `);
-
-    const report = stmt.get(id);
+    `).get(id);
 
     if (!report) {
       return res.status(404).json({
@@ -212,17 +185,12 @@ router.get('/:id', requireAdmin, (req, res) => {
 /**
  * PUT /api/reports/:id/status
  * 更新报告状态（管理员）
- *
- * Body:
- * - status: 新状态（processing/resolved/rejected）
- * - adminResponse: 管理员回复
  */
 router.put('/:id/status', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { status, adminResponse } = req.body;
 
-    // 验证状态
     const validStatuses = ['pending', 'processing', 'resolved', 'rejected'];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
@@ -231,7 +199,6 @@ router.put('/:id/status', requireAdmin, (req, res) => {
       });
     }
 
-    // 检查报告是否存在
     const report = db.prepare('SELECT id FROM certificate_reports WHERE id = ?').get(id);
     if (!report) {
       return res.status(404).json({
@@ -240,14 +207,11 @@ router.put('/:id/status', requireAdmin, (req, res) => {
       });
     }
 
-    // 更新状态
-    const stmt = db.prepare(`
+    db.prepare(`
       UPDATE certificate_reports
       SET status = ?, admin_response = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `);
-
-    stmt.run(status, adminResponse || null, id);
+    `).run(status, adminResponse || null, id);
 
     res.json({
       success: true,
@@ -265,21 +229,18 @@ router.put('/:id/status', requireAdmin, (req, res) => {
 /**
  * GET /api/reports/check-duplicates/:certId
  * 检查重复证书（公开接口）
- *
- * 检查逻辑：
- * 1. 相同证书编号
- * 2. 相同产品名称+型号+企业
- * 3. 相同企业+发证机构+标准
  */
 router.get('/check-duplicates/:certId', (req, res) => {
   try {
     const { certId } = req.params;
 
-    // 获取当前证书信息
+    // v2.0: 从documents+certificate_metadata+products查询
     const cert = db.prepare(`
-      SELECT id, cert_no, product_name, model, company_id, issuer, standard
-      FROM certificates
-      WHERE id = ?
+      SELECT d.id, cm.cert_no, p.name as product_name, p.model, d.company_id, cm.issuer, cm.standard
+      FROM documents d
+      LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+      LEFT JOIN products p ON d.product_id = p.id
+      WHERE d.id = ? AND d.document_type = 'certificate'
     `).get(certId);
 
     if (!cert) {
@@ -294,9 +255,11 @@ router.get('/check-duplicates/:certId', (req, res) => {
     // 1. 检查相同证书编号（排除自己）
     if (cert.cert_no) {
       const sameCertNo = db.prepare(`
-        SELECT id, cert_no, product_name, company_id
-        FROM certificates
-        WHERE cert_no = ? AND id != ?
+        SELECT d.id, cm.cert_no, p.name as product_name, d.company_id
+        FROM documents d
+        LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+        LEFT JOIN products p ON d.product_id = p.id
+        WHERE cm.cert_no = ? AND d.id != ?
       `).all(cert.cert_no, certId);
 
       if (sameCertNo.length > 0) {
@@ -311,9 +274,11 @@ router.get('/check-duplicates/:certId', (req, res) => {
     // 2. 检查相同产品+型号+企业
     if (cert.product_name && cert.model && cert.company_id) {
       const sameProduct = db.prepare(`
-        SELECT id, cert_no, product_name, model
-        FROM certificates
-        WHERE product_name = ? AND model = ? AND company_id = ? AND id != ?
+        SELECT d.id, cm.cert_no, p.name as product_name, p.model
+        FROM documents d
+        LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+        LEFT JOIN products p ON d.product_id = p.id
+        WHERE p.name = ? AND p.model = ? AND d.company_id = ? AND d.id != ?
       `).all(cert.product_name, cert.model, cert.company_id, certId);
 
       if (sameProduct.length > 0) {
@@ -325,12 +290,14 @@ router.get('/check-duplicates/:certId', (req, res) => {
       }
     }
 
-    // 3. 检查相似度高的证书（同企业+同标准）
+    // 3. 检查同企业+同标准
     if (cert.company_id && cert.standard) {
       const similar = db.prepare(`
-        SELECT id, cert_no, product_name, model, issuer, standard
-        FROM certificates
-        WHERE company_id = ? AND standard = ? AND id != ?
+        SELECT d.id, cm.cert_no, p.name as product_name, p.model, cm.issuer, cm.standard
+        FROM documents d
+        LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+        LEFT JOIN products p ON d.product_id = p.id
+        WHERE d.company_id = ? AND cm.standard = ? AND d.id != ?
         LIMIT 5
       `).all(cert.company_id, cert.standard, certId);
 

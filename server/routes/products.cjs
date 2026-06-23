@@ -184,7 +184,8 @@ router.get('/:id/documents', (req, res) => {
 // POST /api/v2/products - 创建产品
 router.post('/', authMiddleware, (req, res) => {
   const {
-    company_id, name, model, description, category_primary_id, status = 'active'
+    company_id, name, name_en, model, description, description_en,
+    category_primary_id, status = 'active'
   } = req.body;
 
   // 必填字段校验
@@ -195,16 +196,33 @@ router.post('/', authMiddleware, (req, res) => {
     });
   }
 
+  // 权限校验：非管理员只能为自己的企业创建产品
+  if (req.admin.role !== 'admin') {
+    // 获取用户所属企业
+    const userCompany = db.prepare('SELECT company_name FROM admins WHERE id = ?').get(req.admin.id);
+    const targetCompany = db.prepare('SELECT name FROM companies WHERE id = ?').get(company_id);
+
+    if (!userCompany || !targetCompany || userCompany.company_name !== targetCompany.name) {
+      return res.status(403).json({
+        success: false,
+        message: '无权为该企业创建产品',
+      });
+    }
+  }
+
   try {
     const result = db.prepare(`
       INSERT INTO products (
-        company_id, name, model, description, category_primary_id, status, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        company_id, name, name_en, model, description, description_en,
+        category_primary_id, status, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       company_id,
       name,
+      name_en || null,
       model || null,
       description || null,
+      description_en || null,
       category_primary_id || null,
       status,
       req.admin.id
@@ -243,8 +261,22 @@ router.put('/:id', authMiddleware, (req, res) => {
     });
   }
 
+  // 权限校验：非管理员只能编辑自己企业的产品
+  if (req.admin.role !== 'admin') {
+    // 获取用户所属企业
+    const userCompany = db.prepare('SELECT company_name FROM admins WHERE id = ?').get(req.admin.id);
+    const productCompany = db.prepare('SELECT name FROM companies WHERE id = ?').get(product.company_id);
+
+    if (!userCompany || !productCompany || userCompany.company_name !== productCompany.name) {
+      return res.status(403).json({
+        success: false,
+        message: '无权编辑该产品',
+      });
+    }
+  }
+
   try {
-    const fields = ['name', 'model', 'description', 'category_primary_id', 'status'];
+    const fields = ['name', 'name_en', 'model', 'description', 'description_en', 'category_primary_id', 'status'];
     const setParts = [];
     const values = [];
     const changes = {};
@@ -288,7 +320,7 @@ router.put('/:id', authMiddleware, (req, res) => {
 });
 
 // DELETE /api/v2/products/:id - 删除产品
-router.delete('/:id', authMiddleware, requireAdmin, (req, res) => {
+router.delete('/:id', authMiddleware, (req, res) => {
   const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
 
   if (!product) {
@@ -296,6 +328,20 @@ router.delete('/:id', authMiddleware, requireAdmin, (req, res) => {
       success: false,
       message: '产品不存在',
     });
+  }
+
+  // 权限校验：非管理员只能删除自己企业的产品
+  if (req.admin.role !== 'admin') {
+    // 获取用户所属企业
+    const userCompany = db.prepare('SELECT company_name FROM admins WHERE id = ?').get(req.admin.id);
+    const productCompany = db.prepare('SELECT name FROM companies WHERE id = ?').get(product.company_id);
+
+    if (!userCompany || !productCompany || userCompany.company_name !== productCompany.name) {
+      return res.status(403).json({
+        success: false,
+        message: '无权删除该产品',
+      });
+    }
   }
 
   // 检查是否有关联文档

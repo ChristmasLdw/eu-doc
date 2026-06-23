@@ -1,75 +1,65 @@
 /**
  * EU-DOC 后台管理 - 注册页
- * 版本: 2.0.0
- *
- * 变更记录 (2.0.0):
- * - 添加多语言支持
- * - 添加用户协议和隐私政策勾选
- * - 适配明亮/暗黑主题
- *
- * 设计意图:
- * - 居中的注册卡片，支持主题切换
- * - 字段：用户名、密码、确认密码、企业名称（可选）
- * - 必须同意协议才能注册
- * - 注册成功后自动登录并跳转到首页
+ * 版本: 2.1.0
  */
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import styles from './RegisterPage.module.css';
 
 export default function RegisterPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAdmin();
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     // 前端校验
-    if (!username.trim() || !password.trim()) {
-      setError(t('messages.registerFailed'));
+    if (!email.trim() || !password.trim()) {
+      setError('请输入邮箱和密码');
       return;
     }
 
-    if (username.trim().length < 3 || username.trim().length > 20) {
-      setError(t('messages.registerFailed'));
+    // 邮箱格式校验
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('邮箱格式不正确');
       return;
     }
 
-    if (password.length < 6 || password.length > 30) {
-      setError(t('messages.registerFailed'));
+    if (password.length < 6) {
+      setError('密码长度不能少于6位');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError(t('messages.registerFailed'));
+      setError('两次输入的密码不一致');
       return;
     }
 
     // 检查是否同意协议
     if (!agreedToTerms) {
-      setError(t('auth.mustAgree'));
+      setError('请阅读并同意用户协议和隐私政策');
       return;
     }
 
     setLoading(true);
     try {
-      await register(username.trim(), password, companyName.trim() || undefined);
+      await register(email.trim(), password, displayName.trim() || undefined, companyName.trim() || undefined);
       // 注册成功后自动登录，跳转到首页
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || t('messages.registerFailed'));
+      setError(err.message || '注册失败');
     } finally {
       setLoading(false);
     }
@@ -90,31 +80,43 @@ export default function RegisterPage() {
           </div>
           <h1 className={styles.title}>EU-DOC</h1>
         </div>
-        <p className={styles.subtitle}>{t('auth.registerTitle')}</p>
+        <p className={styles.subtitle}>创建账号</p>
 
         {/* 注册表单 */}
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="username">{t('auth.username')}</label>
+            <label className={styles.label} htmlFor="email">邮箱 *</label>
             <input
-              id="username"
-              type="text"
+              id="email"
+              type="email"
               className={styles.input}
-              placeholder="3-20"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               autoFocus
             />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">{t('auth.password')}</label>
+            <label className={styles.label} htmlFor="displayName">显示名称</label>
+            <input
+              id="displayName"
+              type="text"
+              className={styles.input}
+              placeholder="您的名称（可选）"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="password">密码 *</label>
             <input
               id="password"
               type="password"
               className={styles.input}
-              placeholder="6-30"
+              placeholder="至少6位"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
@@ -122,12 +124,12 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
+            <label className={styles.label} htmlFor="confirmPassword">确认密码 *</label>
             <input
               id="confirmPassword"
               type="password"
               className={styles.input}
-              placeholder={t('auth.confirmPassword')}
+              placeholder="再次输入密码"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
@@ -135,12 +137,12 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="companyName">{t('auth.companyName')}</label>
+            <label className={styles.label} htmlFor="companyName">企业名称</label>
             <input
               id="companyName"
               type="text"
               className={styles.input}
-              placeholder={t('auth.companyName')}
+              placeholder="您的企业名称（可选）"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
             />
@@ -156,13 +158,13 @@ export default function RegisterPage() {
                 className={styles.checkbox}
               />
               <span className={styles.agreementText}>
-                {t('auth.agreement')}
+                我已阅读并同意
                 <Link to="/terms" target="_blank" className={styles.agreementLink}>
-                  {t('auth.userAgreement')}
+                  用户协议
                 </Link>
-                {t('auth.and')}
+                和
                 <Link to="/privacy" target="_blank" className={styles.agreementLink}>
-                  {t('auth.privacyPolicy')}
+                  隐私政策
                 </Link>
               </span>
             </label>
@@ -185,14 +187,14 @@ export default function RegisterPage() {
             className={styles.submitBtn}
             disabled={loading}
           >
-            {loading ? t('common.loading') : t('auth.registerButton')}
+            {loading ? '注册中...' : '注册'}
           </button>
         </form>
 
         {/* 已有账号链接 */}
         <div className={styles.footer}>
-          {t('auth.hasAccount')}
-          <Link to="/admin/login" className={styles.link}>{t('auth.goToLogin')}</Link>
+          已有账号？
+          <Link to="/admin/login" className={styles.link}>立即登录</Link>
         </div>
       </div>
     </div>

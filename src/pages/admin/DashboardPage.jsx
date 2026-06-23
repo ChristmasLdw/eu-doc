@@ -1,277 +1,146 @@
 /**
- * EU-DOC 后台管理 - 仪表盘页
- * 版本: 1.1.0
- *
- * 变更记录 (1.1.0):
- * - 支持普通用户和管理员显示不同的仪表盘内容
- * - 普通用户显示个人证书统计和最近上传
- * - 管理员显示全局统计和认证标准分布
- *
- * 变更记录 (1.0.3):
- * - 添加完整的多语言支持
- *
- * 变更记录 (1.0.2):
- * - 待审核卡片可点击跳转到证书管理页（带 pending 筛选）
- *
- * 设计意图:
- * - 管理员：展示系统概览数据、认证标准分布、最近操作日志
- * - 普通用户：展示个人证书统计、最近上传的证书列表
- * - 页面加载时自动从后端获取数据
+ * EU-DOC 后台管理 - 仪表盘 v2.1
+ * 企业所有者视角：快捷操作 + 统计概览
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
-import * as api from '../../services/api';
 import styles from './DashboardPage.module.css';
 
 export default function DashboardPage() {
-  const { t } = useTranslation();
-  const { isAdmin } = useAdmin();
-  const [stats, setStats] = useState(null);
-  const [logs, setLogs] = useState([]);
+  const { admin } = useAdmin();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({ products: 0, documents: 0, members: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        if (isAdmin) {
-          // 管理员：获取全局统计和日志
-          const statsPromise = api.getStats().then(data => setStats(data)).catch(() => {});
-          const logsPromise = api.getRecentLogs().then(data => setLogs(data || [])).catch(() => {});
-          await Promise.all([statsPromise, logsPromise]);
-        } else {
-          // 普通用户：获取个人统计
-          const userStats = await api.getUserStats();
-          setStats(userStats);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      
+      // 获取产品数量
+      const productsRes = await fetch('/eu-doc/api/v2/products?pageSize=1', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const productsData = await productsRes.json();
+
+      // 获取文档数量
+      const docsRes = await fetch('/eu-doc/api/v2/documents?pageSize=1', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const docsData = await docsRes.json();
+
+      setStats({
+        products: productsData.pagination?.total || 0,
+        documents: docsData.pagination?.total || 0,
+        members: 1, // 暂时固定
+      });
+    } catch (err) {
+      console.error('获取统计失败:', err);
+    } finally {
+      setLoading(false);
     }
-    fetchData();
-  }, [isAdmin]);
-
-  if (loading) {
-    return <div className={styles.loading}>{t('admin.dashboardPage.loading')}</div>;
-  }
-
-  if (error) {
-    return <div className={styles.error}>{error}</div>;
-  }
-
-  // 普通用户仪表盘
-  if (!isAdmin) {
-    return (
-      <div className={styles.page}>
-        <h1 className={styles.pageTitle}>{t('admin.dashboardPage.myDashboard')}</h1>
-
-        {/* 用户统计卡片 */}
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-            </div>
-            <div className={styles.statInfo}>
-              <div className={styles.statNumber}>{stats?.total || 0}</div>
-              <div className={styles.statLabel}>{t('admin.dashboardPage.myTotalCerts')}</div>
-            </div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#4ade80' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-            </div>
-            <div className={styles.statInfo}>
-              <div className={styles.statNumber}>{stats?.approved || 0}</div>
-              <div className={styles.statLabel}>{t('admin.dashboardPage.approvedCerts')}</div>
-            </div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#facc15' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <div className={styles.statInfo}>
-              <div className={styles.statNumber}>{stats?.pending || 0}</div>
-              <div className={styles.statLabel}>{t('admin.dashboardPage.myPendingReview')}</div>
-            </div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#f87171' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-            </div>
-            <div className={styles.statInfo}>
-              <div className={styles.statNumber}>{stats?.rejected || 0}</div>
-              <div className={styles.statLabel}>{t('admin.dashboardPage.rejectedCerts')}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* 最近上传的证书 */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>{t('admin.dashboardPage.myRecentUploads')}</h2>
-            <Link to="/admin/certificates" className={styles.viewAll}>{t('search.viewAll')}</Link>
-          </div>
-          {stats?.recentUploads && stats.recentUploads.length > 0 ? (
-            <div className={styles.certList}>
-              {stats.recentUploads.map((cert) => (
-                <Link key={cert.id} to={`/certificate/${cert.id}`} className={styles.certItem}>
-                  <div className={styles.certInfo}>
-                    <div className={styles.certName}>{cert.productName}</div>
-                    <div className={styles.certMeta}>
-                      <span className={styles.certNo}>{cert.certNo}</span>
-                      <span className={styles.certDivider}>•</span>
-                      <span className={styles.certCompany}>{cert.companyName || '-'}</span>
-                    </div>
-                  </div>
-                  <div className={styles.certStatus}>
-                    <span className={`${styles.badge} ${styles[cert.reviewStatus]}`}>
-                      {t(`admin.dashboardPage.status.${cert.reviewStatus}`)}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>{t('admin.dashboardPage.noUploads')}</div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // 管理员仪表盘（原有内容）
-  // 认证标准分布数据（后端返回 standards 数组，转换为组件需要的格式）
-  const categoryData = stats?.standards || [];
-
-  // 找到最大值，用于计算条形图宽度比例
-  const maxCategoryCount = Math.max(...categoryData.map(c => c.count), 1);
+  };
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.pageTitle}>{t('admin.dashboardPage.title')}</h1>
+      {/* 欢迎信息 */}
+      <div className={styles.welcome}>
+        <h1>欢迎回来，{admin?.display_name || '用户'}</h1>
+        <p>这是您的企业管理后台</p>
+      </div>
 
-      {/* 统计卡片 */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          </div>
-          <div className={styles.statInfo}>
-            <div className={styles.statNumber}>{stats?.total || 0}</div>
-            <div className={styles.statLabel}>{t('admin.dashboardPage.totalCerts')}</div>
-          </div>
+      {/* 快捷操作 */}
+      <div className={styles.quickActions}>
+        <h2>快捷操作</h2>
+        <div className={styles.actionsGrid}>
+          <button className={styles.actionCard} onClick={() => navigate('/admin/products/create')}>
+            <div className={styles.actionIcon} style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </div>
+            <span>创建产品</span>
+          </button>
+
+          <button className={styles.actionCard} onClick={() => navigate('/admin/documents')}>
+            <div className={styles.actionIcon} style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <span>上传文档</span>
+          </button>
+
+          <button className={styles.actionCard} onClick={() => navigate('/admin/members')}>
+            <div className={styles.actionIcon} style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </div>
+            <span>邀请成员</span>
+          </button>
+
+          <button className={styles.actionCard} onClick={() => navigate('/')}>
+            <div className={styles.actionIcon} style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#eab308' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </div>
+            <span>前台查看</span>
+          </button>
         </div>
+      </div>
 
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#4ade80' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
+      {/* 数据概览 */}
+      <div className={styles.overview}>
+        <h2>数据概览</h2>
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statNumber}>{loading ? '-' : stats.products}</div>
+            <div className={styles.statLabel}>产品数量</div>
           </div>
-          <div className={styles.statInfo}>
-            <div className={styles.statNumber}>{stats?.active || 0}</div>
-            <div className={styles.statLabel}>{t('admin.dashboardPage.activeCerts')}</div>
+          <div className={styles.statCard}>
+            <div className={styles.statNumber}>{loading ? '-' : stats.documents}</div>
+            <div className={styles.statLabel}>文档数量</div>
           </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#facc15' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          </div>
-          <Link to="/admin/certificates?reviewStatus=pending" className={styles.statInfo}>
-            <div className={styles.statNumber}>{stats?.pending || 0}</div>
-            <div className={styles.statLabel}>{t('admin.dashboardPage.pendingReview')}</div>
-          </Link>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#a78bfa' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
-              <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-              <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
-            </svg>
-          </div>
-          <div className={styles.statInfo}>
-            <div className={styles.statNumber}>{stats?.companies || 0}</div>
-            <div className={styles.statLabel}>{t('admin.dashboardPage.companiesCount')}</div>
+          <div className={styles.statCard}>
+            <div className={styles.statNumber}>{loading ? '-' : stats.members}</div>
+            <div className={styles.statLabel}>团队成员</div>
           </div>
         </div>
       </div>
 
-      <div className={styles.grid}>
-        {/* 认证标准分布 */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{t('admin.dashboardPage.standardDistribution')}</h2>
-          {categoryData.length > 0 ? (
-            <div className={styles.chart}>
-              {categoryData.map((item) => (
-                <div key={item.category} className={styles.chartRow}>
-                  <span className={styles.chartLabel}>{item.category}</span>
-                  <div className={styles.chartBarBg}>
-                    <div
-                      className={styles.chartBar}
-                      style={{ width: `${(item.count / maxCategoryCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className={styles.chartCount}>{item.count}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>{t('admin.dashboardPage.noData')}</div>
-          )}
-        </div>
-
-        {/* 最近操作日志 */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>{t('admin.dashboardPage.recentLogs')}</h2>
-            <Link to="/admin/logs" className={styles.viewAll}>{t('search.viewAll')}</Link>
-          </div>
-          {logs.length > 0 ? (
-            <div className={styles.logList}>
-              {logs.slice(0, 8).map((log, i) => (
-                <div key={i} className={styles.logItem}>
-                  <div className={styles.logInfo}>
-                    <span className={styles.logAction}>{log.action || log.type}</span>
-                    <span className={styles.logTarget}>{log.target || log.detail || '-'}</span>
-                  </div>
-                  <span className={styles.logTime}>{log.time || log.createdAt || '-'}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>{t('admin.dashboardPage.noLogs')}</div>
-          )}
+      {/* 常用功能 */}
+      <div className={styles.shortcuts}>
+        <h2>常用功能</h2>
+        <div className={styles.linksGrid}>
+          <Link to="/admin/products" className={styles.linkCard}>
+            <span>产品管理</span>
+            <span className={styles.linkArrow}>→</span>
+          </Link>
+          <Link to="/admin/documents" className={styles.linkCard}>
+            <span>文档管理</span>
+            <span className={styles.linkArrow}>→</span>
+          </Link>
+          <Link to="/admin/company" className={styles.linkCard}>
+            <span>企业信息</span>
+            <span className={styles.linkArrow}>→</span>
+          </Link>
+          <Link to="/admin/members" className={styles.linkCard}>
+            <span>团队成员</span>
+            <span className={styles.linkArrow}>→</span>
+          </Link>
         </div>
       </div>
     </div>

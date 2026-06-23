@@ -61,11 +61,11 @@ function authMiddleware(req, res, next) {
     // 如果 token 过期或签名不匹配，会抛出错误（被 catch 捕获）
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // 将解码后的用户信息（id, username, role, company_name）挂载到请求对象上
-    // 后续的路由处理函数可以通过 req.admin 获取当前登录的用户
+    // 将解码后的用户信息挂载到请求对象上
     req.admin = {
       id: decoded.id,
-      username: decoded.username,
+      username: decoded.username || decoded.email,
+      email: decoded.email || decoded.username,
       role: decoded.role || 'user',
       company_name: decoded.company_name || null,
     };
@@ -99,7 +99,7 @@ function authMiddleware(req, res, next) {
  * - 两个职责分离，可以灵活组合
  */
 function requireAdmin(req, res, next) {
-  if (!req.admin || req.admin.role !== 'admin') {
+  if (!req.admin || (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin')) {
     return res.status(403).json({
       success: false,
       message: '权限不足，仅管理员可执行此操作',
@@ -123,8 +123,9 @@ function generateToken(user) {
   return jwt.sign(
     {
       id: user.id,
-      username: user.username,
-      role: user.role || 'user',
+      username: user.username || user.email,
+      email: user.email || user.username,
+      role: user.role || user.platform_role || 'user',
       company_name: user.company_name || null,
     },
     JWT_SECRET,

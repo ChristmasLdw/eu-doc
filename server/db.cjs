@@ -299,19 +299,106 @@ function initDatabase() {
   const isV2 = tableNames.includes('documents') && tableNames.includes('certificate_metadata');
 
   if (isV2) {
-    console.log('  [数据库] 检测到 v2.0 数据结构，跳过旧版本初始化');
+    console.log('  [数据库] 检测到 v2.0 数据结构，检查是否需要升级');
+
+    // 检查并创建新表
+    const existingTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(t => t.name);
+
+    // 企业成员表
+    if (!existingTables.includes('company_members')) {
+      db.exec(`
+        CREATE TABLE company_members (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          company_id INTEGER NOT NULL,
+          role TEXT NOT NULL DEFAULT 'viewer',
+          status TEXT DEFAULT 'active',
+          invited_by INTEGER,
+          joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (company_id) REFERENCES companies(id)
+        );
+        CREATE INDEX idx_company_members_user ON company_members(user_id);
+        CREATE INDEX idx_company_members_company ON company_members(company_id);
+      `);
+      console.log('  [数据库] 创建 company_members 表');
+    }
+
+    // 上传确认记录表
+    if (!existingTables.includes('upload_confirmations')) {
+      db.exec(`
+        CREATE TABLE upload_confirmations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          document_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          company_id INTEGER NOT NULL,
+          confirmed_authentic INTEGER DEFAULT 0,
+          confirmed_authorized INTEGER DEFAULT 0,
+          accepted_disclaimer INTEGER DEFAULT 0,
+          ip_address TEXT,
+          user_agent TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (document_id) REFERENCES documents(id),
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+        CREATE INDEX idx_upload_confirmations_doc ON upload_confirmations(document_id);
+      `);
+      console.log('  [数据库] 创建 upload_confirmations 表');
+    }
+
+    // 邮件验证令牌表
+    if (!existingTables.includes('email_verifications')) {
+      db.exec(`
+        CREATE TABLE email_verifications (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          email TEXT NOT NULL,
+          token TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'verify',
+          expires_at DATETIME NOT NULL,
+          used INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+        CREATE INDEX idx_email_verifications_token ON email_verifications(token);
+      `);
+      console.log('  [数据库] 创建 email_verifications 表');
+    }
 
     // v2.0: 只检查是否需要创建默认用户
     const userCount = db.prepare('SELECT COUNT(*) as cnt FROM users').get();
     if (userCount.cnt === 0) {
       const hash = bcrypt.hashSync('admin123', 10);
-      db.prepare('INSERT INTO users (email, password_hash, display_name, platform_role, status) VALUES (?, ?, ?, ?, ?)')
-        .run('admin@local', hash, 'admin', 'platform_admin', 'active');
+      db.prepare('INSERT INTO users (email, password_hash, display_name, platform_role, status, email_verified) VALUES (?, ?, ?, ?, ?, ?)')
+        .run('admin@local', hash, 'admin', 'platform_admin', 'active', 1);
       console.log('\x1b[33m%s\x1b[0m', '  [安全提示] 默认管理员已创建: admin@local / admin123');
       console.log('\x1b[33m%s\x1b[0m', '  [安全提示] 请首次登录后立即修改密码！\n');
     }
 
-    console.log('  [数据库] v2.0 初始化完成\n');
+    // 确保 admins_legacy 的用户也迁移到 users 表
+    const adminsLegacy = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admins_legacy'").get();
+    if (adminsLegacy) {
+      const legacyUsers = db.prepare('SELECT * FROM admins_legacy').all();
+      const insertUser = db.prepare(`
+        INSERT OR IGNORE INTO users (email, password_hash, display_name, platform_role, status, email_verified)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const u of legacyUsers) {
+        const role = u.role === 'admin' ? 'platform_admin' : 'user';
+        insertUser.run(`${u.username}@legacy.local`, u.password_hash, u.username, role, 'active', 1);
+      }
+    }
+
+    // 确保 admins 视图存在
+    db.exec(`
+      CREATE VIEW IF NOT EXISTS admins AS
+        SELECT id, email as username, password_hash, 
+          CASE WHEN platform_role = 'platform_admin' THEN 'admin' ELSE 'user' END as role,
+          display_name as company_name, created_at
+        FROM users
+    `);
+
+    console.log('  [数据库] v2.0 升级完成\n');
     return;
   }
 

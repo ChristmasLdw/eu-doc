@@ -1,23 +1,12 @@
 /**
- * EU-DOC 后端服务 - 认证路由
- * 版本: 1.0.2
+ * EU-DOC 后端服务 - 认证路由 v2.0
  *
- * 变更记录 (1.0.2):
- * - 新增 POST /register - 用户注册（普通用户自行注册）
- * - 新增 GET /users - 获取用户列表（仅管理员）
- * - 修改 POST /login - 返回值包含 role 和 company_name
- * - 修改 GET /me - 返回值包含 role 和 company_name
- *
- * 路由:
- * - POST /register - 用户注册（公开）
- * - POST /login    - 用户登录，返回 JWT token
- * - GET  /me       - 获取当前用户信息（需认证）
- * - GET  /users    - 获取用户列表（需管理员权限）
- * - PUT  /password - 修改密码（需认证）
+ * 支持邮箱注册/登录、邮箱验证、密码重置
  */
 
 const { Router } = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin, generateToken } = require('../middleware/auth.cjs');
 
@@ -25,244 +14,295 @@ const router = Router();
 
 /**
  * POST /api/auth/register
- * 用户注册接口（公开）
- *
- * 请求体: { username, password, company_name? }
- * 返回: { success: true, token, user: { id, username, role, company_name } }
- *
- * 注册流程:
- * 1. 校验参数（用户名 3-20 位，密码 6-30 位）
- * 2. 检查用户名是否已存在
- * 3. 如果提供了 company_name，在 companies 表中创建（如不存在）
- * 4. 创建用户（role 默认 'user'）
- * 5. 生成 JWT token 并返回（注册即自动登录）
+ * 用户注册（邮箱）
  */
 router.post('/register', (req, res) => {
-  const { username, password, company_name } = req.body;
+  const { email, password, display_name, company_name } = req.body;
 
-  // 参数校验
-  if (!username || !password) {
-    return res.status(400).json({
-      success: false,
-      message: '请提供用户名和密码',
-    });
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: '请提供邮箱和密码' });
   }
 
-  // 用户名长度校验
-  if (username.trim().length < 3 || username.trim().length > 20) {
-    return res.status(400).json({
-      success: false,
-      message: '用户名长度需在 3-20 个字符之间',
-    });
+  // 邮箱格式校验
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ success: false, message: '邮箱格式不正确' });
   }
 
-  // 密码长度校验
-  if (password.length < 6 || password.length > 30) {
-    return res.status(400).json({
-      success: false,
-      message: '密码长度需在 6-30 个字符之间',
-    });
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, message: '密码长度不能少于6位' });
   }
 
-  const trimmedUsername = username.trim();
-
-  // 检查用户名是否已存在
-  const existing = db.prepare('SELECT id FROM admins WHERE username = ?').get(trimmedUsername);
+  // 检查邮箱是否已存在
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
-    return res.status(409).json({
-      success: false,
-      message: '用户名已存在',
-    });
-  }
-
-  // 如果提供了企业名称，确保 companies 表中有该企业记录
-  let companyId = null;
-  if (company_name && company_name.trim()) {
-    const trimmedCompany = company_name.trim();
-    db.prepare('INSERT OR IGNORE INTO companies (name, name_en) VALUES (?, ?)').run(trimmedCompany, trimmedCompany);
-    const company = db.prepare('SELECT id FROM companies WHERE name = ?').get(trimmedCompany);
-    companyId = company ? company.id : null;
+    return res.status(409).json({ success: false, message: '该邮箱已注册' });
   }
 
   try {
-    // 创建用户
     const hash = bcrypt.hashSync(password, 10);
-    const result = db.prepare(
-      'INSERT INTO admins (username, password_hash, role, company_name) VALUES (?, ?, ?, ?)'
-    ).run(trimmedUsername, hash, 'user', company_name ? company_name.trim() : null);
+    const result = db.prepare(`
+      INSERT INTO users (email, password_hash, display_name, platform_role, status, email_verified)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(email, hash, display_name || email.split('@')[0], 'user', 'active', 0);
 
-    // 获取创建的用户信息
-    const user = db.prepare('SELECT id, username, role, company_name, created_at FROM admins WHERE id = ?').get(result.lastInsertRowid);
+    const userId = result.lastInsertRowid;
 
-    // 生成 token（注册即自动登录）
+    // 如果提供了企业名称，自动创建企业并关联
+    if (company_name && company_name.trim()) {
+      const trimmedCompany = company_name.trim();
+      db.prepare('INSERT OR IGNORE INTO companies (name, name_en) VALUES (?, ?)').run(trimmedCompany, trimmedCompany);
+      const company = db.prepare('SELECT id FROM companies WHERE name = ?').get(trimmedCompany);
+      if (company) {
+        db.prepare('INSERT OR IGNORE INTO company_members (user_id, company_id, role) VALUES (?, ?, ?)')
+          .run(userId, company.id, 'owner');
+      }
+    }
+
+    // 生成验证令牌
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24小时
+    db.prepare(`
+      INSERT INTO email_verifications (user_id, email, token, type, expires_at)
+      VALUES (?, ?, ?, 'verify', ?)
+    `).run(userId, email, verifyToken, expiresAt);
+
+    // 生成 token
+    const user = db.prepare('SELECT id, email, display_name, platform_role FROM users WHERE id = ?').get(userId);
     const token = generateToken(user);
 
-    // 记录注册日志
-    db.prepare(
-      'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(user.id, 'register', 'user', user.id, JSON.stringify({ username: user.username, company_name: user.company_name }), req.ip);
+    // 记录日志
+    db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(userId, 'register', 'user', userId, JSON.stringify({ email }), req.ip);
 
     res.status(201).json({
       success: true,
+      message: '注册成功，请查收验证邮件',
       token,
-      user,
+      user: { id: user.id, email: user.email, display_name: user.display_name, role: user.platform_role },
+      verify_token: verifyToken, // 开发环境返回，生产环境应通过邮件发送
     });
   } catch (err) {
-    console.error('注册失败:', err.message);
-    return res.status(500).json({
-      success: false,
-      message: '注册失败，请稍后重试',
-    });
+    console.error('注册失败:', err);
+    res.status(500).json({ success: false, message: '注册失败，请稍后重试' });
   }
 });
 
 /**
  * POST /api/auth/login
- * 用户登录接口
- *
- * 请求体: { username: string, password: string }
- * 返回: { success: true, token: string, admin: { id, username, role, company_name, created_at } }
- *
- * 登录流程:
- * 1. 根据用户名查询数据库
- * 2. 使用 bcrypt 比对密码哈希
- * 3. 生成 JWT token 返回给客户端
- * 4. 记录登录审计日志
+ * 用户登录（支持邮箱或用户名）
  */
 router.post('/login', (req, res) => {
-  const { username, password } = req.body;
+  const { email, username, password } = req.body;
+  const loginId = email || username;
 
-  // 参数校验
-  if (!username || !password) {
-    return res.status(400).json({
-      success: false,
-      message: '请提供用户名和密码',
-    });
+  if (!loginId || !password) {
+    return res.status(400).json({ success: false, message: '请提供邮箱/用户名和密码' });
   }
 
-  // 查询用户（使用参数化查询防止 SQL 注入）
-  const admin = db.prepare('SELECT * FROM admins WHERE username = ?').get(username);
+  // 先查 users 表（邮箱登录）
+  let user = db.prepare('SELECT * FROM users WHERE email = ?').get(loginId);
 
-  if (!admin) {
-    return res.status(401).json({
-      success: false,
-      message: '用户名或密码错误',
-    });
+  // 如果没找到，查 admins_legacy 表（用户名登录，向后兼容）
+  if (!user) {
+    const legacyAdmin = db.prepare('SELECT * FROM admins_legacy WHERE username = ?').get(loginId);
+    if (legacyAdmin) {
+      const isMatch = bcrypt.compareSync(password, legacyAdmin.password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: '用户名或密码错误' });
+      }
+      // 从 users 表查找对应用户
+      user = db.prepare('SELECT * FROM users WHERE email = ?').get(`${loginId}@legacy.local`);
+    }
   }
 
-  // bcrypt.compareSync: 比较明文密码和哈希值是否匹配
-  // 即使密码错误，比较操作也会花费相同时间（防止计时攻击）
-  const isMatch = bcrypt.compareSync(password, admin.password_hash);
+  if (!user) {
+    return res.status(401).json({ success: false, message: '邮箱/用户名或密码错误' });
+  }
 
+  const isMatch = bcrypt.compareSync(password, user.password_hash);
   if (!isMatch) {
-    return res.status(401).json({
-      success: false,
-      message: '用户名或密码错误',
-    });
+    return res.status(401).json({ success: false, message: '邮箱/用户名或密码错误' });
   }
 
-  // 生成 JWT token
-  const token = generateToken(admin);
+  if (user.status !== 'active') {
+    return res.status(403).json({ success: false, message: '账号已被禁用' });
+  }
 
-  // 记录登录日志
-  db.prepare(
-    'INSERT INTO audit_logs (admin_id, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?)'
-  ).run(admin.id, 'login', 'admin', admin.id, req.ip);
+  const token = generateToken(user);
 
-  // 返回 token 和用户基本信息（不返回密码哈希）
+  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?)')
+    .run(user.id, 'login', 'user', user.id, req.ip);
+
   res.json({
     success: true,
     token,
-    admin: {
-      id: admin.id,
-      username: admin.username,
-      role: admin.role,
-      company_name: admin.company_name,
-      created_at: admin.created_at,
+    user: {
+      id: user.id,
+      email: user.email,
+      display_name: user.display_name,
+      role: user.platform_role,
+      email_verified: user.email_verified,
     },
   });
 });
 
 /**
  * GET /api/auth/me
- * 获取当前登录用户信息
- *
- * 需要在请求头中携带有效的 JWT token
- * authMiddleware 会将解码后的用户信息挂载到 req.admin
+ * 获取当前用户信息
  */
 router.get('/me', authMiddleware, (req, res) => {
-  const admin = db.prepare('SELECT id, username, role, company_name, created_at FROM admins WHERE id = ?').get(req.admin.id);
+  const user = db.prepare('SELECT id, email, display_name, platform_role, email_verified, phone, created_at FROM users WHERE id = ?')
+    .get(req.admin.id);
 
-  if (!admin) {
-    return res.status(404).json({
-      success: false,
-      message: '用户不存在',
-    });
+  if (!user) {
+    return res.status(404).json({ success: false, message: '用户不存在' });
   }
 
-  res.json({ success: true, admin });
+  // 获取用户的企业列表
+  const companies = db.prepare(`
+    SELECT c.id, c.name, cm.role as member_role
+    FROM company_members cm
+    JOIN companies c ON cm.company_id = c.id
+    WHERE cm.user_id = ? AND cm.status = 'active'
+  `).all(user.id);
+
+  res.json({ success: true, user: { ...user, companies } });
+});
+
+/**
+ * POST /api/auth/verify-email
+ * 验证邮箱
+ */
+router.post('/verify-email', (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: '缺少验证令牌' });
+  }
+
+  const verification = db.prepare(`
+    SELECT * FROM email_verifications
+    WHERE token = ? AND type = 'verify' AND used = 0 AND expires_at > datetime('now')
+  `).get(token);
+
+  if (!verification) {
+    return res.status(400).json({ success: false, message: '验证令牌无效或已过期' });
+  }
+
+  db.prepare('UPDATE users SET email_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(verification.user_id);
+  db.prepare('UPDATE email_verifications SET used = 1 WHERE id = ?').run(verification.id);
+
+  res.json({ success: true, message: '邮箱验证成功' });
+});
+
+/**
+ * POST /api/auth/forgot-password
+ * 忘记密码 - 发送重置令牌
+ */
+router.post('/forgot-password', (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: '请提供邮箱' });
+  }
+
+  const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (!user) {
+    // 安全考虑：不透露用户是否存在
+    return res.json({ success: true, message: '如果该邮箱已注册，您将收到重置密码邮件' });
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(); // 1小时
+
+  db.prepare(`
+    INSERT INTO email_verifications (user_id, email, token, type, expires_at)
+    VALUES (?, ?, ?, 'reset', ?)
+  `).run(user.id, email, resetToken, expiresAt);
+
+  res.json({
+    success: true,
+    message: '如果该邮箱已注册，您将收到重置密码邮件',
+    reset_token: resetToken, // 开发环境返回，生产环境应通过邮件发送
+  });
+});
+
+/**
+ * POST /api/auth/reset-password
+ * 重置密码
+ */
+router.post('/reset-password', (req, res) => {
+  const { token, new_password } = req.body;
+
+  if (!token || !new_password) {
+    return res.status(400).json({ success: false, message: '缺少令牌或新密码' });
+  }
+
+  if (new_password.length < 6) {
+    return res.status(400).json({ success: false, message: '密码长度不能少于6位' });
+  }
+
+  const verification = db.prepare(`
+    SELECT * FROM email_verifications
+    WHERE token = ? AND type = 'reset' AND used = 0 AND expires_at > datetime('now')
+  `).get(token);
+
+  if (!verification) {
+    return res.status(400).json({ success: false, message: '重置令牌无效或已过期' });
+  }
+
+  const hash = bcrypt.hashSync(new_password, 10);
+  db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(hash, verification.user_id);
+  db.prepare('UPDATE email_verifications SET used = 1 WHERE id = ?').run(verification.id);
+
+  res.json({ success: true, message: '密码重置成功，请使用新密码登录' });
+});
+
+/**
+ * PUT /api/auth/password
+ * 修改密码（需登录）
+ */
+router.put('/password', authMiddleware, (req, res) => {
+  const { old_password, new_password } = req.body;
+
+  if (!old_password || !new_password) {
+    return res.status(400).json({ success: false, message: '请提供原密码和新密码' });
+  }
+
+  if (new_password.length < 6) {
+    return res.status(400).json({ success: false, message: '新密码长度不能少于6位' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.admin.id);
+
+  if (!bcrypt.compareSync(old_password, user.password_hash)) {
+    return res.status(401).json({ success: false, message: '原密码错误' });
+  }
+
+  const hash = bcrypt.hashSync(new_password, 10);
+  db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(hash, user.id);
+
+  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?)')
+    .run(user.id, 'update_password', 'user', user.id, req.ip);
+
+  res.json({ success: true, message: '密码修改成功' });
 });
 
 /**
  * GET /api/auth/users
  * 获取用户列表（仅管理员）
- *
- * 返回所有注册用户的基本信息，按创建时间倒序
  */
 router.get('/users', authMiddleware, requireAdmin, (req, res) => {
   const users = db.prepare(`
-    SELECT id, username, role, company_name, created_at
-    FROM admins
-    ORDER BY created_at DESC
+    SELECT id, email, display_name, platform_role, email_verified, status, created_at
+    FROM users ORDER BY created_at DESC
   `).all();
 
   res.json({ success: true, data: users });
-});
-
-/**
- * PUT /api/auth/password
- * 修改当前用户密码
- *
- * 请求体: { oldPassword: string, newPassword: string }
- */
-router.put('/password', authMiddleware, (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: '请提供原密码和新密码',
-    });
-  }
-
-  if (newPassword.length < 6) {
-    return res.status(400).json({
-      success: false,
-      message: '新密码长度不能少于6位',
-    });
-  }
-
-  // 查询当前用户完整信息（包含密码哈希）
-  const admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(req.admin.id);
-
-  // 验证原密码
-  if (!bcrypt.compareSync(oldPassword, admin.password_hash)) {
-    return res.status(401).json({
-      success: false,
-      message: '原密码错误',
-    });
-  }
-
-  // 生成新密码哈希并更新
-  const newHash = bcrypt.hashSync(newPassword, 10);
-  db.prepare('UPDATE admins SET password_hash = ? WHERE id = ?').run(newHash, admin.id);
-
-  // 记录密码修改日志
-  db.prepare(
-    'INSERT INTO audit_logs (admin_id, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?)'
-  ).run(admin.id, 'update_password', 'admin', admin.id, req.ip);
-
-  res.json({ success: true, message: '密码修改成功' });
 });
 
 module.exports = router;

@@ -1,792 +1,400 @@
 # eu-doc TODO
 
 最后更新：2026-06-22 CST  
-当前版本：v2.1.0
-当前阶段：第一阶段 - Phase 1 完成，进入 Phase 3（API 兼容层开发）  
-用途：让后续 AI 快速理解用户意图，并能按顺序继续实现功能。
-
-> 说明：旧的完整超长 TODO 已归档到 `docs/archive/todo/TODO_FULL_BEFORE_2026-06-22_TOKEN_CLEANUP.md`。当前文件是“中等详细版”，默认读取本文件即可；只有追溯历史时才读归档。
+当前版本：v2.2.0  
+当前阶段：第一阶段 - 基础功能完善
 
 ---
 
-## 0. 当前最高优先级
+## 已完成 ✅
 
-✅ **Phase 1 已完成** (2026-06-22)
-- ✅ 数据模型升级方案已制定
-- ✅ 数据库迁移脚本已编写并执行成功
-- ✅ 所有新表创建完成
-- ✅ 旧数据迁移完成（47个产品 + 47个文档）
-- ✅ 验证脚本通过
+### 数据架构 (v2.0)
+- ✅ 数据库升级：企业 → 产品 → 文档三级架构
+- ✅ 33个 API 端点全部完成
+- ✅ 旧数据迁移（47个产品 + 47个文档）
+- ✅ 修复企业/统计/报告 API（适配新表结构）
 
-✅ **Phase 3 已完成** (2026-06-22)
-- ✅ 证书API兼容层（8个端点）
-- ✅ 返回格式与 v1.x 完全兼容
-- ✅ 所有接口测试通过
+### 前台功能
+- ✅ 首页、搜索页、证书详情页、企业详情页
+- ✅ 搜索结果点击跳转产品详情页
+- ✅ 产品详情页展示文档列表
+- ✅ 证书文件路径（PDF/缩略图/DoC/说明书）
 
-✅ **Phase 4 已完成** (2026-06-22)
-- ✅ 产品管理API（6个端点）
-- ✅ 文档管理API（5个端点）
-- ✅ 分类管理API（5个端点）
-- ✅ 标签管理API（9个端点）
-- ✅ 所有接口测试通过
+### 管理后台
+- ✅ 登录页面
+- ✅ 产品管理页面（列表/创建/编辑）
+- ✅ 文档上传页面
+- ✅ 证书管理页面
+- ✅ 企业管理页面
+- ✅ 操作日志页面
 
-✅ **五个工作步骤已完成** (2026-06-22)
-- ✅ 步骤1: 分类管理API
-- ✅ 步骤2: 标签管理API
-- ✅ 步骤3: 前端页面测试
-- ✅ 步骤4: API文档
-- ✅ 步骤5: 产品管理前端页面
-
-🔥 **下一步：Phase 5 - 前端完善与优化**
-1. 浏览器中完整测试所有页面
-2. 添加产品创建/编辑功能（后台）
-3. 添加文档管理页面（后台）
-4. 完善分类标签管理界面
-5. 移动端优化
-6. 添加单元测试
+### 数据清理
+- ✅ 删除重复企业数据
+- ✅ 企业名称 UNIQUE 约束
 
 ---
 
-## 1. 用户真实意图
+## 第一优先级：地基（必须现在做）
 
-用户不是只想做一个好看的证书查询 demo，而是要逐步做成一个面向全球的产品合规资料平台。
+### P0-1 用户认证体系
+**状态**：未开始  
+**原因**：后期改会影响所有数据
 
-平台长期定位：
+- [ ] 升级 `users` 表结构
+  - email（唯一）
+  - phone（可选）
+  - password_hash
+  - display_name
+  - email_verified
+  - phone_verified
+  - platform_role（admin / user）
+  - status
+- [ ] 邮箱注册流程
+- [ ] 邮箱验证（发送验证码）
+- [ ] 密码加密存储（已有 bcrypt）
+- [ ] 忘记密码 / 重置密码
+- [ ] 登录/注册页面 UI 优化
 
-```text
-eu-doc 是一个面向全球企业、消费者、采购商、经销商和审批机构的产品合规资料平台。
-```
+### P0-2 企业认证流程
+**状态**：未开始  
+**原因**：第二阶段真实企业需要
 
-平台核心资料类型：
+- [ ] 企业注册流程
+  - 企业名称
+  - 营业执照号
+  - 联系人信息
+- [ ] 企业认证资料提交
+  - 营业执照照片
+  - 授权书
+- [ ] 管理员审核界面
+  - 查看认证资料
+  - 通过 / 拒绝
+  - 备注
+- [ ] 认证状态管理
+  - unverified → pending → verified → rejected
+- [ ] 前台显示企业认证状态
 
-- 产品认证证书
-- DoC 声明文件
-- 产品使用说明书
-- 检测报告
-- 其他合规资料
+### P0-3 企业成员权限
+**状态**：未开始  
+**原因**：企业需要多人协作
 
-长期架构方向必须从：
+- [ ] `company_members` 表
+  - user_id
+  - company_id
+  - role（owner / admin / uploader / viewer）
+  - status
+  - invited_by
+  - joined_at
+- [ ] 成员邀请流程
+  - 邀请链接 / 邮件邀请
+  - 接受邀请
+- [ ] 权限控制
+  - Owner：全部权限
+  - Admin：管理产品和文档
+  - Uploader：只能上传文档
+  - Viewer：只能查看
+- [ ] 企业切换功能（一个用户可属于多个企业）
 
-```text
-企业 -> 证书
-```
+### P0-4 上传确认与免责声明
+**状态**：未开始  
+**原因**：法律风险规避
 
-升级为：
+- [ ] 上传前勾选确认
+  - ☐ 我确认此文档真实有效
+  - ☐ 我确认本人有权代表该企业上传此文档
+  - ☐ 我确认此文档不侵犯第三方权利
+  - ☐ 我已阅读并同意免责声明
+  - ☐ 我理解虚假资料由上传方承担全部法律责任
+- [ ] `upload_confirmations` 表记录
+- [ ] 管理员可查看上传确认记录
 
-```text
-企业 -> 产品 -> 文档
-```
+### P0-5 法律页面
+**状态**：部分完成（已有 TermsPage、PrivacyPage）  
+**原因**：合规要求
 
-其中：
+- [ ] 免责声明页面（新建）
+- [ ] 企业入驻协议页面（新建）
+- [ ] 上传承诺书页面（新建）
+- [ ] 联系我们页面（新建）
+- [ ] Footer 添加完整链接
+- [ ] 上传页链接到免责声明
 
-```text
-文档 = 证书 + DoC + 说明书 + 检测报告 + 其他合规资料
+### P0-6 环境变量配置
+**状态**：未开始  
+**原因**：部署迁移需要
+
+- [ ] 前端环境变量
+  - VITE_APP_BASE_PATH
+  - VITE_API_BASE_URL
+- [ ] 后端环境变量
+  - DATABASE_PATH
+  - UPLOAD_DIR
+  - PUBLIC_FILE_BASE_URL
+  - APP_ENV
+- [ ] 创建 .env.example 文件
+- [ ] 更新文档说明
+
+---
+
+## 第二优先级：核心功能完善
+
+### P1-1 文档管理功能
+**状态**：未开始
+
+- [ ] 文档列表页面（按产品分组）
+- [ ] 文档编辑功能
+  - 修改标题、类型、语言
+  - 修改证书元数据（编号、标准、有效期等）
+- [ ] 文档删除功能（软删除）
+- [ ] 文档状态管理（approved / pending / rejected）
+- [ ] 文档版本管理（证书更新时保留旧版本）
+
+### P1-2 企业管理页面完善
+**状态**：部分完成
+
+- [ ] 企业创建功能
+- [ ] 企业编辑功能
+- [ ] 企业删除功能
+- [ ] 企业认证状态显示
+- [ ] 企业成员管理界面
+
+### P1-3 产品详情页完善
+**状态**：部分完成
+
+- [ ] 文档内嵌预览（不跳转）
+- [ ] 文档下载按钮
+- [ ] 分享产品链接
+- [ ] 产品编辑入口（管理员）
+- [ ] 文档审核状态显示
+
+### P1-4 数据备份方案
+**状态**：未开始
+
+- [ ] 数据库备份脚本
+- [ ] 上传文件备份脚本
+- [ ] 备份命名规范
+- [ ] 恢复步骤文档
+- [ ] 定时备份配置
+
+---
+
+## 第三优先级：体验优化
+
+### P2-1 移动端适配
+**状态**：未开始
+
+- [ ] 管理后台响应式优化
+- [ ] 产品详情页移动端适配
+- [ ] 搜索结果页移动端适配
+- [ ] 文档预览移动端适配
+
+### P2-2 搜索优化
+**状态**：未开始
+
+- [ ] 搜索结果高亮
+- [ ] 搜索建议
+- [ ] 热门搜索
+- [ ] 搜索历史
+- [ ] 按分类筛选
+- [ ] 按标签筛选
+
+### P2-3 批量上传
+**状态**：未开始
+
+- [ ] 多文件选择
+- [ ] 批量填写信息
+- [ ] 上传进度显示
+- [ ] 上传结果汇总
+
+### P2-4 用户指引
+**状态**：未开始
+
+- [ ] 新手引导页面
+- [ ] B端企业使用教程
+- [ ] C端用户使用教程
+- [ ] 审批机构使用指南
+- [ ] 常见问题 FAQ
+
+---
+
+## 第四优先级：商业化预留
+
+### P3-1 收费体系（预留表结构）
+**状态**：未开始
+
+- [ ] `plans` 表（套餐定义）
+  - name
+  - price
+  - max_products
+  - max_documents_per_product
+  - max_file_size
+  - features
+- [ ] `subscriptions` 表（订阅记录）
+- [ ] `usage_records` 表（使用量记录）
+- [ ] 套餐页面 UI（展示但不接支付）
+
+### P3-2 支付集成（第二阶段）
+**状态**：未开始
+
+- [ ] 微信支付接入
+- [ ] 支付宝接入
+- [ ] 支付订单管理
+- [ ] 发票功能
+
+---
+
+## 第五优先级：高级功能
+
+### P4-1 SEO 优化
+**状态**：未开始
+
+- [ ] 产品页 SEO
+- [ ] 企业页 SEO
+- [ ] 证书页 SEO
+- [ ] sitemap.xml
+- [ ] 结构化数据
+
+### P4-2 数据分析
+**状态**：未开始
+
+- [ ] 访问量统计
+- [ ] 搜索关键词统计
+- [ ] 下载量统计
+- [ ] 地区分布
+
+### P4-3 OCR 自动识别
+**状态**：未开始
+
+- [ ] 证书编号识别
+- [ ] 签发机构识别
+- [ ] 有效期识别
+- [ ] 认证标准识别
+
+### P4-4 对象存储迁移
+**状态**：未开始
+
+- [ ] 腾讯云 COS / AWS S3 接入
+- [ ] 文件迁移脚本
+- [ ] CDN 配置
+
+### P4-5 多语言完善
+**状态**：部分完成
+
+- [ ] 中文（已有）
+- [ ] 英文（已有）
+- [ ] 德文
+- [ ] 法文
+- [ ] 西班牙文
+- [ ] 意大利文
+
+### P4-6 证书到期提醒
+**状态**：未开始
+
+- [ ] 到期前 30 天提醒
+- [ ] 到期前 60 天提醒
+- [ ] 到期前 90 天提醒
+- [ ] 邮件通知
+
+---
+
+## 数据库设计预留
+
+以下表结构建议在第一阶段就创建，即使暂时不使用：
+
+```sql
+-- 用户表（升级现有 users 表）
+ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN phone_verified INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN platform_role TEXT DEFAULT 'user';
+
+-- 企业成员表
+CREATE TABLE company_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  company_id INTEGER NOT NULL,
+  role TEXT NOT NULL DEFAULT 'viewer',
+  status TEXT DEFAULT 'active',
+  invited_by INTEGER,
+  joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+
+-- 上传确认记录
+CREATE TABLE upload_confirmations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  document_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  company_id INTEGER NOT NULL,
+  confirmed_authentic INTEGER DEFAULT 0,
+  confirmed_authorized INTEGER DEFAULT 0,
+  accepted_disclaimer INTEGER DEFAULT 0,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (document_id) REFERENCES documents(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 套餐表（预留）
+CREATE TABLE plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  max_products INTEGER,
+  max_documents_per_product INTEGER,
+  max_file_size INTEGER,
+  features TEXT,
+  status TEXT DEFAULT 'active',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 订阅表（预留）
+CREATE TABLE subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  company_id INTEGER NOT NULL,
+  plan_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'active',
+  start_date DATETIME,
+  end_date DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (company_id) REFERENCES companies(id),
+  FOREIGN KEY (plan_id) REFERENCES plans(id)
+);
 ```
 
 ---
 
-## 2. 三阶段推进策略
+## 开发顺序建议
 
-### 第一阶段：个人测试 / 本地开发
+### 本周（第一阶段地基）
+1. 用户认证体系（P0-1）
+2. 上传确认 + 免责声明（P0-4）
+3. 法律页面（P0-5）
 
-目标：用户自己模拟真实企业录入资料，验证基础功能、流程和用户体验。
+### 下周（企业认证）
+1. 企业认证流程（P0-2）
+2. 企业成员权限（P0-3）
+3. 环境变量配置（P0-6）
 
-第一阶段验收标准：
+### 第三周（功能完善）
+1. 文档管理功能（P1-1）
+2. 企业管理页面（P1-2）
+3. 产品详情页完善（P1-3）
 
-```text
-注册/登录 -> 创建企业 -> 提交认证 -> 管理员审核 -> 创建产品 -> 上传证书/DoC/说明书 -> 前台搜索 -> 用户查看/下载/举报
-```
-
-### 第二阶段：测试服务器 + 小域名 + 10-20 家企业测试
-
-目标：允许真实企业注册、认证、上传资料，允许外部用户访问小域名，验证真实使用体验。
-
-第二阶段前必须具备：
-
-- 真实注册登录
-- 邮箱验证
-- 企业认证人工审核
-- 企业成员权限
-- 产品和文档上传
-- HTTPS
-- 备份和恢复
-- 举报反馈
-- 帮助中心
-- 管理员审核后台
-
-### 第三阶段：正式服务器 / 正式域名 / 商业化
-
-目标：正式推广，面向更多企业和全球用户，再逐步开启收费和高级能力。
-
-第三阶段再做：
-
-- 支付系统
-- 套餐订阅
-- 发票/合同
-- OCR
-- API 开放平台
-- 对象存储 / CDN
-- 数据分析
-- 自定义域名
-- 多语言完整覆盖
+### 第四周（体验优化）
+1. 移动端适配（P2-1）
+2. 搜索优化（P2-2）
+3. 用户指引（P2-4）
 
 ---
 
-## 3. 功能前置 / 后移判断
-
-### 现在必须做扎实
-
-这些是长期地基，后移会导致数据迁移、权限重构或页面大改：
-
-| 功能 | 判断 | 原因 |
-| --- | --- | --- |
-| 产品模型 `products` | 现在做 | 平台本质是产品资料库，不是单纯证书库 |
-| 文档模型 `documents` | 现在做 | 证书、DoC、说明书、检测报告不能都塞进证书表 |
-| 分类体系 `categories` | 现在做 | 后期数据多了再改会影响搜索、筛选、后台、统计 |
-| 标签体系 `tags` | 现在做 | 支持跨行业、跨标准、跨用途筛选 |
-| 用户模型 `users` | 现在做 | 当前 `admins` 思路不适合平台化 |
-| 企业成员 `company_members` | 现在做 | 第二阶段企业员工权限会用到 |
-| 企业认证状态 | 现在做 | 第二阶段真实企业上传前必须有 |
-| 上传确认 / 免责声明 | 现在做 | 责任链不能后补 |
-| 审计日志 | 现在做 | 后续追责、排查、审核都依赖它 |
-| 环境变量配置 | 现在做 | 本地、测试域名、正式域名会迁移 |
-| 备份结构 | 现在做 | 第二阶段开始会有真实企业数据 |
-| 多语言字段预留 | 现在做 | 最终面向全球，后补成本高 |
-
-### 可以后移，但现在要预留接口
-
-| 功能 | 现在预留 | 后续实现 |
-| --- | --- | --- |
-| 支付系统 | 套餐、订阅、用量表 | 微信/支付宝/Stripe/PayPal |
-| 套餐系统 | plan 字段和权限判断入口 | 套餐页、购买流程 |
-| OCR | `ocr_status / extracted_text / metadata_json` | OCR 服务接入 |
-| API 开放 | 规范接口结构 | API Key、接口文档 |
-| 对象存储/CDN | 文件路径不要写死 | 腾讯云 COS / S3 / CDN |
-| 第三方企业核验 | 认证状态和资料表 | 工商核验接口 |
-| 数据分析 | 访问、搜索、下载日志 | 企业数据报表 |
-
----
-
-## 4. 最近已完成 / 待复核
-
-这些是另一次整理中记录的近期工作，后续开始平台化改造前最好先复核确认。
-
-| 编号 | 任务 | 状态 | 说明 |
-| --- | --- | --- | --- |
-| EU-R001 | DoC 图片下载和展示 | 待复核 | 已从 `www.eu-doc.com` 下载 DoC 图片，证书详情页显示 DoC 缩略图 |
-| EU-R002 | DoC 语言版本切换 | 待复核 | 后端可扫描 `server/uploads/declarations/` 中同证书不同语言版本 |
-| EU-R003 | 证书详情页右侧预览优化 | 待复核 | 证书和 DoC 预览区样式统一，DoC 区域放大 |
-| EU-R004 | 认证标准显示修正 | 待复核 | `CE EN 1384` 显示为 `CE EN 1384:2023` |
-| EU-R005 | token 节省整理 | 已完成 | 根目录清理、旧日志和旧备份代码归档、TODO 精简；本文件已恢复为中等详细版 |
-
----
-
-## 5. 第一阶段核心任务
-
-### EU-P001 建立产品模型 `products`
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：极高
-
-建议字段：
-
-```text
-products
-- id
-- company_id
-- name
-- name_en
-- model
-- description
-- category_primary_id
-- status
-- created_at
-- updated_at
-```
-
-目的：
-
-- 让平台从“证书中心”变成“产品资料中心”。
-- 让证书、DoC、说明书都挂到产品下面。
-- 让 C 端用户搜索和查看的是产品，而不只是证书。
-
-完成标准：
-
-- 后台可以创建产品。
-- 产品可以关联企业。
-- 前台可以展示产品基础信息。
-- 证书、DoC、说明书能归属于某个产品。
-
-### EU-P002 建立统一文档模型 `documents`
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：极高
-
-建议字段：
-
-```text
-documents
-- id
-- company_id
-- product_id
-- document_type
-- title
-- title_en
-- language
-- file_path
-- file_size
-- mime_type
-- version
-- status
-- review_status
-- uploaded_by
-- created_at
-- updated_at
-```
-
-文档类型：
-
-```text
-certificate
-doc_declaration
-manual
-test_report
-other
-```
-
-完成标准：
-
-- 一个产品下可以上传证书、DoC、说明书。
-- 每个文件都有类型、语言、版本、审核状态。
-- 前台能区分展示不同文件类型。
-
-### EU-P003 改造证书表为证书元数据
-
-- 状态：未开始
-- 优先级：P0 / 高
-- 阶段：第一阶段
-- 后移风险：高
-
-建议方向：
-
-```text
-certificates 或 certificate_metadata 只保存证书特有字段。
-证书文件本身归入 documents。
-```
-
-建议字段：
-
-```text
-certificate_metadata
-- document_id
-- cert_no
-- standard
-- issuer
-- issue_date
-- expiry_date
-- certificate_status
-```
-
-完成标准：
-
-- 证书编号、标准、签发机构、有效期等字段不丢失。
-- 证书文件能挂在产品和企业下面。
-- 旧证书数据能迁移到新结构。
-
-### EU-P004 建立三层分类体系 `categories`
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：极高
-
-建议字段：
-
-```text
-categories
-- id
-- parent_id
-- level
-- name
-- name_en
-- slug
-- sort_order
-- status
-```
-
-分类结构：
-
-```text
-一级：行业大类
-二级：产品类型
-三级：细分品类
-```
-
-初始示例：
-
-```text
-安全防护设备
-  - 头部防护
-    - 马术头盔
-```
-
-完成标准：
-
-- 后台可以选择一级、二级、三级分类。
-- 产品可以绑定主分类。
-- 前台可以按分类筛选。
-- 分类支持中英文名称。
-
-### EU-P005 建立标签系统 `tags`
-
-- 状态：未开始
-- 优先级：P0 / 高
-- 阶段：第一阶段
-- 后移风险：高
-
-建议字段：
-
-```text
-tags
-- id
-- name
-- name_en
-- type
-- status
-```
-
-标签类型：
-
-```text
-standard：认证标准，例如 CE、EN1384、RoHS
-feature：产品特性，例如 防水、轻量、智能
-industry：行业标签，例如 运动装备、儿童用品
-```
-
-建议关联表：
-
-```text
-product_tags
-document_tags
-```
-
-完成标准：
-
-- 产品和文档都可以添加标签。
-- 搜索和筛选可以使用标签。
-- 标签支持中英文。
-
-### EU-P006 升级用户模型 `users`
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：极高
-
-当前 `admins` 表适合 demo，但不适合平台化。建议升级为：
-
-```text
-users
-- id
-- email
-- phone
-- password_hash
-- display_name
-- email_verified
-- phone_verified
-- platform_role
-- status
-- created_at
-```
-
-`platform_role`：
-
-```text
-platform_admin
-user
-```
-
-完成标准：
-
-- 用户可以注册和登录。
-- 平台管理员和普通用户权限分开。
-- 旧 admin 账号可以迁移为 `platform_admin`。
-
-### EU-P007 建立企业成员表 `company_members`
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：极高
-
-建议字段：
-
-```text
-company_members
-- id
-- user_id
-- company_id
-- role
-- status
-- invited_by
-- joined_at
-```
-
-企业角色：
-
-```text
-owner
-admin
-uploader
-viewer
-```
-
-完成标准：
-
-- 一个企业可以有多个成员。
-- 一个用户可以属于多个企业。
-- 不同角色有不同权限。
-- 上传资料时能记录属于哪个企业和哪个用户。
-
-### EU-P008 企业认证轻量版
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段做基础，第二阶段前可用
-- 后移风险：高
-
-建议在 `companies` 增加：
-
-```text
-verification_status
-verified_at
-verified_by
-verification_note
-country
-business_license_no
-```
-
-新增认证资料表：
-
-```text
-company_verification_documents
-- id
-- company_id
-- document_type
-- file_path
-- uploaded_by
-- review_status
-- created_at
-```
-
-认证状态：
-
-```text
-unverified
-pending
-verified
-rejected
-suspended
-```
-
-完成标准：
-
-- 企业可以提交认证资料。
-- 平台管理员可以审核通过或拒绝。
-- 前台能显示企业认证状态。
-- 未认证企业是否能上传，由后台配置控制。
-
-### EU-P009 上传确认与免责声明记录
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：极高
-
-建议新增：
-
-```text
-upload_confirmations
-- id
-- document_id
-- user_id
-- company_id
-- confirmed_authentic
-- confirmed_authorized
-- accepted_disclaimer
-- ip_address
-- user_agent
-- created_at
-```
-
-上传前必须勾选：
-
-```text
-我确认上传资料真实有效。
-我确认本人有权代表该企业上传资料。
-我确认资料不侵犯第三方权利。
-我已阅读并同意免责声明。
-我理解虚假资料由上传方承担责任。
-```
-
-完成标准：
-
-- 上传文件前必须勾选确认。
-- 确认记录保存到数据库。
-- 管理员可查看某个文件的上传确认记录。
-
-### EU-P010 完善审计日志
-
-- 状态：未开始
-- 优先级：P0 / 高
-- 阶段：第一阶段
-- 后移风险：高
-
-关键操作必须记录：
-
-```text
-注册
-登录
-创建企业
-提交企业认证
-审核企业认证
-创建产品
-上传文档
-修改文档
-删除/下架文档
-修改成员权限
-提交举报
-处理举报
-```
-
-建议字段：
-
-```text
-audit_logs
-- id
-- user_id
-- company_id
-- action
-- target_type
-- target_id
-- detail_json
-- ip_address
-- user_agent
-- created_at
-```
-
-完成标准：
-
-- 后台能看到关键操作记录。
-- 每个文件能追溯谁上传、何时上传、代表哪家企业上传。
-
-### EU-P011 法律页面简版
-
-- 状态：未开始
-- 优先级：P1 / 高
-- 阶段：第一阶段
-- 后移风险：中
-
-建议补齐：
-
-```text
-免责声明
-企业入驻协议
-证书上传承诺
-联系我们
-```
-
-完成标准：
-
-- Footer 能进入服务条款、隐私政策、免责声明、联系方式。
-- 上传页能链接到免责声明。
-- 第二阶段前法律入口完整。
-
-### EU-P012 环境变量配置
-
-- 状态：未开始
-- 优先级：P0 / 最高
-- 阶段：第一阶段
-- 后移风险：高
-
-当前项目存在固定部署路径，例如：
-
-```text
-BASE_URL = /eu-doc/api
-BASENAME = /eu-doc
-```
-
-建议改为环境变量：
-
-```text
-VITE_APP_BASE_PATH
-VITE_API_BASE_URL
-DATABASE_PATH
-UPLOAD_DIR
-PUBLIC_FILE_BASE_URL
-APP_ENV
-```
-
-环境文件：
-
-```text
-.env.local
-.env.test
-.env.production
-```
-
-完成标准：
-
-- 本地开发、小域名测试、正式域名部署可以使用不同配置。
-- 不需要改源码就能切换服务器和域名。
-
-### EU-P013 备份与恢复基础方案
-
-- 状态：未开始
-- 优先级：P0 / 高
-- 阶段：第一阶段
-- 后移风险：高
-
-第一阶段至少规划：
-
-```text
-数据库备份
-上传文件备份
-配置文件备份
-恢复步骤文档
-```
-
-第二阶段前必须可用：
-
-```text
-一键备份脚本
-备份文件命名规范
-恢复测试
-```
-
-完成标准：
-
-- 能备份当前数据库和上传文件。
-- 能在另一台机器恢复基本数据。
-- 第二阶段真实企业数据不会因为误操作丢失。
-
----
-
-## 6. 第二阶段任务摘要
-
-| 编号 | 任务 | 阶段 | 说明 |
-| --- | --- | --- | --- |
-| EU-P014 | 真实注册登录稳定化 | 第二阶段前 | 企业用户可自行注册、邮箱验证、登录稳定 |
-| EU-P015 | 企业认证后台 | 第二阶段前 | 管理员可审核企业认证资料 |
-| EU-P016 | 企业成员管理 | 第二阶段前 | owner/admin/uploader/viewer 权限可用 |
-| EU-P017 | 产品 + 文档上传流程 | 第二阶段前 | 企业可创建产品并上传证书、DoC、说明书 |
-| EU-P018 | 外部用户查看体验 | 第二阶段前 | 无需登录即可搜索和查看公开资料 |
-| EU-P019 | 举报与反馈入口 | 第二阶段前 | 用户可举报错误、虚假、过期资料 |
-| EU-P020 | 小域名部署稳定化 | 第二阶段前 | HTTPS、刷新、API、文件预览稳定 |
-| EU-P021 | 日志与错误排查 | 第二阶段前 | 后端日志、访问日志、友好错误提示 |
-| EU-P022 | 测试账号与演示数据 | 第二阶段前 | 准备不同行业样例产品和文件 |
-| EU-P023 | 帮助中心 | 第二阶段前 | C 端、企业、审批机构使用指南 |
-| EU-P024 | 新手引导 | 第二阶段 | 企业后台首次使用路径提示 |
-
----
-
-## 7. 第三阶段任务摘要
-
-| 编号 | 任务 | 阶段 | 说明 |
-| --- | --- | --- | --- |
-| EU-P025 | 套餐与订阅系统 | 第三阶段 | 免费试用、基础版、专业版、企业版 |
-| EU-P026 | 支付系统 | 第三阶段 | 支付订单、回调、续费、退款、发票 |
-| EU-P027 | 多语言完善 | 第三阶段 | 中文、英文、德文、法文、西班牙文、意大利文 |
-| EU-P028 | SEO | 第三阶段 | 产品页、企业页、证书页、sitemap、结构化数据 |
-| EU-P029 | 对象存储与 CDN | 第三阶段 | 腾讯云 COS / AWS S3 / CDN |
-| EU-P030 | 证书到期提醒 | 第三阶段 | 30/60/90 天到期提醒 |
-| EU-P031 | OCR 自动识别 | 第三阶段 | 识别证书编号、签发机构、有效期、标准 |
-| EU-P032 | 数据分析报表 | 第三阶段 | 浏览量、下载量、搜索关键词、地区分布 |
-| EU-P033 | API 开放平台 | 第三阶段 | API Key、查询接口、接口文档、调用限制 |
-
----
-
-## 8. 推荐开发顺序
-
-### 第一优先级：先做结构，不急着美化
-
-```text
-1. products
-2. documents
-3. categories
-4. tags
-5. users
-6. company_members
-7. company verification
-8. upload confirmations
-```
-
-### 第二优先级：打通完整闭环
-
-```text
-1. 企业注册
-2. 创建企业
-3. 企业认证
-4. 创建产品
-5. 上传证书/DoC/说明书
-6. 管理员审核
-7. 前台搜索
-8. 产品资料页展示
-9. 用户举报反馈
-```
-
-### 第三优先级：稳定性和迁移
-
-```text
-1. 环境变量
-2. 小域名部署
-3. HTTPS
-4. 数据备份
-5. 错误日志
-6. 恢复测试
-```
-
-### 第四优先级：商业化预留
-
-```text
-1. plans 表
-2. subscriptions 表
-3. usage_records 表
-4. 功能权限判断函数
-```
-
-注意：只预留，不接支付。
-
----
-
-## 9. AI 工作规则
-
-- 默认只读 `AGENTS.md`、`CURRENT_STATUS.md`、本文件和用户指定的相关源代码。
-- 不要默认读取 `docs/archive/`、`node_modules/`、`dist/`、`server/uploads/`、`server/data/`、`package-lock.json`。
-- 只有用户要求查历史、回退、备份状态、总结工作时，才读取 `WORK_LOG.md` 或 `docs/archive/` 中指定文件。
-- 开始新功能前，先确认是否需要版本号、Git commit、数据备份。
-- 后续不要只围绕 `certificates` 表继续堆字段，应逐步转向 `products + documents` 架构。
-
----
-
-## 10. 下一步建议
-
-不要直接改页面，先做：
-
-```text
-eu-doc 数据模型升级与迁移方案
-```
-
-方案必须包括：
-
-1. 新表结构。
-2. 旧数据如何迁移。
-3. 哪些旧字段保留。
-4. 哪些页面先不动。
-5. 哪些 API 先兼容旧结构。
-6. 第一阶段最小改动路径。
-7. 每一步如何验证没有破坏现有功能。
+## 注意事项
+
+1. **不要跳过地基**：用户认证、企业认证、法律声明必须先做
+2. **预留表结构**：即使不实现功能，也要先建好表
+3. **环境变量**：所有配置项都要可配置，不要写死
+4. **数据备份**：从一开始就养成备份习惯
+5. **代码规范**：保持一致性，方便后续维护

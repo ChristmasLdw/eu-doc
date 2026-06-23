@@ -1,388 +1,183 @@
 /**
- * 仪表盘页样式
+ * 仪表盘页样式 v2.1
+ * 企业所有者视角
  */
 
-.pageTitle {
+.page {
+  max-width: 1200px;
+}
+
+/* ===== 欢迎信息 ===== */
+.welcome {
+  margin-bottom: 32px;
+}
+
+.welcome h1 {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 24px;
   color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
-.loading,
-.error {
-  text-align: center;
-  padding: 48px;
-  color: var(--text-secondary);
+.welcome p {
   font-size: 14px;
+  color: var(--text-secondary);
 }
 
-.error {
-  color: #f87171;
+/* ===== 快捷操作 ===== */
+.quickActions {
+  margin-bottom: 32px;
 }
 
-/* ===== 统计卡片网格 ===== */
-.statsGrid {
+.quickActions h2,
+.overview h2,
+.shortcuts h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.actionsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
 }
 
-.statCard {
+.actionCard {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 24px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  transition: border-color 0.2s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
 }
 
-.statCard:hover {
-  border-color: var(--border-hover);
+.actionCard:hover {
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
 }
 
-.statIcon {
+.actionIcon {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: var(--radius-md);
-  flex-shrink: 0;
 }
 
-.statInfo {
+.actionCard span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ===== 数据概览 ===== */
+.overview {
+  margin-bottom: 32px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.statCard {
   display: flex;
   flex-direction: column;
-  color: var(--text-primary);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.statInfo:hover .statNumber {
-  color: var(--accent-blue);
+  align-items: center;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  text-align: center;
 }
 
 .statNumber {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
+  color: var(--accent-blue);
+  margin-bottom: 4px;
 }
 
 .statLabel {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-top: 2px;
 }
 
-/* ===== 双列布局 ===== */
-.grid {
+/* ===== 常用功能 ===== */
+.shortcuts {
+  margin-bottom: 32px;
+}
+
+.linksGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
-.card {
-  padding: 20px;
+.linkCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-}
-
-.cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.cardTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.viewAll {
-  font-size: 13px;
-  color: var(--accent-blue);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.viewAll:hover {
-  color: var(--accent-indigo);
-}
-
-/* ===== 水平条形图 ===== */
-.chart {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.chartRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.chartLabel {
-  width: 100px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chartBarBg {
-  flex: 1;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.chartBar {
-  height: 100%;
-  background: var(--accent-gradient);
-  border-radius: 4px;
-  transition: width 0.5s ease;
-  min-width: 4px;
-}
-
-.chartCount {
-  width: 32px;
-  font-size: 13px;
-  color: var(--text-primary);
-  font-weight: 600;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-/* ===== 操作日志列表 ===== */
-.logList {
-  display: flex;
-  flex-direction: column;
-}
-
-.logItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.logItem:last-child {
-  border-bottom: none;
-}
-
-.logInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.logAction {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.logTarget {
-  font-size: 12px;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.logTime {
-  font-size: 12px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-
-/* ===== 空状态 ===== */
-.empty {
-  padding: 32px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-/* ===== 证书列表（用户仪表盘） ===== */
-.certList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.certItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
-.certItem:hover {
+.linkCard:hover {
   border-color: var(--accent-blue);
-  background: var(--bg-hover);
+  background: var(--bg-card-hover);
 }
 
-.certInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1;
-}
-
-.certName {
+.linkCard span {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.certMeta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
+.linkArrow {
   color: var(--text-muted);
+  transition: transform 0.2s ease;
 }
 
-.certNo {
-  font-family: 'Monaco', 'Courier New', monospace;
-}
-
-.certDivider {
-  color: var(--text-muted);
-  opacity: 0.5;
-}
-
-.certCompany {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.certStatus {
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge.pending {
-  background: rgba(234, 179, 8, 0.1);
-  color: #facc15;
-}
-
-.badge.approved {
-  background: rgba(34, 197, 94, 0.1);
-  color: #4ade80;
-}
-
-.badge.rejected {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+.linkCard:hover .linkArrow {
+  transform: translateX(4px);
+  color: var(--accent-blue);
 }
 
 /* ===== 响应式 ===== */
-@media (max-width: 1024px) {
-  .statsGrid {
+@media (max-width: 768px) {
+  .actionsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .grid {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .linksGrid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 640px) {
-  /* 移动端：统计卡片单列 */
-  .statsGrid {
+@media (max-width: 480px) {
+  .actionsGrid {
     grid-template-columns: 1fr;
   }
 
-  /* 证书列表项优化 */
-  .certItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .certInfo {
-    width: 100%;
-  }
-
-  .certStatus {
-    width: 100%;
-    margin-left: 0;
-    display: flex;
-    justify-content: flex-start;
-  }
-
-  /* 统计卡片优化 */
-  .statCard {
-    padding: 16px;
-  }
-
-  .statIcon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .statNumber {
-    font-size: 24px;
-  }
-
-  /* 图表标签宽度调整 */
-  .chartLabel {
-    width: 80px;
-    font-size: 12px;
-  }
-
-  /* 日志列表优化 */
-  .logItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .logInfo {
-    width: 100%;
-  }
-
-  .logTime {
-    margin-left: 0;
-    font-size: 11px;
+  .statsGrid {
+    grid-template-columns: 1fr;
   }
 }

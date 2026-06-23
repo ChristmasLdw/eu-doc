@@ -198,3 +198,138 @@ a:hover {
   background: rgba(59, 130, 246, 0.3);
   color: var(--text-primary);
 }
+
+/* ===== 移动端全局优化 ===== */
+@media (max-width: 768px) {
+  /* 触摸优化 */
+  button, a, input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* 防止iOS自动缩放 */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  
+  /* 安全区域适配 */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ===== 移动端导航栏优化 ===== */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 12px;
+  }
+  
+  .nav-links {
+    gap: 4px;
+  }
+}
+
+/* ===== 移动端表格优化 ===== */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  thead {
+    display: none;
+  }
+  
+  tbody {
+    display: block;
+  }
+  
+  tr {
+    display: block;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px;
+  }
+  
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  
+  td:last-child {
+    border-bottom: none;
+  }
+}
+
+/* ===== 移动端模态框优化 ===== */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+  
+  .modal {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* ===== 移动端表单优化 ===== */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  input, select, textarea {
+    width: 100%;
+  }
+}
+
+/* ===== 移动端按钮优化 ===== */
+@media (max-width: 768px) {
+  .btn-block {
+    width: 100%;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    width: 100%;
+  }
+}
+
+/* ===== 移动端分页优化 ===== */
+@media (max-width: 768px) {
+  .pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .pagination button {
+    width: 100%;
+  }
+}

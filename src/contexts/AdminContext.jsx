@@ -84,13 +84,12 @@ export function AdminProvider({ children }) {
   }, []);
 
   // 登录方法
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (emailOrUsername, password) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      const data = await api.login(username, password);
-      // 后端返回 { success, token, admin: { id, username, role, ... } }
+      const data = await api.login(emailOrUsername, password);
       localStorage.setItem('admin_token', data.token);
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { admin: data.admin, token: data.token } });
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { admin: data.user, token: data.token } });
     } catch (error) {
       dispatch({ type: 'LOGIN_FAIL', payload: error.message });
       throw error;
@@ -98,11 +97,10 @@ export function AdminProvider({ children }) {
   }, []);
 
   // 注册方法（注册成功后自动登录）
-  const register = useCallback(async (username, password, companyName) => {
+  const register = useCallback(async (email, password, displayName, companyName) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      const data = await api.register(username, password, companyName);
-      // 后端返回 { success, token, user: { id, username, role, ... } }
+      const data = await api.register(email, password, displayName, companyName);
       localStorage.setItem('admin_token', data.token);
       dispatch({ type: 'LOGIN_SUCCESS', payload: { admin: data.user, token: data.token } });
     } catch (error) {
@@ -123,8 +121,7 @@ export function AdminProvider({ children }) {
   }, []);
 
   // isAdmin 计算属性：判断当前用户是否为管理员
-  // useMemo 缓存计算结果，避免每次渲染都重新计算
-  const isAdmin = useMemo(() => state.admin?.role === 'admin', [state.admin?.role]);
+  const isAdmin = useMemo(() => state.admin?.role === 'admin' || state.admin?.role === 'platform_admin', [state.admin?.role]);
 
   const value = useMemo(() => ({
     ...state,

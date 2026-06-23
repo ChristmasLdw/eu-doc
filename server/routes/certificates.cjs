@@ -97,6 +97,7 @@ router.get('/', (req, res) => {
     const dataSql = `
       SELECT
         d.id,
+        d.product_id,
         cm.cert_no,
         d.company_id,
         p.name as product_name,
@@ -107,6 +108,7 @@ router.get('/', (req, res) => {
         cm.expiry_date,
         cm.certificate_status as status,
         d.file_path,
+        cl.thumbnail_path,
         d.review_status,
         cm.remark,
         d.created_at,
@@ -114,6 +116,7 @@ router.get('/', (req, res) => {
         comp.name as company_name
       FROM documents d
       INNER JOIN certificate_metadata cm ON d.id = cm.document_id
+      LEFT JOIN certificates_legacy cl ON d.id = cl.id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
       ${whereClause}
@@ -158,6 +161,9 @@ router.get('/:id', (req, res) => {
         cm.expiry_date,
         cm.certificate_status as status,
         d.file_path,
+        cl.thumbnail_path,
+        cl.manual_path,
+        cl.declaration_path,
         d.review_status,
         cm.remark,
         d.created_at,
@@ -166,6 +172,7 @@ router.get('/:id', (req, res) => {
         comp.name_en as company_name_en
       FROM documents d
       INNER JOIN certificate_metadata cm ON d.id = cm.document_id
+      LEFT JOIN certificates_legacy cl ON d.id = cl.id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
       WHERE d.id = ? AND d.document_type = 'certificate'

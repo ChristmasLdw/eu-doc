@@ -1,14 +1,10 @@
 /**
  * EU-DOC 后台管理 - 登录页
- * 版本: 2.0.0
- *
- * 变更记录 (2.0.0):
- * - 添加多语言支持
+ * 版本: 2.1.0
  */
 
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import styles from './LoginPage.module.css';
 
@@ -20,7 +16,6 @@ export default function LoginPage() {
   const { login } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
 
   const from = location.state?.from?.pathname || '/admin';
 
@@ -29,7 +24,7 @@ export default function LoginPage() {
     setError('');
 
     if (!username.trim() || !password.trim()) {
-      setError(t('messages.loginFailed'));
+      setError('请输入用户名和密码');
       return;
     }
 
@@ -38,7 +33,7 @@ export default function LoginPage() {
       await login(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || t('messages.loginFailed'));
+      setError(err.message || '登录失败');
     } finally {
       setLoading(false);
     }
@@ -56,16 +51,16 @@ export default function LoginPage() {
           </div>
           <h1 className={styles.title}>EU-DOC</h1>
         </div>
-        <p className={styles.subtitle}>{t('auth.loginTitle')}</p>
+        <p className={styles.subtitle}>登录管理后台</p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="username">{t('auth.username')}</label>
+            <label className={styles.label} htmlFor="username">用户名</label>
             <input
               id="username"
               type="text"
               className={styles.input}
-              placeholder={t('auth.username')}
+              placeholder="请输入用户名"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -74,12 +69,12 @@ export default function LoginPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">{t('auth.password')}</label>
+            <label className={styles.label} htmlFor="password">密码</label>
             <input
               id="password"
               type="password"
               className={styles.input}
-              placeholder={t('auth.password')}
+              placeholder="请输入密码"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -102,13 +97,13 @@ export default function LoginPage() {
             className={styles.submitBtn}
             disabled={loading}
           >
-            {loading ? t('common.loading') : t('auth.loginButton')}
+            {loading ? '登录中...' : '登录'}
           </button>
         </form>
 
         <div className={styles.footer}>
-          {t('auth.noAccount')}
-          <Link to="/admin/register" className={styles.link}>{t('auth.goToRegister')}</Link>
+          还没有账号？
+          <Link to="/admin/register" className={styles.link}>立即注册</Link>
         </div>
       </div>
     </div>
