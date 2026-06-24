@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import styles from './UploadPage.module.css';
 
 export default function DocumentUploadPage() {
@@ -326,7 +326,13 @@ export default function DocumentUploadPage() {
                 onChange={(e) => setConfirmations(prev => ({ ...prev, accepted_disclaimer: e.target.checked }))}
                 style={{ marginTop: '4px' }}
               />
-              <span>我已阅读并同意免责声明，理解虚假资料由上传方承担全部法律责任</span>
+              <span>
+                我已阅读并同意
+                <Link to="/disclaimer" target="_blank" style={{ color: '#667eea', margin: '0 4px' }}>免责声明</Link>
+                和
+                <Link to="/upload-commitment" target="_blank" style={{ color: '#667eea', margin: '0 4px' }}>上传承诺书</Link>
+                ，理解虚假资料由上传方承担全部法律责任
+              </span>
             </label>
           </div>
         </div>

@@ -41,10 +41,14 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
 import EnterpriseAgreementPage from './pages/EnterpriseAgreementPage';
+import UploadCommitmentPage from './pages/UploadCommitmentPage';
 import ContactPage from './pages/ContactPage';
 import GuidePage from './pages/GuidePage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import EmailVerifyPage from './pages/EmailVerifyPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -64,18 +68,21 @@ import CompanyMembersPage from './pages/admin/CompanyMembersPage';
 import BatchUploadPage from './pages/admin/BatchUploadPage';
 import MyCompanyPage from './pages/admin/MyCompanyPage';
 import TeamMembersPage from './pages/admin/TeamMembersPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import UploadConfirmationsPage from './pages/admin/UploadConfirmationsPage';
 import { useAdmin } from './contexts/AdminContext';
 
 function App() {
   const location = useLocation();
   const { isAdmin } = useAdmin();
-  // 只在登录和注册页面隐藏导航栏
-  const isLoginOrRegister = location.pathname === '/admin/login' || location.pathname === '/admin/register';
+  // 只在登录和注册页面以及邮箱验证、密码重置页面隐藏导航栏
+  const authPages = ['/admin/login', '/admin/register', '/verify-email', '/forgot-password', '/reset-password'];
+  const isAuthPage = authPages.includes(location.pathname);
 
   return (
     <>
-      {/* 公共导航栏 - 除了登录/注册页面，所有页面都显示 */}
-      {!isLoginOrRegister && <Navbar />}
+      {/* 公共导航栏 - 除了认证页面，所有页面都显示 */}
+      {!isAuthPage && <Navbar />}
 
       {/*
         Routes 定义 URL 路径与页面组件的映射关系
@@ -115,8 +122,14 @@ function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/disclaimer" element={<DisclaimerPage />} />
         <Route path="/enterprise-agreement" element={<EnterpriseAgreementPage />} />
+        <Route path="/upload-commitment" element={<UploadCommitmentPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/guide" element={<GuidePage />} />
+
+        {/* 用户认证相关页面 */}
+        <Route path="/verify-email" element={<EmailVerifyPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* ===== 后台管理路由 ===== */}
         {/* 登录页 - 不需要登录保护 */}
@@ -160,6 +173,12 @@ function App() {
           <Route path="company" element={<MyCompanyPage />} />
           {/* 团队成员 */}
           <Route path="members" element={<TeamMembersPage />} />
+          {/* 企业成员管理 */}
+          <Route path="company-members" element={<CompanyMembersPage />} />
+          {/* 上传确认记录 */}
+          <Route path="upload-confirmations" element={<UploadConfirmationsPage />} />
+          {/* 个人设置 */}
+          <Route path="settings" element={<SettingsPage />} />
           {/* 错误报告管理 */}
           <Route path="reports" element={<ReportsPage />} />
           {/* 操作日志 */}
@@ -167,8 +186,8 @@ function App() {
         </Route>
       </Routes>
 
-      {/* 公共页脚 - 除了登录/注册页面和后台管理页面 */}
-      {!isLoginOrRegister && !location.pathname.startsWith('/admin') && <Footer />}
+      {/* 公共页脚 - 除了认证页面和后台管理页面 */}
+      {!isAuthPage && !location.pathname.startsWith('/admin') && <Footer />}
     </>
   );
 }

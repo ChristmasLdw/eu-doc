@@ -14,6 +14,7 @@ export default function Footer() {
           <Link to="/terms">服务条款</Link>
           <Link to="/privacy">隐私政策</Link>
           <Link to="/disclaimer">免责声明</Link>
+          <Link to="/upload-commitment">上传承诺书</Link>
           <Link to="/enterprise-agreement">企业入驻</Link>
           <Link to="/contact">联系我们</Link>
         </div>

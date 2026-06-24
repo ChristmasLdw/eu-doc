@@ -2,6 +2,40 @@
 
 本文件记录最近三天工作日志、每日总结和下一步计划。超过三天的内容应归档到 `docs/archive/summaries/` 或 `docs/archive/status-and-plans/`。
 
+## 2026-06-24
+
+### 2026-06-24 19:30:00 CST
+
+- 关联任务：P0 级地基功能实施（部分完成）
+- 关联版本：v2.3.0
+- 工作内容：
+  - **P0-6 环境变量配置**：创建 .env.development、.env.production、.env.example、server/.env.example，创建 src/config/env.js 统一管理环境变量
+  - **P0-1 用户认证体系**：
+    - 创建邮箱验证页面 EmailVerifyPage.jsx
+    - 创建忘记密码页面 ForgotPasswordPage.jsx
+    - 创建重置密码页面 ResetPasswordPage.jsx
+    - 创建个人设置页面 SettingsPage.jsx（修改密码功能）
+    - 登录页面添加"忘记密码"链接
+  - **P0-4 上传确认逻辑**：
+    - 创建上传确认记录管理页面 UploadConfirmationsPage.jsx
+    - 创建后端 API /api/v2/upload-confirmations（查询上传确认记录）
+    - 文档上传页面确认勾选框添加法律页面链接
+  - **P0-5 法律页面完善**：
+    - 创建上传承诺书页面 UploadCommitmentPage.jsx
+    - Footer 添加"上传承诺书"链接
+  - **路由配置**：
+    - 更新 server/index.cjs 注册新路由
+    - 更新 App.jsx 添加所有新页面路由
+  - **构建验证**：npm run build 成功通过
+- 完成情况：部分完成（P0-1、P0-4、P0-5、P0-6 完成；P0-2、P0-3 未实施）
+- 未完成内容：
+  - P0-2 企业认证流程（认证申请、管理员审核）
+  - P0-3 企业成员权限（权限检查中间件、企业切换功能）
+- 下一步建议：
+  - 继续完成 P0-2 和 P0-3
+  - 测试所有新功能
+  - 更新多语言翻译文件
+
 ## 2026-06-22 16:30:00 CST - Mimo 接手前备份：v2.1.0
 
 - 关联版本：v2.1.0
