@@ -327,4 +327,149 @@ router.post('/:id/logo', authMiddleware, logoUpload.single('logo'), (req, res) =
   });
 });
 
+/**
+ * POST /api/companies/:id/verification
+ * 提交企业认证申请（需认证）
+ */
+router.post('/:id/verification', authMiddleware, upload.fields([
+  { name: 'business_license', maxCount: 1 },
+  { name: 'authorization_letter', maxCount: 1 }
+]), (req, res) => {
+  const companyId = req.params.id;
+
+  // 检查企业是否存在
+  const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(companyId);
+  if (!company) {
+    return res.status(404).json({ success: false, message: '企业不存在' });
+  }
+
+  // 检查用户是否是该企业的成员
+  const membership = db.prepare('SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = ?')
+    .get(req.admin.id, companyId, 'active');
+
+  if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    return res.status(403).json({ success: false, message: '只有企业所有者或管理员可以申请认证' });
+  }
+
+  // 检查是否已经认证或待审核
+  if (company.verification_status === 'verified') {
+    return res.status(400).json({ success: false, message: '企业已通过认证' });
+  }
+  if (company.verification_status === 'pending') {
+    return res.status(400).json({ success: false, message: '认证申请审核中，请耐心等待' });
+  }
+
+  if (!req.files || !req.files.business_license) {
+    return res.status(400).json({ success: false, message: '请上传营业执照' });
+  }
+
+  try {
+    // 保存文件到 company_verification_documents 表
+    const businessLicenseFile = req.files.business_license[0];
+    const businessLicensePath = `/logos/${businessLicenseFile.filename}`;
+
+    db.prepare(`
+      INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by, review_status)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(companyId, 'business_license', businessLicensePath, businessLicenseFile.size, req.admin.id, 'pending');
+
+    // 如果有授权书
+    if (req.files.authorization_letter) {
+      const authLetterFile = req.files.authorization_letter[0];
+      const authLetterPath = `/logos/${authLetterFile.filename}`;
+      db.prepare(`
+        INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by, review_status)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(companyId, 'authorization_letter', authLetterPath, authLetterFile.size, req.admin.id, 'pending');
+    }
+
+    // 更新企业认证状态为待审核
+    db.prepare('UPDATE companies SET verification_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run('pending', companyId);
+
+    // 记录审计日志
+    db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(req.admin.id, 'submit_verification', 'company', companyId, JSON.stringify({ status: 'pending' }), req.ip);
+
+    res.json({ success: true, message: '认证申请已提交，等待管理员审核' });
+  } catch (err) {
+    console.error('提交认证申请失败:', err);
+    res.status(500).json({ success: false, message: '提交失败' });
+  }
+});
+
+/**
+ * GET /api/v2/companies/verifications
+ * 获取企业认证申请列表（仅管理员）
+ */
+router.get('/verifications', authMiddleware, requireAdmin, (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let whereClause = '';
+    const params = [];
+
+    if (status) {
+      whereClause = 'WHERE c.verification_status = ?';
+      params.push(status);
+    }
+
+    const companies = db.prepare(`
+      SELECT c.id as company_id, c.name as company_name, c.business_license_no, c.contact_person,
+             c.contact_email, c.verification_status, c.created_at, c.updated_at
+      FROM companies c
+      ${whereClause}
+      ORDER BY c.updated_at DESC
+    `).all(...params);
+
+    res.json({ success: true, data: companies });
+  } catch (err) {
+    console.error('获取认证列表失败:', err);
+    res.status(500).json({ success: false, message: '获取失败' });
+  }
+});
+
+/**
+ * PUT /api/companies/:id/verification
+ * 审核企业认证（仅管理员）
+ */
+router.put('/:id/verification', authMiddleware, requireAdmin, (req, res) => {
+  const companyId = req.params.id;
+  const { action, note } = req.body; // action: 'approve' or 'reject'
+
+  if (!action || !['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ success: false, message: '无效的操作' });
+  }
+
+  const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(companyId);
+  if (!company) {
+    return res.status(404).json({ success: false, message: '企业不存在' });
+  }
+
+  if (company.verification_status !== 'pending') {
+    return res.status(400).json({ success: false, message: '该企业当前不是待审核状态' });
+  }
+
+  try {
+    const newStatus = action === 'approve' ? 'verified' : 'rejected';
+
+    db.prepare(`
+      UPDATE companies
+      SET verification_status = ?, verified_at = CURRENT_TIMESTAMP, verified_by = ?, verification_note = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(newStatus, req.admin.id, note || null, companyId);
+
+    // 记录审计日志
+    db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(req.admin.id, action === 'approve' ? 'approve_verification' : 'reject_verification', 'company', companyId,
+           JSON.stringify({ status: newStatus, note }), req.ip);
+
+    res.json({ success: true, message: action === 'approve' ? '认证已通过' : '认证已拒绝' });
+  } catch (err) {
+    console.error('审核失败:', err);
+    res.status(500).json({ success: false, message: '审核失败' });
+  }
+});
+
+
 module.exports = router;

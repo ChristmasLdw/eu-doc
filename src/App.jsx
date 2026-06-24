@@ -42,6 +42,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
 import EnterpriseAgreementPage from './pages/EnterpriseAgreementPage';
 import UploadCommitmentPage from './pages/UploadCommitmentPage';
+import CompanyVerificationPage from './pages/CompanyVerificationPage';
 import ContactPage from './pages/ContactPage';
 import GuidePage from './pages/GuidePage';
 import ProductsPage from './pages/ProductsPage';
@@ -70,6 +71,7 @@ import MyCompanyPage from './pages/admin/MyCompanyPage';
 import TeamMembersPage from './pages/admin/TeamMembersPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import UploadConfirmationsPage from './pages/admin/UploadConfirmationsPage';
+import CompanyVerificationAdminPage from './pages/admin/CompanyVerificationAdminPage';
 import { useAdmin } from './contexts/AdminContext';
 
 function App() {
@@ -131,6 +133,9 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+        {/* 企业认证申请页面 */}
+        <Route path="/company-verification" element={<CompanyVerificationPage />} />
+
         {/* ===== 后台管理路由 ===== */}
         {/* 登录页 - 不需要登录保护 */}
         <Route path="/admin/login" element={<LoginPage />} />
@@ -177,6 +182,8 @@ function App() {
           <Route path="company-members" element={<CompanyMembersPage />} />
           {/* 上传确认记录 */}
           <Route path="upload-confirmations" element={<UploadConfirmationsPage />} />
+          {/* 企业认证审核 */}
+          <Route path="company-verifications" element={<CompanyVerificationAdminPage />} />
           {/* 个人设置 */}
           <Route path="settings" element={<SettingsPage />} />
           {/* 错误报告管理 */}
