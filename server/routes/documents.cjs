@@ -15,6 +15,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { requireCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
 
@@ -240,6 +241,34 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   if (!company_id || !product_id || !document_type || !title) {
     // 删除已上传的文件
     if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(400).json({
+      success: false,
+      message: '企业ID、产品ID、文档类型和标题为必填项',
+    });
+  }
+
+  // 权限检查：用户必须是该企业的 owner/admin/uploader
+  if (req.admin.role !== 'platform_admin' && req.admin.role !== 'admin') {
+    const membership = db.prepare(`
+      SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = 'active'
+    `).get(req.admin.id, company_id);
+
+    if (!membership) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return res.status(403).json({
+        success: false,
+        message: '您不是该企业的成员，无法上传文档',
+      });
+    }
+
+    if (!['owner', 'admin', 'uploader'].includes(membership.role)) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return res.status(403).json({
+        success: false,
+        message: '权限不足，只有企业所有者、管理员和上传者可以上传文档',
+      });
+    }
+  }
     return res.status(400).json({
       success: false,
       message: '企业ID、产品ID、文档类型和标题为必填项',

@@ -13,6 +13,7 @@
 const { Router } = require('express');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { requireCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
 
@@ -194,6 +195,27 @@ router.post('/', authMiddleware, (req, res) => {
       success: false,
       message: '企业ID和产品名称为必填项',
     });
+  }
+
+  // 权限检查：用户必须是该企业的 owner/admin
+  if (req.admin.role !== 'platform_admin' && req.admin.role !== 'admin') {
+    const membership = db.prepare(`
+      SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = 'active'
+    `).get(req.admin.id, company_id);
+
+    if (!membership) {
+      return res.status(403).json({
+        success: false,
+        message: '您不是该企业的成员，无法创建产品',
+      });
+    }
+
+    if (!['owner', 'admin'].includes(membership.role)) {
+      return res.status(403).json({
+        success: false,
+        message: '权限不足，只有企业所有者和管理员可以创建产品',
+      });
+    }
   }
 
   // 权限校验：非管理员只能为自己的企业创建产品
