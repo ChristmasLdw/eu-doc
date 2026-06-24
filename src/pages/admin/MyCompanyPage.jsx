@@ -31,20 +31,21 @@ export default function MyCompanyPage() {
   const fetchCompany = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      // 获取用户的企业列表
-      const res = await fetch('/eu-doc/api/v2/company-members?company_id=1', {
+
+      // 先获取当前用户信息，看看有没有企业
+      const userRes = await fetch('/eu-doc/api/auth/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
-      
-      if (data.success && data.data.length > 0) {
-        // 获取企业详情
-        const companyId = data.data[0].company_id || 1;
+      const userData = await userRes.json();
+
+      if (userData.success && userData.user.companies && userData.user.companies.length > 0) {
+        // 用户有企业，获取第一个企业的详情
+        const companyId = userData.user.companies[0].id;
         const companyRes = await fetch(`/eu-doc/api/companies/${companyId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const companyData = await companyRes.json();
-        
+
         if (companyData.success) {
           setCompany(companyData.data);
           setFormData({
@@ -81,7 +82,9 @@ export default function MyCompanyPage() {
 
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('/eu-doc/api/v2/company-members', {
+
+      // 先创建企业
+      const res = await fetch('/eu-doc/api/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,13 +96,17 @@ export default function MyCompanyPage() {
 
       if (data.success) {
         setSuccess('企业创建成功');
-        fetchCompany();
+        setError('');
+        // 重新获取企业信息
+        setTimeout(() => {
+          fetchCompany();
+        }, 500);
       } else {
         setError(data.message || '创建失败');
       }
     } catch (err) {
       console.error('创建企业失败:', err);
-      setError('创建失败');
+      setError('创建失败，请稍后重试');
     }
   };
 
