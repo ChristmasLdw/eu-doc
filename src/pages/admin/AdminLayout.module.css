@@ -104,6 +104,67 @@
   flex-shrink: 0;
 }
 
+/* 导航链接 - 新增统一样式 */
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.navLink svg {
+  flex-shrink: 0;
+}
+
+/* 激活状态 */
+.navActive {
+  color: var(--text-primary);
+  background: var(--bg-input);
+  font-weight: 600;
+}
+
+.navActive:hover {
+  background: var(--bg-card-hover);
+}
+
+/* 禁用状态 - 灰色显示 */
+.navDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.navDisabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+/* 禁用状态的提示 */
+.navDisabled[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 100%;
+  margin-left: 10px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
 /* 侧边栏底部 */
 .sidebarFooter {
   padding: 12px;

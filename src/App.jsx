@@ -145,15 +145,17 @@ function App() {
         {/*
           后台管理布局 - 需要登录保护
           AdminRoute 包裹 AdminLayout，未登录会重定向到 /admin/login
-          根据用户角色选择不同布局：
-          - 管理员(admin): 使用完整的 AdminLayout（带侧边栏）
-          - 普通用户(user): 使用简化的 AdminLayoutSimple（只有导航栏）
+
+          v2.2 改进：统一使用 AdminLayout
+          - 所有用户看到相同的后台布局（带侧边栏）
+          - 根据用户角色动态控制菜单的启用/禁用状态
+          - 权限配置在 src/config/menuPermissions.js
         */}
         <Route
           path="/admin"
           element={
             <AdminRoute>
-              {isAdmin ? <AdminLayout /> : <AdminLayoutSimple />}
+              <AdminLayout />
             </AdminRoute>
           }
         >
