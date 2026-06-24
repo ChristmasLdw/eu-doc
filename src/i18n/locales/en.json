@@ -414,6 +414,96 @@
       "action": "Action",
       "target": "Target",
       "detail": "Detail"
+    },
+    "settingsPage": {
+      "title": "Settings",
+      "subtitle": "Manage your account settings",
+      "passwordTab": "Change Password",
+      "profileTab": "Profile",
+      "oldPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "changePassword": "Change Password",
+      "changing": "Changing...",
+      "passwordSuccess": "Password changed successfully",
+      "email": "Email",
+      "displayName": "Display Name",
+      "role": "Role",
+      "emailVerified": "Email Verification Status",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "platformAdmin": "Platform Admin",
+      "user": "User"
+    },
+    "uploadConfirmationsPage": {
+      "title": "Upload Confirmations",
+      "subtitle": "View all document upload confirmation records",
+      "search": "Search by document title, user email...",
+      "documentTitle": "Document Title",
+      "uploader": "Uploader",
+      "company": "Company",
+      "authentic": "Authenticity",
+      "authorized": "Authorization",
+      "disclaimer": "Disclaimer",
+      "ipAddress": "IP Address",
+      "uploadTime": "Upload Time",
+      "loading": "Loading...",
+      "noRecords": "No upload confirmation records"
+    },
+    "companyVerificationPage": {
+      "title": "Company Verification",
+      "subtitle": "Submit verification documents to get certified badge and more benefits",
+      "benefits": "Certified Benefits",
+      "selectCompany": "Select Company",
+      "businessLicense": "Business License",
+      "authorizationLetter": "Authorization Letter (Optional)",
+      "submit": "Submit Application",
+      "submitting": "Submitting...",
+      "fileHint": "Support JPG, PNG, PDF format, max 5MB",
+      "authLetterHint": "Upload authorization letter if not the legal representative"
+    },
+    "companyVerificationAdminPage": {
+      "title": "Verification Review",
+      "subtitle": "Review company verification applications",
+      "pending": "Pending",
+      "all": "All",
+      "viewDetails": "View Details",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reviewNote": "Review Note",
+      "reviewing": "Processing...",
+      "approveSuccess": "Approved",
+      "rejectSuccess": "Rejected",
+      "loading": "Loading...",
+      "noApplications": "No applications"
+    },
+    "emailVerifyPage": {
+      "verifying": "Verifying email...",
+      "success": "Verification successful",
+      "failed": "Verification failed",
+      "redirecting": "Redirecting to login in 3 seconds",
+      "backToLogin": "Back to Login"
+    },
+    "forgotPasswordPage": {
+      "title": "Forgot Password",
+      "subtitle": "Enter your email to receive password reset link",
+      "email": "Email",
+      "sendLink": "Send Reset Link",
+      "sending": "Sending...",
+      "emailSent": "Email Sent",
+      "checkEmail": "If the email is registered, you will receive a password reset email. Please check your inbox.",
+      "backToLogin": "Back to Login"
+    },
+    "resetPasswordPage": {
+      "title": "Reset Password",
+      "subtitle": "Enter your new password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "resetButton": "Reset Password",
+      "resetting": "Resetting...",
+      "success": "Password Reset Successful",
+      "successMessage": "Your password has been reset successfully. Please login with new password.",
+      "redirecting": "Redirecting to login in 3 seconds"
     }
   },
   "footer": {
@@ -421,6 +511,9 @@
     "contact": "Contact",
     "terms": "Terms",
     "privacy": "Privacy",
+    "disclaimer": "Disclaimer",
+    "uploadCommitment": "Upload Commitment",
+    "enterpriseAgreement": "Enterprise Agreement",
     "copyright": "© 2026 EU-DOC. All rights reserved."
   },
   "messages": {

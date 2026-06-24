@@ -427,6 +427,96 @@
       "action": "操作类型",
       "target": "目标",
       "detail": "详情"
+    },
+    "settingsPage": {
+      "title": "个人设置",
+      "subtitle": "管理您的账号设置",
+      "passwordTab": "修改密码",
+      "profileTab": "个人信息",
+      "oldPassword": "原密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码",
+      "changePassword": "确认修改",
+      "changing": "修改中...",
+      "passwordSuccess": "密码修改成功",
+      "email": "邮箱",
+      "displayName": "显示名称",
+      "role": "角色",
+      "emailVerified": "邮箱验证状态",
+      "verified": "已验证",
+      "unverified": "未验证",
+      "platformAdmin": "平台管理员",
+      "user": "普通用户"
+    },
+    "uploadConfirmationsPage": {
+      "title": "上传确认记录",
+      "subtitle": "查看所有文档上传时的确认声明记录",
+      "search": "搜索文档标题、用户邮箱...",
+      "documentTitle": "文档标题",
+      "uploader": "上传者",
+      "company": "企业",
+      "authentic": "真实性确认",
+      "authorized": "授权确认",
+      "disclaimer": "免责声明",
+      "ipAddress": "IP 地址",
+      "uploadTime": "上传时间",
+      "loading": "加载中...",
+      "noRecords": "暂无上传确认记录"
+    },
+    "companyVerificationPage": {
+      "title": "企业认证申请",
+      "subtitle": "提交企业认证资料，获得认证标识和更多权益",
+      "benefits": "认证企业权益",
+      "selectCompany": "选择企业",
+      "businessLicense": "营业执照",
+      "authorizationLetter": "授权书（可选）",
+      "submit": "提交认证申请",
+      "submitting": "提交中...",
+      "fileHint": "支持 JPG、PNG、PDF 格式，不超过 5MB",
+      "authLetterHint": "如非企业法人申请，请上传企业授权书"
+    },
+    "companyVerificationAdminPage": {
+      "title": "企业认证审核",
+      "subtitle": "审核企业提交的认证资料",
+      "pending": "待审核",
+      "all": "全部",
+      "viewDetails": "查看资料",
+      "approve": "通过",
+      "reject": "拒绝",
+      "reviewNote": "审核意见",
+      "reviewing": "处理中...",
+      "approveSuccess": "认证已通过",
+      "rejectSuccess": "认证已拒绝",
+      "loading": "加载中...",
+      "noApplications": "暂无认证申请"
+    },
+    "emailVerifyPage": {
+      "verifying": "正在验证邮箱...",
+      "success": "验证成功",
+      "failed": "验证失败",
+      "redirecting": "页面将在 3 秒后自动跳转到登录页",
+      "backToLogin": "返回登录"
+    },
+    "forgotPasswordPage": {
+      "title": "忘记密码",
+      "subtitle": "输入您的注册邮箱，我们将发送密码重置链接",
+      "email": "邮箱",
+      "sendLink": "发送重置链接",
+      "sending": "发送中...",
+      "emailSent": "邮件已发送",
+      "checkEmail": "如果该邮箱已注册，您将收到密码重置邮件。请查收邮箱并点击链接重置密码。",
+      "backToLogin": "返回登录"
+    },
+    "resetPasswordPage": {
+      "title": "重置密码",
+      "subtitle": "请输入您的新密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认密码",
+      "resetButton": "重置密码",
+      "resetting": "重置中...",
+      "success": "密码重置成功",
+      "successMessage": "您的密码已成功重置，请使用新密码登录",
+      "redirecting": "页面将在 3 秒后自动跳转到登录页"
     }
   },
   "footer": {
@@ -434,6 +524,9 @@
     "contact": "联系我们",
     "terms": "服务条款",
     "privacy": "隐私政策",
+    "disclaimer": "免责声明",
+    "uploadCommitment": "上传承诺书",
+    "enterpriseAgreement": "企业入驻",
     "copyright": "© 2026 EU-DOC. 保留所有权利。"
   },
   "messages": {
