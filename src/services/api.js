@@ -61,12 +61,10 @@ async function request(url, options = {}) {
 
   // 如果是 FormData（文件上传），不设置 Content-Type，让浏览器自动设置 boundary
   const isFormData = options.body instanceof FormData;
-  const headers = isFormData
-    ? createHeaders({ ...customHeaders, 'Content-Type': undefined })
-    : createHeaders(customHeaders);
+  const headers = createHeaders(customHeaders);
 
-  // 删除 Content-Type 为 undefined 的条目
-  if (headers['Content-Type'] === undefined) {
+  // FormData 上传时必须让浏览器自动生成 Content-Type 和 boundary
+  if (isFormData) {
     delete headers['Content-Type'];
   }
 
@@ -213,8 +211,10 @@ export function login(emailOrUsername, password) {
 }
 
 /** 获取当前用户信息（验证 token 有效性） */
-export function getMe() {
-  return request('/auth/me');
+export async function getMe() {
+  const response = await request('/auth/me');
+  // v2.0 后端返回 {success: true, user: {...}}，需要提取 user 字段
+  return response.user || response.admin || response;
 }
 
 /** 获取用户列表（仅管理员） */
@@ -226,7 +226,7 @@ export function getUsers() {
 export function updatePassword(oldPassword, newPassword) {
   return request('/auth/password', {
     method: 'PUT',
-    body: JSON.stringify({ oldPassword, newPassword }),
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
   });
 }
 
@@ -337,6 +337,15 @@ export function getCompanies(params = {}) {
       data.data = data.data.map(keysToCamelCase);
     }
     return data;
+  });
+}
+
+/** 获取当前登录用户可管理的企业列表 */
+export function getMyCompanies() {
+  return request('/companies?my=1&pageSize=100').then((data) => {
+    if (Array.isArray(data)) return data.map(keysToCamelCase);
+    if (data && Array.isArray(data.data)) return data.data.map(keysToCamelCase);
+    return [];
   });
 }
 
@@ -464,4 +473,130 @@ export function updateReportStatus(id, status, adminResponse) {
 /** 检查重复证书 */
 export function checkDuplicates(certId) {
   return request(`/reports/check-duplicates/${certId}`).then(keysToCamelCase);
+}
+
+// ===== 后台 v2 个人类目 API =====
+
+export function getPersonalOverview() {
+  return request('/personal/overview').then(keysToCamelCase);
+}
+
+export function updatePersonalProfile(data) {
+  return request('/personal/profile', {
+    method: 'PUT',
+    body: JSON.stringify({
+      display_name: data.displayName,
+      real_name: data.realName,
+      position: data.position,
+      department: data.department,
+      bio: data.bio,
+    }),
+  }).then(keysToCamelCase);
+}
+
+export function uploadPersonalAvatar(file) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return request('/personal/avatar', {
+    method: 'POST',
+    body: formData,
+  }).then(keysToCamelCase);
+}
+
+export function deleteFavorite(id) {
+  return request(`/personal/favorites/${id}`, { method: 'DELETE' });
+}
+
+export function updateFavoriteNote(id, note) {
+  return request(`/personal/favorites/${id}/note`, {
+    method: 'PUT',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export function updateHistorySetting(historyEnabled) {
+  return request('/personal/history/settings', {
+    method: 'PUT',
+    body: JSON.stringify({ history_enabled: historyEnabled }),
+  }).then(keysToCamelCase);
+}
+
+export function clearHistory() {
+  return request('/personal/history', { method: 'DELETE' });
+}
+
+export function markAllNotificationsRead() {
+  return request('/personal/notifications/read-all', { method: 'PUT' });
+}
+
+export function markNotificationRead(id) {
+  return request(`/personal/notifications/${id}/read`, { method: 'PUT' });
+}
+
+export function revokeOtherSessions() {
+  return request('/personal/sessions/revoke-others', { method: 'PUT' });
+}
+
+export function getCompanyProducts(companyId) {
+  return request(`/v2/products?companyId=${companyId}&status=all&pageSize=500`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
+    return response;
+  });
+}
+
+export function getCompanyDocuments(companyId) {
+  return request(`/v2/documents?companyId=${companyId}&reviewStatus=all&status=all&pageSize=500`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
+    return response;
+  });
+}
+
+export function createProduct(data) {
+  return request('/v2/products', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateProduct(id, data) {
+  return request(`/v2/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export function createDocument(data) {
+  const formData = new FormData();
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) formData.append(key, value);
+  });
+  return request('/v2/documents', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function updateDocument(id, data) {
+  return request(`/v2/documents/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export function replaceDocumentFile(id, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request(`/v2/documents/${id}/replace`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function uploadProductImage(id, file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  return request(`/v2/products/${id}/image`, {
+    method: 'POST',
+    body: formData,
+  }).then(keysToCamelCase);
 }

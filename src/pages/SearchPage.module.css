@@ -1078,3 +1078,18 @@
 .companyCard:hover .companyViewBtn {
   color: var(--accent-blue);
 }
+
+:global(.chrome-collapsed) .searchBar {
+  transform: translateY(-120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.searchBar {
+  transition: transform 0.24s ease, opacity 0.2s ease, background 0.3s ease;
+}
+
+/* 搜索栏跟随导航栏柔和收起 */
+.searchBar {
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease, background 0.3s ease;
+}

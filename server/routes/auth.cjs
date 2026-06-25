@@ -68,7 +68,7 @@ router.post('/register', (req, res) => {
     `).run(userId, email, verifyToken, expiresAt);
 
     // 生成 token
-    const user = db.prepare('SELECT id, email, display_name, platform_role FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT id, email, display_name, platform_role, session_version FROM users WHERE id = ?').get(userId);
     const token = generateToken(user);
 
     // 记录日志
@@ -107,12 +107,13 @@ router.post('/login', (req, res) => {
   if (!user) {
     const legacyAdmin = db.prepare('SELECT * FROM admins_legacy WHERE username = ?').get(loginId);
     if (legacyAdmin) {
-      const isMatch = bcrypt.compareSync(password, legacyAdmin.password_hash);
-      if (!isMatch) {
+      const isLegacyMatch = bcrypt.compareSync(password, legacyAdmin.password_hash);
+      if (!isLegacyMatch) {
         return res.status(401).json({ success: false, message: '用户名或密码错误' });
       }
-      // 从 users 表查找对应用户
-      user = db.prepare('SELECT * FROM users WHERE email = ?').get(`${loginId}@legacy.local`);
+
+      // 兼容旧账号 admin：通过后映射到正式平台管理员账号。
+      user = db.prepare('SELECT * FROM users WHERE email = ?').get('admin@eu-doc.local');
     }
   }
 
@@ -143,6 +144,7 @@ router.post('/login', (req, res) => {
       display_name: user.display_name,
       role: user.platform_role,
       email_verified: user.email_verified,
+      session_version: user.session_version || 0,
     },
   });
 });
@@ -152,7 +154,7 @@ router.post('/login', (req, res) => {
  * 获取当前用户信息
  */
 router.get('/me', authMiddleware, (req, res) => {
-  const user = db.prepare('SELECT id, email, display_name, platform_role, email_verified, phone, created_at FROM users WHERE id = ?')
+  const user = db.prepare('SELECT id, email, display_name, platform_role, email_verified, phone, user_code, session_version, created_at FROM users WHERE id = ?')
     .get(req.admin.id);
 
   if (!user) {
@@ -283,8 +285,15 @@ router.put('/password', authMiddleware, (req, res) => {
   }
 
   const hash = bcrypt.hashSync(new_password, 10);
-  db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+  db.prepare('UPDATE users SET password_hash = ?, session_version = COALESCE(session_version, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
     .run(hash, user.id);
+
+  // 兼容旧用户名登录：admin -> admin@legacy.local
+  if (user.email && user.email.endsWith('@legacy.local')) {
+    const legacyUsername = user.email.replace('@legacy.local', '');
+    db.prepare('UPDATE admins_legacy SET password_hash = ? WHERE username = ?')
+      .run(hash, legacyUsername);
+  }
 
   db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?)')
     .run(user.id, 'update_password', 'user', user.id, req.ip);

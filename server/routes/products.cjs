@@ -11,11 +11,35 @@
  */
 
 const { Router } = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 const { requireCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
+
+const imageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/products');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `product-${req.params.id}-${Date.now()}${ext}`);
+  },
+});
+
+const imageUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('只支持 JPG、PNG、WebP 产品图'));
+  },
+});
 
 // GET /api/v2/products - 获取产品列表
 router.get('/', (req, res) => {
@@ -39,8 +63,15 @@ router.get('/', (req, res) => {
     // 构建 WHERE 条件
     const conditions = [];
     const params = [];
+    const authHeader = req.headers.authorization;
+    const hasToken = authHeader && authHeader.startsWith('Bearer ');
 
-    if (status) {
+    if (!hasToken) {
+      conditions.push("COALESCE(c.verification_status, 'pending') = 'verified'");
+      conditions.push('COALESCE(c.public_visible, 1) = 1');
+    }
+
+    if (status && status !== 'all') {
       conditions.push('p.status = ?');
       params.push(status);
     }
@@ -67,6 +98,8 @@ router.get('/', (req, res) => {
     const countSql = `
       SELECT COUNT(*) as total
       FROM products p
+      LEFT JOIN companies c ON p.company_id = c.id
+      LEFT JOIN categories cat ON p.category_primary_id = cat.id
       ${whereClause}
     `;
     const { total } = db.prepare(countSql).get(...params);
@@ -210,24 +243,10 @@ router.post('/', authMiddleware, (req, res) => {
       });
     }
 
-    if (!['owner', 'admin'].includes(membership.role)) {
+    if (!['owner', 'admin', 'applicant'].includes(membership.role)) {
       return res.status(403).json({
         success: false,
         message: '权限不足，只有企业所有者和管理员可以创建产品',
-      });
-    }
-  }
-
-  // 权限校验：非管理员只能为自己的企业创建产品
-  if (req.admin.role !== 'admin') {
-    // 获取用户所属企业
-    const userCompany = db.prepare('SELECT company_name FROM admins WHERE id = ?').get(req.admin.id);
-    const targetCompany = db.prepare('SELECT name FROM companies WHERE id = ?').get(company_id);
-
-    if (!userCompany || !targetCompany || userCompany.company_name !== targetCompany.name) {
-      return res.status(403).json({
-        success: false,
-        message: '无权为该企业创建产品',
       });
     }
   }
@@ -283,13 +302,13 @@ router.put('/:id', authMiddleware, (req, res) => {
     });
   }
 
-  // 权限校验：非管理员只能编辑自己企业的产品
-  if (req.admin.role !== 'admin') {
-    // 获取用户所属企业
-    const userCompany = db.prepare('SELECT company_name FROM admins WHERE id = ?').get(req.admin.id);
-    const productCompany = db.prepare('SELECT name FROM companies WHERE id = ?').get(product.company_id);
+  // 权限检查：用户必须是该企业的 owner/admin
+  if (req.admin.role !== 'platform_admin' && req.admin.role !== 'admin') {
+    const membership = db.prepare(`
+      SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = 'active'
+    `).get(req.admin.id, product.company_id);
 
-    if (!userCompany || !productCompany || userCompany.company_name !== productCompany.name) {
+    if (!membership || !['owner', 'admin', 'applicant'].includes(membership.role)) {
       return res.status(403).json({
         success: false,
         message: '无权编辑该产品',
@@ -339,6 +358,22 @@ router.put('/:id', authMiddleware, (req, res) => {
       message: '更新产品失败: ' + error.message,
     });
   }
+});
+
+// POST /api/v2/products/:id/image - 上传产品图
+router.post('/:id/image', authMiddleware, imageUpload.single('image'), (req, res) => {
+  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  if (!product) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(404).json({ success: false, message: '产品不存在' });
+  }
+  if (!req.file) return res.status(400).json({ success: false, message: '请选择产品图片' });
+
+  const imagePath = `/uploads/products/${req.file.filename}`;
+  db.prepare('UPDATE products SET image_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(imagePath, product.id);
+  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(req.admin.id, 'upload_product_image', 'product', product.id, JSON.stringify({ image_path: imagePath }), req.ip);
+  res.json({ success: true, message: '产品图已上传', data: { image_path: imagePath } });
 });
 
 // DELETE /api/v2/products/:id - 删除产品

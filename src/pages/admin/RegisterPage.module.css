@@ -1,29 +1,30 @@
 /**
- * 注册页样式 - 与登录页风格一致，居中卡片，支持主题切换
- * 版本: 2.0.0
+ * 注册页样式 - 与前台页面统一
  */
 
 .page {
+  position: relative;
+  z-index: 1;
+  min-height: calc(100vh - 64px);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 24px;
-  background-color: var(--bg-primary);
+  padding: 96px 24px 48px;
+  background: var(--bg-primary);
 }
 
 .card {
   width: 100%;
-  max-width: 420px;
-  padding: 40px;
+  max-width: 440px;
+  padding: 36px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  transition: all 0.3s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-/* Logo 区域 */
 .logo {
   display: flex;
   align-items: center;
@@ -56,14 +57,13 @@
   text-align: center;
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
-/* 表单 */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .field {
@@ -74,17 +74,17 @@
 
 .label {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
 .input {
-  padding: 10px 14px;
+  padding: 12px 14px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 15px;
   font-family: var(--font-family);
   outline: none;
   transition: all 0.2s ease;
@@ -96,12 +96,11 @@
 
 .input:focus {
   border-color: var(--accent-blue);
-  background: var(--bg-card);
+  box-shadow: var(--shadow-glow);
 }
 
-/* 用户协议勾选 */
 .agreementField {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .agreementLabel {
@@ -130,8 +129,7 @@
   color: var(--accent-blue);
   text-decoration: none;
   margin: 0 2px;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  font-weight: 600;
 }
 
 .agreementLink:hover {
@@ -139,7 +137,6 @@
   text-decoration: underline;
 }
 
-/* 错误提示 */
 .error {
   display: flex;
   align-items: center;
@@ -152,9 +149,8 @@
   font-size: 13px;
 }
 
-/* 注册按钮 */
 .submitBtn {
-  padding: 12px;
+  padding: 13px;
   background: var(--accent-gradient);
   border: none;
   border-radius: var(--radius-sm);
@@ -163,20 +159,21 @@
   font-weight: 600;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: opacity 0.2s ease;
-  margin-top: 4px;
+  transition: all 0.2s ease;
+  margin-top: 2px;
 }
 
 .submitBtn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .submitBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* 底部链接 */
 .footer {
   text-align: center;
   margin-top: 24px;
@@ -188,16 +185,18 @@
   color: var(--accent-blue);
   text-decoration: none;
   margin-left: 4px;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  font-weight: 600;
 }
 
 .link:hover {
   color: var(--accent-indigo);
 }
 
-/* 响应式 */
 @media (max-width: 480px) {
+  .page {
+    padding: 88px 16px 32px;
+  }
+
   .card {
     padding: 24px;
   }

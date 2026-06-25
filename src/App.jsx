@@ -27,7 +27,7 @@
  *   /admin/logs -> 操作日志
  */
 
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminRoute from './components/AdminRoute';
@@ -52,34 +52,17 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
-import AdminLayout from './pages/admin/AdminLayout';
-import AdminLayoutSimple from './pages/admin/AdminLayoutSimple';
-import DashboardPage from './pages/admin/DashboardPage';
-import UploadPage from './pages/admin/UploadPage';
-import CertificatesPage from './pages/admin/CertificatesPage';
-import CompaniesPage from './pages/admin/CompaniesPage';
-import LogsPage from './pages/admin/LogsPage';
-import ReportsPage from './pages/admin/ReportsPage';
-import AdminProductsPage from './pages/admin/ProductsPage';
-import ProductCreatePage from './pages/admin/ProductCreatePage';
-import ProductEditPage from './pages/admin/ProductEditPage';
-import DocumentUploadPage from './pages/admin/DocumentUploadPage';
-import DocumentsPage from './pages/admin/DocumentsPage';
-import CompanyMembersPage from './pages/admin/CompanyMembersPage';
-import BatchUploadPage from './pages/admin/BatchUploadPage';
-import MyCompanyPage from './pages/admin/MyCompanyPage';
-import TeamMembersPage from './pages/admin/TeamMembersPage';
-import SettingsPage from './pages/admin/SettingsPage';
-import UploadConfirmationsPage from './pages/admin/UploadConfirmationsPage';
-import CompanyVerificationAdminPage from './pages/admin/CompanyVerificationAdminPage';
+import AdminV2Page from './pages/admin/AdminV2Page';
 import { useAdmin } from './contexts/AdminContext';
 
 function App() {
   const location = useLocation();
   const { isAdmin } = useAdmin();
-  // 只在登录和注册页面以及邮箱验证、密码重置页面隐藏导航栏
-  const authPages = ['/admin/login', '/admin/register', '/verify-email', '/forgot-password', '/reset-password'];
+  // 邮箱验证、密码重置保持独立页面；登录/注册显示公共导航栏，保持前后台一体感
+  const authPages = ['/verify-email', '/forgot-password', '/reset-password'];
   const isAuthPage = authPages.includes(location.pathname);
+  const isProtectedAdminPage = (location.pathname === '/admin' || location.pathname.startsWith('/admin/') || location.pathname.startsWith('/admin-v2')) && !location.pathname.startsWith('/admin/login') && !location.pathname.startsWith('/admin/register');
+  const isAdminPage = isProtectedAdminPage;
 
   return (
     <>
@@ -136,67 +119,27 @@ function App() {
         {/* 企业认证申请页面 */}
         <Route path="/company-verification" element={<CompanyVerificationPage />} />
 
+
         {/* ===== 后台管理路由 ===== */}
         {/* 登录页 - 不需要登录保护 */}
         <Route path="/admin/login" element={<LoginPage />} />
         {/* 注册页 - 不需要登录保护 */}
         <Route path="/admin/register" element={<RegisterPage />} />
 
-        {/*
-          后台管理布局 - 需要登录保护
-          AdminRoute 包裹 AdminLayout，未登录会重定向到 /admin/login
-
-          v2.2 改进：统一使用 AdminLayout
-          - 所有用户看到相同的后台布局（带侧边栏）
-          - 根据用户角色动态控制菜单的启用/禁用状态
-          - 权限配置在 src/config/menuPermissions.js
-        */}
+        {/* 新后台 v2 已替换旧后台：/admin 作为正式后台入口，/admin-v2 保留为兼容跳转 */}
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <AdminRoute>
-              <AdminLayout />
+              <AdminV2Page />
             </AdminRoute>
           }
-        >
-          {/* 默认子路由：仪表盘 */}
-          <Route index element={<DashboardPage />} />
-          {/* 证书上传 */}
-          <Route path="upload" element={<UploadPage />} />
-          {/* 证书管理 */}
-          <Route path="certificates" element={<CertificatesPage />} />
-          {/* 企业管理 */}
-          <Route path="companies" element={<CompaniesPage />} />
-          {/* 产品管理 */}
-          <Route path="products" element={<AdminProductsPage />} />
-          <Route path="products/create" element={<ProductCreatePage />} />
-          <Route path="products/edit/:id" element={<ProductEditPage />} />
-          <Route path="products/:productId/upload" element={<DocumentUploadPage />} />
-          {/* 文档管理 */}
-          <Route path="documents" element={<DocumentsPage />} />
-          {/* 批量上传 */}
-          <Route path="batch-upload" element={<BatchUploadPage />} />
-          {/* 我的企业 */}
-          <Route path="company" element={<MyCompanyPage />} />
-          {/* 团队成员 */}
-          <Route path="members" element={<TeamMembersPage />} />
-          {/* 企业成员管理 */}
-          <Route path="company-members" element={<CompanyMembersPage />} />
-          {/* 上传确认记录 */}
-          <Route path="upload-confirmations" element={<UploadConfirmationsPage />} />
-          {/* 企业认证审核 */}
-          <Route path="company-verifications" element={<CompanyVerificationAdminPage />} />
-          {/* 个人设置 */}
-          <Route path="settings" element={<SettingsPage />} />
-          {/* 错误报告管理 */}
-          <Route path="reports" element={<ReportsPage />} />
-          {/* 操作日志 */}
-          <Route path="logs" element={<LogsPage />} />
-        </Route>
+        />
+        <Route path="/admin-v2/*" element={<Navigate to="/admin" replace />} />
       </Routes>
 
       {/* 公共页脚 - 除了认证页面和后台管理页面 */}
-      {!isAuthPage && !location.pathname.startsWith('/admin') && <Footer />}
+      {!isAuthPage && !isAdminPage && <Footer />}
     </>
   );
 }

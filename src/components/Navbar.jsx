@@ -25,6 +25,8 @@ export default function Navbar() {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   // 切换语言
   const changeLanguage = (lng) => {
@@ -32,23 +34,67 @@ export default function Navbar() {
     setShowLanguageMenu(false);
   };
 
+  const handleLogout = () => {
+    setShowAdminMenu(false);
+    logout();
+  };
+
   // 点击外部关闭语言菜单
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // 检查点击是否在语言切换按钮或下拉框内部
-      const languageButton = event.target.closest(`.${styles.functionButton}`);
-      const languageDropdown = event.target.closest(`.${styles.languageDropdown}`);
+      const languageMenu = event.target.closest(`.${styles.languageMenu}`);
+      const adminMenu = event.target.closest(`.${styles.adminMenu}`);
 
-      if (showLanguageMenu && !languageButton && !languageDropdown) {
+      if (showLanguageMenu && !languageMenu) {
         setShowLanguageMenu(false);
+      }
+      if (showAdminMenu && !adminMenu) {
+        setShowAdminMenu(false);
       }
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
+  }, [showLanguageMenu, showAdminMenu]);
+
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+
+    const showNav = () => {
+      setHidden(false);
+      document.documentElement.classList.remove('chrome-collapsed');
+    };
+
+    const hideNav = () => {
+      setHidden(true);
+      document.documentElement.classList.add('chrome-collapsed');
+    };
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY < 80 || currentY < lastY - 8) {
+        showNav();
+      } else if (currentY > lastY + 8 && currentY > 160 && !showLanguageMenu) {
+        hideNav();
+      }
+      lastY = currentY;
+    };
+
+    const handleMouseMove = (event) => {
+      if (event.clientY <= 12) showNav();
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.documentElement.classList.remove('chrome-collapsed');
+    };
   }, [showLanguageMenu]);
 
   return (
-    <nav className={styles.navbar}>
+    <nav className={`${styles.navbar} ${hidden ? styles.navbarHidden : ''}`}>
       <div className={styles.container}>
         {/* Logo 区域 */}
         <Link to="/" className={styles.logo}>
@@ -120,7 +166,11 @@ export default function Navbar() {
           </button>
 
           {/* 语言切换 - 功能按钮（地球图标+下拉菜单） */}
-          <div style={{ position: 'relative' }}>
+          <div
+            className={styles.languageMenu}
+            onMouseEnter={() => setShowLanguageMenu(true)}
+            onMouseLeave={() => setShowLanguageMenu(false)}
+          >
             <button
               className={styles.functionButton}
               onClick={() => setShowLanguageMenu(!showLanguageMenu)}
@@ -161,25 +211,37 @@ export default function Navbar() {
               {t('auth.loginButton')}
             </Link>
           ) : (
-            <>
-              <Link
-                to="/admin"
-                className={`${styles.textButton} ${styles.adminButton} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
+            <div
+              className={styles.adminMenu}
+              onMouseEnter={() => setShowAdminMenu(true)}
+              onMouseLeave={() => setShowAdminMenu(false)}
+            >
+              <button
+                type="button"
+                className={`${styles.textButton} ${styles.adminButton} ${(location.pathname.startsWith('/admin') || location.pathname.startsWith('/admin-v2')) ? styles.active : ''}`}
+                onClick={() => setShowAdminMenu(!showAdminMenu)}
               >
                 {isAdmin ? t('nav.admin') : '我的上传'}
-              </Link>
-              <button
-                className={styles.logoutBtn}
-                onClick={logout}
-                title={t('admin.logout')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
               </button>
-            </>
+              {showAdminMenu && (
+                <div className={styles.adminDropdown}>
+                  <Link
+                    to="/admin"
+                    className={styles.adminOption}
+                    onClick={() => setShowAdminMenu(false)}
+                  >
+                    <span>进入后台</span>
+                  </Link>
+                  <button
+                    type="button"
+                    className={`${styles.adminOption} ${styles.logoutOption}`}
+                    onClick={handleLogout}
+                  >
+                    <span>{t('admin.logout')}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

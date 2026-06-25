@@ -73,7 +73,7 @@ router.get('/', (req, res) => {
     const conditions = [];
     const params = [];
 
-    if (status) {
+    if (status && status !== 'all') {
       conditions.push('d.status = ?');
       params.push(status);
     }
@@ -82,9 +82,11 @@ router.get('/', (req, res) => {
     const authHeader = req.headers.authorization;
     const hasToken = authHeader && authHeader.startsWith('Bearer ');
 
-    if (!hasToken || !reviewStatus) {
+    if (!hasToken) {
       conditions.push("d.review_status = 'approved'");
-    } else if (reviewStatus) {
+      conditions.push("COALESCE(c.verification_status, 'pending') = 'verified'");
+      conditions.push('COALESCE(c.public_visible, 1) = 1');
+    } else if (reviewStatus && reviewStatus !== 'all') {
       conditions.push('d.review_status = ?');
       params.push(reviewStatus);
     }
@@ -130,11 +132,17 @@ router.get('/', (req, res) => {
         p.name as product_name,
         p.model as product_model,
         c.name as company_name,
-        u.display_name as uploaded_by_name
+        u.display_name as uploaded_by_name,
+        cm.cert_no,
+        cm.standard,
+        cm.issuer,
+        cm.issue_date,
+        cm.expiry_date
       FROM documents d
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies c ON d.company_id = c.id
       LEFT JOIN users u ON d.uploaded_by = u.id
+      LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
       ${whereClause}
       ORDER BY d.${safeSortBy} ${safeSortOrder}
       LIMIT ? OFFSET ?
@@ -261,18 +269,13 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
       });
     }
 
-    if (!['owner', 'admin', 'uploader'].includes(membership.role)) {
+    if (!['owner', 'admin', 'uploader', 'applicant'].includes(membership.role)) {
       if (req.file) fs.unlinkSync(req.file.path);
       return res.status(403).json({
         success: false,
         message: '权限不足，只有企业所有者、管理员和上传者可以上传文档',
       });
     }
-  }
-    return res.status(400).json({
-      success: false,
-      message: '企业ID、产品ID、文档类型和标题为必填项',
-    });
   }
 
   // 文档类型校验
@@ -408,6 +411,28 @@ router.put('/:id', authMiddleware, (req, res) => {
     db.prepare(`UPDATE documents SET ${setParts.join(', ')} WHERE id = ?`)
       .run(...values, document.id);
 
+    if (document.document_type === 'certificate') {
+      const certFields = ['cert_no', 'standard', 'issuer', 'issue_date', 'expiry_date'];
+      const certSetParts = [];
+      const certValues = [];
+      for (const field of certFields) {
+        if (req.body[field] !== undefined) {
+          certSetParts.push(`${field} = ?`);
+          certValues.push(req.body[field]);
+        }
+      }
+      if (certSetParts.length > 0) {
+        const existingMeta = db.prepare('SELECT id FROM certificate_metadata WHERE document_id = ?').get(document.id);
+        if (existingMeta) {
+          db.prepare(`UPDATE certificate_metadata SET ${certSetParts.join(', ')} WHERE document_id = ?`)
+            .run(...certValues, document.id);
+        } else {
+          db.prepare('INSERT INTO certificate_metadata (document_id, cert_no, standard, issuer, issue_date, expiry_date) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(document.id, req.body.cert_no || null, req.body.standard || null, req.body.issuer || null, req.body.issue_date || null, req.body.expiry_date || null);
+        }
+      }
+    }
+
     // 记录审计日志
     db.prepare(
       'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
@@ -424,6 +449,32 @@ router.put('/:id', authMiddleware, (req, res) => {
       message: '更新文档失败: ' + error.message,
     });
   }
+});
+
+// POST /api/v2/documents/:id/replace - 替换文档文件
+router.post('/:id/replace', authMiddleware, upload.single('file'), (req, res) => {
+  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
+
+  if (!document) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(404).json({ success: false, message: '文档不存在' });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: '请选择要替换的文件' });
+  }
+
+  const filePath = `/documents/${req.file.filename}`;
+  db.prepare(`
+    UPDATE documents
+    SET file_path = ?, file_size = ?, mime_type = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(filePath, req.file.size, req.file.mimetype, document.id);
+
+  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(req.admin.id, 'replace_file', 'document', document.id, JSON.stringify({ old: document.file_path, new: filePath }), req.ip);
+
+  res.json({ success: true, message: '文件已替换', data: { file_path: filePath } });
 });
 
 // DELETE /api/v2/documents/:id - 删除文档

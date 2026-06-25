@@ -121,7 +121,11 @@ export function AdminProvider({ children }) {
   }, []);
 
   // isAdmin 计算属性：判断当前用户是否为管理员
-  const isAdmin = useMemo(() => state.admin?.role === 'admin' || state.admin?.role === 'platform_admin', [state.admin?.role]);
+  // 兼容 v1.x 的 role 和 v2.0 的 platform_role
+  const isAdmin = useMemo(() => {
+    const role = state.admin?.role || state.admin?.platform_role;
+    return role === 'admin' || role === 'platform_admin';
+  }, [state.admin?.role, state.admin?.platform_role]);
 
   const value = useMemo(() => ({
     ...state,

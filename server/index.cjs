@@ -84,6 +84,7 @@ app.use('/api/certificates', require('./routes/certificates.cjs'));  // v2.0 完
 app.use('/api/companies', require('./routes/companies.cjs'));
 app.use('/api/stats', require('./routes/stats.cjs'));
 app.use('/api/reports', require('./routes/reports.cjs'));
+app.use('/api/personal', require('./routes/personal.cjs'));
 
 // v2.0 新 API
 app.use('/api/v2/products', require('./routes/products.cjs'));

@@ -68,6 +68,7 @@ function authMiddleware(req, res, next) {
       email: decoded.email || decoded.username,
       role: decoded.role || 'user',
       company_name: decoded.company_name || null,
+      session_version: decoded.session_version || 0,
     };
 
     // 调用 next() 将控制权传递给下一个中间件或路由处理函数
@@ -127,6 +128,7 @@ function generateToken(user) {
       email: user.email || user.username,
       role: user.role || user.platform_role || 'user',
       company_name: user.company_name || null,
+      session_version: user.session_version || 0,
     },
     JWT_SECRET,
     { expiresIn: '7d' }

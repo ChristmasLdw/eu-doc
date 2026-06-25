@@ -7,32 +7,32 @@ export default defineConfig({
   server: {
     proxy: {
       '/eu-doc/api': {
-        target: 'http://localhost:3007',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc\/api/, '/api')
       },
       '/eu-doc/certificates': {
-        target: 'http://localhost:3007',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc/, '')
       },
       '/eu-doc/manuals': {
-        target: 'http://localhost:3007',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc/, '')
       },
       '/eu-doc/declarations': {
-        target: 'http://localhost:3007',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc/, '')
       },
       '/eu-doc/uploads': {
-        target: 'http://localhost:3007',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc/, '')
       },
       '/eu-doc/documents': {
-        target: 'http://localhost:3007',
+        target: 'http://127.0.0.1:3007',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/eu-doc/, '')
       }

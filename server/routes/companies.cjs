@@ -19,9 +19,21 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
-const { authMiddleware } = require('../middleware/auth.cjs');
+const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 
 const router = Router();
+
+function ensureCompanyColumns() {
+  const columns = db.prepare('PRAGMA table_info(companies)').all().map((col) => col.name);
+  const addColumn = (name, definition) => {
+    if (!columns.includes(name)) db.prepare(`ALTER TABLE companies ADD COLUMN ${name} ${definition}`).run();
+  };
+  addColumn('slug', 'TEXT');
+  addColumn('website', 'TEXT');
+  addColumn('description', 'TEXT');
+  addColumn('main_category', 'TEXT');
+  addColumn('public_visible', 'INTEGER DEFAULT 1');
+}
 
 // 配置multer用于Logo上传
 const logoStorage = multer.diskStorage({
@@ -61,9 +73,28 @@ const logoUpload = multer({
  * - search: 搜索企业名称
  */
 router.get('/', (req, res) => {
+  ensureCompanyColumns();
   const { page = 1, pageSize = 20, search } = req.query;
 
-  const conditions = [];
+  if (req.query.my === '1') {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: '未提供认证令牌，请先登录' });
+    }
+    const { authMiddleware } = require('../middleware/auth.cjs');
+    return authMiddleware(req, res, () => {
+      const companies = db.prepare(`
+        SELECT c.*, cm.role as member_role
+        FROM company_members cm
+        JOIN companies c ON cm.company_id = c.id
+        WHERE cm.user_id = ? AND cm.status = 'active'
+        ORDER BY c.created_at DESC
+      `).all(req.admin.id);
+      res.json({ success: true, data: companies });
+    });
+  }
+
+  const conditions = ["COALESCE(c.verification_status, 'pending') = 'verified'", 'COALESCE(c.public_visible, 1) = 1'];
   const params = [];
 
   if (search) {
@@ -104,6 +135,7 @@ router.get('/', (req, res) => {
  * 包含该企业下的所有证书
  */
 router.get('/:id', (req, res) => {
+  ensureCompanyColumns();
   const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
 
   if (!company) {
@@ -112,6 +144,29 @@ router.get('/:id', (req, res) => {
       message: '企业不存在',
     });
   }
+
+  const isPublicCompany = company.verification_status === 'verified' && company.public_visible !== 0;
+  if (!isPublicCompany) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(403).json({ success: false, message: '该公司尚未认证，暂不公开展示' });
+    }
+    return authMiddleware(req, res, () => {
+      const membership = db.prepare(`
+        SELECT id FROM company_members
+        WHERE user_id = ? AND company_id = ? AND status = 'active'
+      `).get(req.admin.id, company.id);
+      if (!membership && req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
+        return res.status(403).json({ success: false, message: '该公司尚未认证，暂不公开展示' });
+      }
+      return sendCompanyDetail(res, company);
+    });
+  }
+
+  return sendCompanyDetail(res, company);
+});
+
+function sendCompanyDetail(res, company) {
 
   // 查询该企业下的所有证书（v2.0: 从documents+certificate_metadata+products查询）
   const certificates = db.prepare(`
@@ -140,7 +195,7 @@ router.get('/:id', (req, res) => {
       certificates,
     },
   });
-});
+}
 
 /**
  * POST /api/companies
@@ -158,23 +213,39 @@ router.post('/', authMiddleware, (req, res) => {
 
   try {
     const result = db.prepare(`
-      INSERT INTO companies (name, name_en, contact_person, contact_email, contact_phone, address)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO companies (name, name_en, contact_person, contact_email, contact_phone, address, verification_status, public_visible, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', 0, 'draft')
     `).run(name, name_en || null, contact_person || null, contact_email || null, contact_phone || null, address || null);
+
+    const companyId = result.lastInsertRowid;
+
+    console.log('[创建企业] 企业ID:', companyId, '用户ID:', req.admin.id);
+
+    // 将创建者添加为企业所有者
+    try {
+      db.prepare(`
+        INSERT INTO company_members (user_id, company_id, role, status, invited_by)
+        VALUES (?, ?, 'applicant', 'active', ?)
+      `).run(req.admin.id, companyId, req.admin.id);
+      console.log('[创建企业] 成员关系创建成功');
+    } catch (memberErr) {
+      console.error('[创建企业] 创建成员关系失败:', memberErr.message);
+    }
 
     db.prepare(
       'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(
-      req.admin.id, 'create', 'company', result.lastInsertRowid,
+      req.admin.id, 'create', 'company', companyId,
       JSON.stringify({ name }), req.ip
     );
 
     res.status(201).json({
       success: true,
       message: '企业创建成功',
-      id: result.lastInsertRowid,
+      id: companyId,
     });
   } catch (err) {
+    console.error('[创建企业] 错误:', err.message);
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({
         success: false,
@@ -190,6 +261,7 @@ router.post('/', authMiddleware, (req, res) => {
  * 更新企业（需认证）
  */
 router.put('/:id', authMiddleware, (req, res) => {
+  ensureCompanyColumns();
   const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
 
   if (!company) {
@@ -199,7 +271,7 @@ router.put('/:id', authMiddleware, (req, res) => {
     });
   }
 
-  const fields = ['name', 'name_en', 'contact_person', 'contact_email', 'contact_phone', 'address'];
+  const fields = ['name', 'name_en', 'contact_person', 'contact_email', 'contact_phone', 'address', 'slug', 'website', 'description', 'main_category', 'public_visible'];
   const setParts = [];
   const values = [];
   const changes = {};
@@ -331,7 +403,7 @@ router.post('/:id/logo', authMiddleware, logoUpload.single('logo'), (req, res) =
  * POST /api/companies/:id/verification
  * 提交企业认证申请（需认证）
  */
-router.post('/:id/verification', authMiddleware, upload.fields([
+router.post('/:id/verification', authMiddleware, logoUpload.fields([
   { name: 'business_license', maxCount: 1 },
   { name: 'authorization_letter', maxCount: 1 }
 ]), (req, res) => {
