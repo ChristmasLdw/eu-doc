@@ -13,7 +13,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,9 +54,9 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(email.trim(), password, displayName.trim() || undefined, companyName.trim() || undefined);
-      // 注册成功后自动登录，跳转到首页
-      navigate('/', { replace: true });
+      await register(email.trim(), password, displayName.trim() || undefined);
+      // 注册成功后自动登录，跳转到后台（引导用户创建企业）
+      navigate('/admin/company', { replace: true });
     } catch (err) {
       setError(err.message || '注册失败');
     } finally {
@@ -133,18 +132,6 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="companyName">企业名称</label>
-            <input
-              id="companyName"
-              type="text"
-              className={styles.input}
-              placeholder="您的企业名称（可选）"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
             />
           </div>
 

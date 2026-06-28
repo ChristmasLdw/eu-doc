@@ -93,6 +93,7 @@ app.use('/api/v2/categories', require('./routes/categories.cjs'));
 app.use('/api/v2/tags', require('./routes/tags.cjs'));
 app.use('/api/v2/company-members', require('./routes/company-members.cjs'));
 app.use('/api/v2/upload-confirmations', require('./routes/upload-confirmations.cjs'));
+app.use('/api/v2/imports', require('./routes/imports.cjs'));
 
 /**
  * 健康检查接口

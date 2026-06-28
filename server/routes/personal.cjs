@@ -26,11 +26,13 @@ function ensurePersonalTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       item_type TEXT NOT NULL,
+      item_id INTEGER,
       title TEXT NOT NULL,
       meta TEXT,
       description TEXT,
       note TEXT,
       status TEXT DEFAULT '正常',
+      deleted_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
@@ -162,7 +164,8 @@ router.get('/overview', (req, res) => {
     FROM users WHERE id = ?
   `).get(req.admin.id);
   const settings = db.prepare('SELECT history_enabled FROM user_notification_settings WHERE user_id = ?').get(req.admin.id);
-  const favorites = db.prepare('SELECT * FROM user_favorites WHERE user_id = ? ORDER BY updated_at DESC, id DESC').all(req.admin.id);
+  const favorites = db.prepare('SELECT * FROM user_favorites WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC, id DESC').all(req.admin.id);
+  const recentlyDeleted = db.prepare('SELECT * FROM user_favorites WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC LIMIT 20').all(req.admin.id);
   const history = db.prepare('SELECT * FROM user_history WHERE user_id = ? ORDER BY viewed_at DESC, id DESC LIMIT 50').all(req.admin.id);
   const notifications = db.prepare('SELECT * FROM user_notifications WHERE user_id = ? ORDER BY pinned DESC, created_at DESC, id DESC').all(req.admin.id);
   const loginRecords = db.prepare(`
@@ -172,7 +175,7 @@ router.get('/overview', (req, res) => {
     ORDER BY created_at DESC
     LIMIT 10
   `).all(req.admin.id);
-  res.json({ success: true, data: { user, settings, favorites, history, notifications, loginRecords } });
+  res.json({ success: true, data: { user, settings, favorites, recentlyDeleted, history, notifications, loginRecords } });
 });
 
 router.put('/profile', (req, res) => {
@@ -196,10 +199,75 @@ router.post('/avatar', avatarUpload.single('avatar'), (req, res) => {
   res.json({ success: true, data: { avatar_path: avatarPath }, message: '头像已上传' });
 });
 
+// 添加收藏（基于实体ID）
+router.post('/favorites', (req, res) => {
+  ensurePersonalTables();
+  const { item_type, item_id, title, meta, description } = req.body;
+
+  if (!item_type || !item_id || !title) {
+    return res.status(400).json({ success: false, message: '请提供完整的收藏信息' });
+  }
+
+  // 检查是否已收藏（包括已删除的）
+  const existing = db.prepare('SELECT id, deleted_at FROM user_favorites WHERE user_id = ? AND item_type = ? AND item_id = ?')
+    .get(req.admin.id, item_type, item_id);
+
+  if (existing) {
+    if (existing.deleted_at) {
+      // 如果之前删除过，恢复收藏
+      db.prepare('UPDATE user_favorites SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(existing.id);
+      const favorite = db.prepare('SELECT * FROM user_favorites WHERE id = ?').get(existing.id);
+      return res.json({ success: true, data: favorite, message: '已重新添加到收藏' });
+    } else {
+      return res.status(409).json({ success: false, message: '该项已在收藏列表中' });
+    }
+  }
+
+  const result = db.prepare(`
+    INSERT INTO user_favorites (user_id, item_type, item_id, title, meta, description, status)
+    VALUES (?, ?, ?, ?, ?, ?, '正常')
+  `).run(req.admin.id, item_type, item_id, title, meta || '', description || '');
+
+  const favorite = db.prepare('SELECT * FROM user_favorites WHERE id = ?').get(result.lastInsertRowid);
+
+  res.json({ success: true, data: favorite, message: '已添加到收藏' });
+});
+
+// 检查收藏状态
+router.get('/favorites/check', (req, res) => {
+  ensurePersonalTables();
+  const { item_type, item_id } = req.query;
+
+  if (!item_type || !item_id) {
+    return res.status(400).json({ success: false, message: '请提供item_type和item_id' });
+  }
+
+  const favorite = db.prepare(
+    'SELECT id FROM user_favorites WHERE user_id = ? AND item_type = ? AND item_id = ? AND deleted_at IS NULL'
+  ).get(req.admin.id, item_type, parseInt(item_id));
+
+  res.json({
+    success: true,
+    data: {
+      isFavorited: !!favorite,
+      favoriteId: favorite?.id || null
+    }
+  });
+});
+
+// 软删除收藏
 router.delete('/favorites/:id', (req, res) => {
   ensurePersonalTables();
-  db.prepare('DELETE FROM user_favorites WHERE id = ? AND user_id = ?').run(req.params.id, req.admin.id);
+  db.prepare('UPDATE user_favorites SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?')
+    .run(req.params.id, req.admin.id);
   res.json({ success: true, message: '收藏已取消' });
+});
+
+// 永久删除收藏
+router.delete('/favorites/:id/permanent', (req, res) => {
+  ensurePersonalTables();
+  db.prepare('DELETE FROM user_favorites WHERE id = ? AND user_id = ?').run(req.params.id, req.admin.id);
+  res.json({ success: true, message: '已永久删除' });
 });
 
 router.put('/favorites/:id/note', (req, res) => {

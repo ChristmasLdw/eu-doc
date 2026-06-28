@@ -365,6 +365,13 @@ function initDatabase() {
       console.log('  [数据库] 创建 email_verifications 表');
     }
 
+    // 文档缩略图字段：产品详情页优先展示缩略图，避免直接加载 PDF 导致部分浏览器自动下载。
+    const documentColumns = db.prepare('PRAGMA table_info(documents)').all().map(col => col.name);
+    if (!documentColumns.includes('thumbnail_path')) {
+      db.prepare('ALTER TABLE documents ADD COLUMN thumbnail_path TEXT').run();
+      console.log('  [数据库] documents 表已添加 thumbnail_path 字段');
+    }
+
     // v2.0: 只检查是否需要创建默认用户
     const userCount = db.prepare('SELECT COUNT(*) as cnt FROM users').get();
     if (userCount.cnt === 0) {

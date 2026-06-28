@@ -17,7 +17,7 @@ const router = Router();
  * 用户注册（邮箱）
  */
 router.post('/register', (req, res) => {
-  const { email, password, display_name, company_name } = req.body;
+  const { email, password, display_name } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: '请提供邮箱和密码' });
@@ -48,16 +48,7 @@ router.post('/register', (req, res) => {
 
     const userId = result.lastInsertRowid;
 
-    // 如果提供了企业名称，自动创建企业并关联
-    if (company_name && company_name.trim()) {
-      const trimmedCompany = company_name.trim();
-      db.prepare('INSERT OR IGNORE INTO companies (name, name_en) VALUES (?, ?)').run(trimmedCompany, trimmedCompany);
-      const company = db.prepare('SELECT id FROM companies WHERE name = ?').get(trimmedCompany);
-      if (company) {
-        db.prepare('INSERT OR IGNORE INTO company_members (user_id, company_id, role) VALUES (?, ?, ?)')
-          .run(userId, company.id, 'owner');
-      }
-    }
+    // 注册时不再自动创建企业，用户需要在后台手动创建并提交认证
 
     // 生成验证令牌
     const verifyToken = crypto.randomBytes(32).toString('hex');

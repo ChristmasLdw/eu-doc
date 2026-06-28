@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   base: '/eu-doc/',
   server: {
+    host: '0.0.0.0', // 允许局域网访问
+    port: 5173,
     proxy: {
       '/eu-doc/api': {
         target: 'http://127.0.0.1:3007',

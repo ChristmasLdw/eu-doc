@@ -48,6 +48,7 @@ export default function CertificatePage() {
   const [likeCount, setLikeCount] = useState(0);
   const [favorited, setFavorited] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
+  const [favoriteId, setFavoriteId] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -59,6 +60,8 @@ export default function CertificatePage() {
         addRecentView(data);
         // 加载点赞和收藏状态
         loadInteractionData(id);
+        // 加载收藏状态
+        loadFavoriteStatus(id);
       })
       .catch((err) => {
         setError(err.message || t('messages.networkError'));
@@ -66,6 +69,20 @@ export default function CertificatePage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // 加载收藏状态
+  const loadFavoriteStatus = async (certId) => {
+    try {
+      const result = await api.checkFavorite('文件', parseInt(certId));
+      // result 已经是解包后的数据对象
+      if (result && result.isFavorited) {
+        setFavorited(true);
+        setFavoriteId(result.favoriteId);
+      }
+    } catch (error) {
+      console.error('加载收藏状态失败:', error);
+    }
+  };
 
   useEffect(() => {
     const versions = cert?.declarationVersions || [];
@@ -123,40 +140,64 @@ export default function CertificatePage() {
   };
 
   // 收藏功能
-  const handleFavorite = () => {
-    const favorites = JSON.parse(localStorage.getItem('cert_favorites') || '{}');
-    const favoriteCounts = JSON.parse(localStorage.getItem('cert_favorite_counts') || '{}');
+  const handleFavorite = async () => {
+    if (!cert) return;
 
-    if (favorited) {
-      // 取消收藏
-      delete favorites[id];
-      favoriteCounts[id] = Math.max((favoriteCounts[id] || 0) - 1, 0);
-      setFavorited(false);
-      setFavoriteCount(favoriteCounts[id]);
-    } else {
-      // 收藏
-      favorites[id] = true;
-      favoriteCounts[id] = (favoriteCounts[id] || 0) + 1;
-      setFavorited(true);
-      setFavoriteCount(favoriteCounts[id]);
+    try {
+      if (favorited) {
+        // 取消收藏
+        if (favoriteId) {
+          await api.deleteFavorite(favoriteId);
+          setFavorited(false);
+          setFavoriteCount(prev => Math.max(prev - 1, 0));
+          setFavoriteId(null);
+        } else {
+          // 如果没有favoriteId，先查询
+          const result = await api.checkFavorite('文件', parseInt(id));
+          if (result && result.favoriteId) {
+            await api.deleteFavorite(result.favoriteId);
+            setFavorited(false);
+            setFavoriteCount(prev => Math.max(prev - 1, 0));
+            setFavoriteId(null);
+          }
+        }
 
-      // 保存证书信息到收藏列表
-      const favList = JSON.parse(localStorage.getItem('favorite_certificates') || '[]');
-      if (cert && !favList.find(item => item.id === cert.id)) {
-        favList.unshift({
-          id: cert.id,
-          certNo: cert.certNo,
-          productName: cert.productName,
-          companyName: cert.companyName,
-          thumbnailPath: cert.thumbnailPath,
-          timestamp: Date.now()
-        });
-        localStorage.setItem('favorite_certificates', JSON.stringify(favList));
+        // 同时更新localStorage
+        const favorites = JSON.parse(localStorage.getItem('cert_favorites') || '{}');
+        const favoriteCounts = JSON.parse(localStorage.getItem('cert_favorite_counts') || '{}');
+        delete favorites[id];
+        favoriteCounts[id] = Math.max((favoriteCounts[id] || 0) - 1, 0);
+        localStorage.setItem('cert_favorites', JSON.stringify(favorites));
+        localStorage.setItem('cert_favorite_counts', JSON.stringify(favoriteCounts));
+      } else {
+        // 添加收藏 - 调用后端API
+        const result = await api.addFavorite(
+          '文件',
+          parseInt(id),
+          cert.certNo || cert.productName || '证书',
+          cert.companyName || '',
+          `${cert.productName || ''} - ${cert.standard || ''}`.trim()
+        );
+
+        setFavorited(true);
+        setFavoriteCount(prev => prev + 1);
+        // result 已经是解包后的收藏对象，直接访问 id
+        if (result && result.id) {
+          setFavoriteId(result.id);
+        }
+
+        // 同时更新localStorage
+        const favorites = JSON.parse(localStorage.getItem('cert_favorites') || '{}');
+        const favoriteCounts = JSON.parse(localStorage.getItem('cert_favorite_counts') || '{}');
+        favorites[id] = true;
+        favoriteCounts[id] = (favoriteCounts[id] || 0) + 1;
+        localStorage.setItem('cert_favorites', JSON.stringify(favorites));
+        localStorage.setItem('cert_favorite_counts', JSON.stringify(favoriteCounts));
       }
+    } catch (error) {
+      console.error('收藏操作失败:', error);
+      alert(error.message || '收藏操作失败');
     }
-
-    localStorage.setItem('cert_favorites', JSON.stringify(favorites));
-    localStorage.setItem('cert_favorite_counts', JSON.stringify(favoriteCounts));
   };
 
   // 复制证书编号

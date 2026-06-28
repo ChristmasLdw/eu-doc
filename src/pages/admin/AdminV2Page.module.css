@@ -1389,16 +1389,19 @@ tbody tr:last-child td {
 
 .fileOverviewGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 14px;
 }
 
 .fileOverviewCard {
+  width: 100%;
   padding: 16px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-input);
+  text-align: left;
+  cursor: pointer;
 }
 
 .fileOverviewCard strong {
@@ -1426,6 +1429,7 @@ tbody tr:last-child td {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 12px;
 }
 
 .fileList {
@@ -4043,17 +4047,20 @@ tbody tr:last-child td {
 /* 后台 v2 最终布局微调：左侧贴边，右侧保留适中阅读留白 */
 .main {
   margin-left: 236px;
-  padding: 22px 28px 36px;
+  padding: 22px clamp(28px, 4vw, 72px) 36px;
 }
 
 .header,
 .section {
-  max-width: 1240px;
+  width: min(100%, 1360px);
+  margin-left: auto;
+  margin-right: auto;
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1800px) {
   .main {
-    padding-right: 40px;
+    padding-left: clamp(40px, 5vw, 110px);
+    padding-right: clamp(40px, 5vw, 110px);
   }
 }
 
@@ -4385,18 +4392,30 @@ tbody tr:last-child td {
 .modalFormGrid input,
 .modalFormGrid select,
 .modalFormGrid textarea {
-  min-height: 42px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   background: var(--bg-input);
   color: var(--text-primary);
   font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.2;
   outline: none;
+}
+
+.modalFormGrid select {
+  height: 44px;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .modalFormGrid textarea {
   padding-top: 10px;
+  line-height: 1.5;
   resize: vertical;
 }
 
@@ -4447,4 +4466,1821 @@ tbody tr:last-child td {
 .pendingPanel p {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.quickImportBox {
+  padding: 8px 8px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  margin-bottom: 10px;
+}
+
+.quickImportBox button {
+  width: 100%;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.08));
+  color: #2563eb;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+}
+
+.quickImportBox button:hover,
+.quickImportActive {
+  background: linear-gradient(135deg, #3b82f6, #0ea5e9) !important;
+  color: #fff !important;
+}
+
+.importHero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.9), rgba(248, 250, 252, 0.8));
+  margin-bottom: 16px;
+}
+
+.importHero h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.importHero p {
+  margin: 0;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.7;
+}
+
+.importStats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.importStats span {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  color: var(--text-secondary, #64748b);
+}
+
+.importStats strong {
+  display: block;
+  color: #2563eb;
+  font-size: 24px;
+}
+
+.importActions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.importDropHint {
+  border: 1px dashed rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.importDropHint strong {
+  color: #2563eb;
+  font-size: 18px;
+}
+
+.importDropHint p {
+  margin: 8px 0 0;
+  color: var(--text-secondary, #64748b);
+}
+
+.importList {
+  display: grid;
+  gap: 14px;
+}
+
+.importCard {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 18px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.importDone {
+  opacity: 0.72;
+}
+
+.importFileInfo {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.importFileInfo h3 {
+  margin: 0 0 5px;
+  font-size: 17px;
+}
+
+.importFileInfo p {
+  margin: 0;
+  color: var(--text-secondary, #64748b);
+}
+
+.importOrganizeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.importOrganizeGrid label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary, #64748b);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.importOrganizeGrid input,
+.importOrganizeGrid select {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-primary, #0f172a);
+}
+
+@media (max-width: 1100px) {
+  .importHero {
+    flex-direction: column;
+  }
+
+  .importActions {
+    justify-content: flex-start;
+  }
+
+  .importOrganizeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.importTargetBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 18px;
+  background: rgba(239, 246, 255, 0.72);
+}
+
+.importTargetBar strong {
+  color: var(--text-primary, #0f172a);
+}
+
+.importTargetBar p {
+  margin: 5px 0 0;
+  color: var(--text-secondary, #64748b);
+}
+
+.importTargetBar select {
+  min-width: 280px;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-primary, #0f172a);
+  padding: 10px 12px;
+  font-weight: 800;
+}
+
+.importBlockedState {
+  position: relative;
+  min-height: 520px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.importBlurPreview {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  filter: blur(5px);
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+.importBlurPreview div {
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.9), rgba(248, 250, 252, 0.9));
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.importBlockedCard {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 92%);
+  padding: 34px;
+  text-align: center;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.14);
+}
+
+.importBlockedCard h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.importBlockedCard p {
+  margin: 0 0 22px;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .importTargetBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .importTargetBar select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.dangerSoftBtn {
+  width: 100%;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dangerSoftBtn:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.34);
+}
+
+.placeholder p {
+  margin: 8px 0 0;
+  color: var(--text-secondary, #64748b);
+}
+
+.importGroupFiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.importGroupFiles span {
+  padding: 7px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.importGroupHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.importGroupHeader .importFileInfo {
+  margin-bottom: 0;
+}
+
+.importRecognized {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 14px;
+}
+
+.importRecognized span {
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.importRecognized strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.importCard {
+  padding: 20px 22px;
+}
+
+.importFileInfo h3 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.importFileInfo p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.importOrganizeGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.importOrganizeGrid label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.importOrganizeGrid input,
+.importOrganizeGrid select {
+  min-height: 44px;
+  border-color: var(--border-color);
+  border-radius: 14px;
+  font-size: 14px;
+}
+
+.importOrganizeGrid .primaryBtn,
+.importOrganizeGrid button {
+  min-height: 44px;
+  border-radius: 14px;
+}
+
+@media (max-width: 1200px) {
+  .importRecognized,
+  .importOrganizeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .importGroupHeader {
+    flex-direction: column;
+  }
+
+  .importRecognized,
+  .importOrganizeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.importFileNameRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.importFileNameRow strong {
+  padding: 9px 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.importGroupHint {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.importHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.confidenceBadge.green {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.confidenceBadge.orange {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.confidenceBadge.red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.importQuestionnaire {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.importQuestion {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: var(--bg-soft);
+}
+
+.questionIndex {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  font-weight: 900;
+}
+
+.questionBody h4 {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.questionBody p {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.questionBody select,
+.questionBody input {
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 9px 12px;
+  font-size: 14px;
+}
+
+.questionBody > select,
+.questionBody > input {
+  width: min(420px, 100%);
+  margin-right: 10px;
+}
+
+.languageRows,
+.productAssignGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.languageRows label,
+.productAssignGrid label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.finalQuestion {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(99, 102, 241, 0.08));
+}
+
+.finalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .importQuestion {
+    grid-template-columns: 1fr;
+  }
+
+  .languageRows,
+  .productAssignGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.importCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.importMiniCard {
+  min-height: 190px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.importMiniCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+}
+
+.importMiniTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.importMiniCard strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.importMiniCard p {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.importMiniFiles {
+  display: grid;
+  gap: 6px;
+}
+
+.importMiniFiles span {
+  overflow: hidden;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confidenceDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.14);
+}
+
+.confidenceDot.green { background: #22c55e; }
+.confidenceDot.orange { background: #f59e0b; }
+.confidenceDot.red { background: #ef4444; }
+
+.importModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(10px);
+}
+
+.importModal {
+  width: min(980px, 100%);
+  max-height: min(86vh, 920px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  border-radius: 28px;
+  background: var(--bg-card);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+}
+
+.importModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.importModalHeader p {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.importModalHeader h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.importModal .importGroupHint,
+.importModal .questionBody p {
+  opacity: 0.72;
+}
+
+.importModal .questionBody h4,
+.importModal .importFileNameRow strong {
+  opacity: 0.96;
+}
+
+.importModal .importQuestion {
+  background: color-mix(in srgb, var(--bg-soft) 78%, transparent);
+}
+
+.importModal .finalQuestion {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.1));
+}
+
+@media (max-width: 760px) {
+  .importModalBackdrop {
+    padding: 12px;
+  }
+
+  .importModal {
+    max-height: 92vh;
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .importModalHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.importQuestionnaire {
+  position: relative;
+  perspective: 1200px;
+}
+
+.importQuestion {
+  transform-origin: center center;
+  transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+
+.questionActive {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  border-color: rgba(59, 130, 246, 0.38);
+  background: var(--bg-card);
+  box-shadow: 0 14px 34px rgba(59, 130, 246, 0.08);
+  filter: none;
+}
+
+.questionDone {
+  opacity: 0.46;
+  transform: scale(0.985) translateY(-2px);
+  filter: saturate(0.82);
+}
+
+.questionWaiting {
+  opacity: 0.34;
+  transform: scale(0.97) translateY(4px);
+  filter: blur(0.2px) saturate(0.72);
+}
+
+.questionActive .questionIndex {
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.12);
+}
+
+.questionDone .questionIndex {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.questionWaiting .questionIndex {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.questionDone:hover,
+.questionWaiting:hover {
+  opacity: 0.86;
+  transform: scale(0.995);
+  filter: none;
+}
+
+.modelRows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.modelRows label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fileConfirmRows {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fileConfirmRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 0.8fr) minmax(130px, 0.7fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-card);
+}
+
+.fileConfirmRow strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .fileConfirmRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modelEditor {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.modelChipGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.modelChipInput {
+  min-width: 180px;
+  max-width: 240px;
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.modelChipInput input {
+  height: 48px;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--text-primary);
+  font-weight: 800;
+  text-align: center;
+}
+
+.modelChipInput input:focus {
+  border-color: rgba(59, 130, 246, 0.68);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.importCompletedTitle {
+  margin: 18px 0 2px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.importCompletedCard {
+  opacity: 0.76;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), var(--bg-card));
+}
+
+.importCompletedCard:hover {
+  opacity: 1;
+}
+
+.completedBadge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.freeRecognizeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.freeRecognizeChips span {
+  padding: 6px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.duplicateBadge {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.duplicateReason {
+  display: block;
+  margin-top: 8px;
+  color: #b45309;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.importMiniDanger {
+  display: inline-flex;
+  width: max-content;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.completedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.completedActions span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.completedActions .dangerText {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.modelInputWrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.modelInputWrap input {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.modelInputWrap button {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.addModelMiniBtn {
+  align-self: end;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px dashed rgba(59, 130, 246, 0.38);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* Batch import model chips: keep them compact and aligned. */
+.modelChipGrid {
+  align-items: flex-end;
+  gap: 10px !important;
+}
+
+.modelChipInput {
+  flex: 0 0 190px !important;
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+}
+
+.modelChipInput > span {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.modelInputWrap {
+  position: relative;
+  width: 190px !important;
+  height: 48px !important;
+  display: block !important;
+  overflow: visible !important;
+}
+
+.modelInputWrap input {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 8px 34px 8px 12px !important;
+  border: 1px solid rgba(59, 130, 246, 0.28) !important;
+  border-radius: 16px !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+}
+
+.modelInputWrap button {
+  position: absolute !important;
+  top: 50% !important;
+  right: 8px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateY(-50%);
+  display: grid !important;
+  place-items: center;
+  border-radius: 999px !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #dc2626 !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+}
+
+.addModelMiniBtn {
+  flex: 0 0 auto;
+  align-self: end !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  margin-bottom: 0;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+}
+
+/* Polish the product assignment step so controls share one visual system. */
+.productAssignGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: end !important;
+  gap: 18px !important;
+}
+
+.productAssignGrid label {
+  min-width: 0;
+}
+
+.productAssignGrid label > span,
+.modelChipInput > span {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.productAssignGrid select,
+.productAssignGrid input {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  box-sizing: border-box !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+  background: var(--bg-input) !important;
+  padding: 8px 16px !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+}
+
+.modelChipInput {
+  flex: 0 0 210px !important;
+  width: 210px !important;
+  min-width: 210px !important;
+  max-width: 210px !important;
+}
+
+.modelInputWrap {
+  width: 210px !important;
+  height: 48px !important;
+  border: 1px solid rgba(59, 130, 246, 0.34) !important;
+  border-radius: 16px !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  box-sizing: border-box !important;
+}
+
+.modelInputWrap input {
+  width: 100% !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 16px !important;
+  padding: 8px 36px 8px 12px !important;
+}
+
+.modelInputWrap:focus-within {
+  border-color: rgba(59, 130, 246, 0.68) !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.modelInputWrap button {
+  right: 9px !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  font-size: 14px !important;
+}
+
+.addModelMiniBtn {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 18px !important;
+  margin-top: 18px !important;
+}
+
+/* Final compact style for the import confirmation controls. */
+.productAssignGrid {
+  gap: 16px !important;
+  margin-bottom: 14px !important;
+}
+
+.productAssignGrid select,
+.productAssignGrid input,
+.fileConfirmRow select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  border: 1px solid rgba(203, 213, 225, 0.86) !important;
+  border-radius: 14px !important;
+  background-color: rgba(248, 250, 252, 0.88) !important;
+  background-image: linear-gradient(45deg, transparent 50%, #475569 50%), linear-gradient(135deg, #475569 50%, transparent 50%);
+  background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+}
+
+.productAssignGrid input {
+  background-image: none !important;
+}
+
+.modelChipInput {
+  flex: 0 0 180px !important;
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+}
+
+.modelInputWrap {
+  width: 180px !important;
+  height: 42px !important;
+  border-radius: 14px !important;
+  background: rgba(59, 130, 246, 0.065) !important;
+}
+
+.modelInputWrap input {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 7px 32px 7px 12px !important;
+  border-radius: 14px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+.modelInputWrap button {
+  right: 7px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  background: rgba(239, 68, 68, 0.10) !important;
+  font-size: 13px !important;
+}
+
+.addModelMiniBtn {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 16px !important;
+  margin-top: 18px !important;
+  border-radius: 14px !important;
+  font-size: 13px !important;
+}
+
+.questionBody .secondaryBtn,
+.questionBody .primaryBtn,
+.questionBody .dangerSoftBtn {
+  min-height: 40px !important;
+  padding: 0 16px !important;
+  border-radius: 14px !important;
+}
+
+/* Make file type/language confirmation rows lighter. */
+.fileConfirmRows {
+  gap: 8px !important;
+}
+
+.fileConfirmRow {
+  min-height: 58px !important;
+  grid-template-columns: minmax(180px, 1.6fr) minmax(150px, 0.7fr) minmax(130px, 0.62fr) !important;
+  padding: 8px 12px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.66) !important;
+}
+
+.fileConfirmRow strong {
+  font-size: 15px !important;
+  font-weight: 850 !important;
+}
+
+.fileConfirmRow select {
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 13px !important;
+  padding: 6px 34px 6px 12px !important;
+  background-position: calc(100% - 17px) 16px, calc(100% - 11px) 16px !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+}
+
+.matchHint {
+  margin-top: 4px;
+  color: #b45309;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.duplicatePanel {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.26);
+  border-radius: 16px;
+  background: rgba(245, 158, 11, 0.08);
+  color: #92400e;
+}
+
+.duplicatePanel strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.duplicatePanel p {
+  margin: 0 0 4px;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.duplicatePanel span {
+  color: rgba(146, 64, 14, 0.76);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.importCompanyPicker {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.importCompanyPicker select {
+  width: min(260px, 100%);
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.fileKeepTag,
+.fileDupTag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
+.fileKeepTag {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.fileDupTag {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.importMiniFiles span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fileConfirmRow strong .fileKeepTag,
+.fileConfirmRow strong .fileDupTag {
+  margin-left: 10px;
+}
+
+.fileStackRow {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileStackName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileStackBadges {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fileDupStack,
+.fileArchivedTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fileDupStack {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.fileArchivedTag {
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+}
+
+.importDuplicateCard {
+  border-color: rgba(245, 158, 11, 0.26) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), var(--bg-card)) !important;
+}
+
+.importDuplicateCard .fileTypeIcon {
+  color: #b45309;
+}
+
+/* Keep normal and duplicate import cards visually aligned. */
+.importMiniCard {
+  height: 360px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 18px !important;
+}
+
+.importMiniTop {
+  height: 82px !important;
+  align-items: flex-start !important;
+  margin-bottom: 12px !important;
+}
+
+.importMiniTop .fileTypeIcon {
+  width: 70px !important;
+  height: 70px !important;
+  flex: 0 0 70px !important;
+}
+
+.importMiniCard > strong {
+  min-height: 30px !important;
+  margin-bottom: 6px !important;
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+}
+
+.importMiniCard > p {
+  min-height: 22px !important;
+  margin-bottom: 12px !important;
+  line-height: 1.35 !important;
+}
+
+.importMiniFiles {
+  min-height: 86px !important;
+  align-content: start !important;
+}
+
+.duplicateReason {
+  min-height: 44px !important;
+  display: block !important;
+  margin-top: 10px !important;
+  line-height: 1.35 !important;
+}
+
+.normalCardHint {
+  color: rgba(100, 116, 139, 0.72) !important;
+}
+
+.importMiniDanger {
+  margin-top: auto !important;
+}
+
+.headerActionsInline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.productOverviewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.productOverviewCard {
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 22px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.productOverviewTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.productOverviewCard h3 {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.modelTagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 28px;
+  margin-bottom: 12px;
+}
+
+.modelTagList span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.fileCompletenessRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.doneMini,
+.missMini {
+  padding: 8px 6px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.doneMini {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.missMini {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.productFileList {
+  display: grid;
+  gap: 8px;
+  min-height: 120px;
+  margin-bottom: 14px;
+}
+
+.productFileList button {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.productFileList button span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productFileList button strong,
+.productFileList button em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.productFileList p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.productActionsCompact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fileLibraryList {
+  display: grid;
+  gap: 10px;
+}
+
+.fileFilterTools {
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr));
+  margin-bottom: 12px;
+}
+
+.fileTableHeader {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.45fr) minmax(170px, 0.9fr) minmax(220px, 1.1fr) 92px 180px;
+  gap: 12px;
+  align-items: center;
+  padding: 0 14px 8px 92px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fileLibraryRow {
+  display: grid;
+  grid-template-columns: 64px minmax(260px, 1.45fr) minmax(170px, 0.9fr) minmax(220px, 1.1fr) 92px 180px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: var(--bg-card);
+}
+
+.fileLibraryRow .fileTypeIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+}
+
+.fileLibraryMain h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.fileLibraryMain p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.fileLibraryProduct {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fileLibraryProduct strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileLibraryProduct span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fileLibraryTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-start;
+}
+
+.fileLibraryTags span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+@media (max-width: 980px) {
+  .fileFilterTools,
+  .fileTableHeader,
+  .fileLibraryRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fileTableHeader {
+    display: none;
+  }
+
+  .fileLibraryTags,
+  .fileLibraryRow .fileActions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+.productEditModal {
+  width: min(920px, 100%);
+}
+
+.productEditLayout {
+  display: grid;
+  gap: 14px;
+}
+
+.productEditBlock {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: var(--bg-soft);
+}
+
+.productEditBlockTitle {
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.productEditHint {
+  margin: -4px 0 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.productModelEditor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+}
+
+.productModelPill {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 178px;
+  height: 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.productModelPill input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0 10px 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 40px;
+  outline: none;
+}
+
+.productModelPill button,
+.addModelMiniBtn {
+  border: 0;
+  cursor: pointer;
+}
+
+.productModelPill button {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.addModelMiniBtn {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 38px;
+}
+
+.productEditFiles {
+  display: grid;
+  gap: 8px;
+}
+
+.productEditFiles button {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.productEditFiles strong,
+.productEditFiles em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.productEditFiles span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productEditFiles p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.productEditInlineActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .productEditBlock {
+    padding: 14px;
+  }
+
+  .productModelPill {
+    width: 100%;
+  }
+
+  .productEditFiles button {
+    grid-template-columns: 1fr;
+  }
 }

@@ -83,6 +83,15 @@ router.get('/', (req, res) => {
     }
     const { authMiddleware } = require('../middleware/auth.cjs');
     return authMiddleware(req, res, () => {
+      if (req.admin.role === 'platform_admin' || req.admin.role === 'admin') {
+        const companies = db.prepare(`
+          SELECT c.*, 'platform_admin' as member_role
+          FROM companies c
+          ORDER BY c.created_at DESC
+        `).all();
+        return res.json({ success: true, data: companies });
+      }
+
       const companies = db.prepare(`
         SELECT c.*, cm.role as member_role
         FROM company_members cm
@@ -90,7 +99,7 @@ router.get('/', (req, res) => {
         WHERE cm.user_id = ? AND cm.status = 'active'
         ORDER BY c.created_at DESC
       `).all(req.admin.id);
-      res.json({ success: true, data: companies });
+      return res.json({ success: true, data: companies });
     });
   }
 
@@ -321,26 +330,52 @@ router.delete('/:id', authMiddleware, (req, res) => {
     });
   }
 
-  // 检查是否有关联证书
-  const certCount = db.prepare("SELECT COUNT(*) as cnt FROM documents WHERE company_id = ? AND document_type = 'certificate'").get(company.id);
+  const isPlatformAdmin = req.admin.role === 'platform_admin' || req.admin.role === 'admin';
+  const membership = db.prepare(`
+    SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = 'active'
+  `).get(req.admin.id, company.id);
 
-  if (certCount.cnt > 0) {
+  if (!isPlatformAdmin && !membership) {
+    return res.status(403).json({ success: false, message: '无权删除该公司' });
+  }
+
+  const isDraftCompany = company.status === 'draft' || company.verification_status === 'pending';
+  const canDeleteDraft = isDraftCompany && (isPlatformAdmin || ['applicant', 'owner'].includes(membership?.role));
+  if (!canDeleteDraft && !isPlatformAdmin) {
+    return res.status(403).json({ success: false, message: '只有草稿/待审核公司可由申请人自行删除' });
+  }
+
+  const counts = db.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM documents WHERE company_id = ?) as documents,
+      (SELECT COUNT(*) FROM products WHERE company_id = ?) as products
+  `).get(company.id, company.id);
+  const hasImportItemsTable = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'import_items'").get();
+  const organizedImports = hasImportItemsTable
+    ? db.prepare("SELECT COUNT(*) as cnt FROM import_items WHERE company_id = ? AND status != 'pending'").get(company.id).cnt
+    : 0;
+
+  if ((counts.documents || 0) > 0 || (counts.products || 0) > 0 || organizedImports > 0) {
     return res.status(409).json({
       success: false,
-      message: `该企业下有 ${certCount.cnt} 条证书记录，请先删除或转移相关证书`,
+      message: '该公司已有产品或正式文件，不能直接删除。请先清理资料或联系平台管理员。',
     });
   }
 
-  db.prepare('DELETE FROM companies WHERE id = ?').run(company.id);
+  db.transaction(() => {
+    if (hasImportItemsTable) db.prepare('DELETE FROM import_items WHERE company_id = ?').run(company.id);
+    db.prepare('DELETE FROM company_verification_documents WHERE company_id = ?').run(company.id);
+    db.prepare('DELETE FROM company_members WHERE company_id = ?').run(company.id);
+    db.prepare('DELETE FROM companies WHERE id = ?').run(company.id);
+    db.prepare(
+      'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(
+      req.admin.id, 'delete_draft', 'company', company.id,
+      JSON.stringify({ name: company.name, status: company.status, verification_status: company.verification_status }), req.ip
+    );
+  })();
 
-  db.prepare(
-    'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(
-    req.admin.id, 'delete', 'company', company.id,
-    JSON.stringify({ name: company.name }), req.ip
-  );
-
-  res.json({ success: true, message: '企业已删除' });
+  res.json({ success: true, message: '公司草稿已删除' });
 });
 
 /**

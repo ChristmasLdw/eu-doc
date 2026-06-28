@@ -10,6 +10,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCompany } from '../services/api';
+import * as api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import styles from './CompanyPage.module.css';
 
@@ -21,6 +22,10 @@ export default function CompanyPage() {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // 收藏状态
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteId, setFavoriteId] = useState(null);
 
   // 搜索和排序状态
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,6 +52,8 @@ export default function CompanyPage() {
           console.log('First cert keys:', Object.keys(data.certificates[0]));
         }
         setCompany(data);
+        // 加载收藏状态
+        loadFavoriteStatus(id);
       })
       .catch((err) => {
         console.error('Error loading company:', err);
@@ -55,6 +62,63 @@ export default function CompanyPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // 加载收藏状态
+  const loadFavoriteStatus = async (companyId) => {
+    try {
+      const result = await api.checkFavorite('公司', parseInt(companyId));
+      // result 已经是解包后的数据对象
+      if (result && result.isFavorited) {
+        setIsFavorited(true);
+        setFavoriteId(result.favoriteId);
+      }
+    } catch (error) {
+      console.error('加载收藏状态失败:', error);
+    }
+  };
+
+  // 收藏功能
+  const handleFavorite = async () => {
+    if (!company) return;
+
+    try {
+      if (isFavorited && favoriteId) {
+        // 取消收藏
+        await api.deleteFavorite(favoriteId);
+        setIsFavorited(false);
+        setFavoriteId(null);
+      } else {
+        // 添加收藏
+        const result = await api.addFavorite(
+          '公司',
+          parseInt(id),
+          company.name,
+          company.nameEn || company.name_en || '',
+          company.contactEmail || company.contact_email || ''
+        );
+        setIsFavorited(true);
+        // result 已经是解包后的收藏对象，直接访问 id
+        if (result && result.id) {
+          setFavoriteId(result.id);
+        }
+      }
+    } catch (error) {
+      console.error('收藏操作失败:', error);
+      alert(error.message || '收藏操作失败');
+    }
+  };
+
+  // 分享功能
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/eu-doc/company/${id}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('链接已复制到剪贴板');
+      });
+    } else {
+      alert('分享链接：' + shareUrl);
+    }
+  };
 
   // 过滤和排序后的证书列表
   const filteredCertificates = useMemo(() => {
@@ -200,6 +264,46 @@ export default function CompanyPage() {
                 {company.nameEn && company.nameEn !== company.name && (
                   <p className={styles.companyNameEn}>{company.nameEn}</p>
                 )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                  <button
+                    onClick={handleFavorite}
+                    title={isFavorited ? '取消收藏' : '收藏公司'}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '14px',
+                      color: isFavorited ? '#ff6b6b' : '#666',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {isFavorited ? '★' : '☆'} {isFavorited ? '已收藏' : '收藏'}
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    title="分享公司"
+                    style={{
+                      background: 'none',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '14px',
+                      color: '#666',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    📤 分享
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -38,15 +38,19 @@ const BASE_URL = '/eu-doc/api';
  * 创建请求头
  * 自动从 localStorage 读取 JWT token 并附加到 Authorization 头
  */
-function createHeaders(customHeaders = {}) {
+function createHeaders(customHeaders = {}, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...customHeaders,
   };
 
-  const token = localStorage.getItem('admin_token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (!options.skipAuth) {
+    const token = localStorage.getItem('admin_token');
+    if (token && !/[\r\n]/.test(token)) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else if (token) {
+      localStorage.removeItem('admin_token');
+    }
   }
 
   return headers;
@@ -57,11 +61,11 @@ function createHeaders(customHeaders = {}) {
  * 处理所有 HTTP 请求的公共逻辑：token 附加、401 跳转、JSON 解析
  */
 async function request(url, options = {}) {
-  const { headers: customHeaders, raw, ...restOptions } = options;
+  const { headers: customHeaders, raw, skipAuth, ...restOptions } = options;
 
   // 如果是 FormData（文件上传），不设置 Content-Type，让浏览器自动设置 boundary
   const isFormData = options.body instanceof FormData;
-  const headers = createHeaders(customHeaders);
+  const headers = createHeaders(customHeaders, { skipAuth });
 
   // FormData 上传时必须让浏览器自动生成 Content-Type 和 boundary
   if (isFormData) {
@@ -192,12 +196,12 @@ function mapCertificate(cert) {
 // ===== 认证相关 API =====
 
 /** 用户注册（注册成功后自动登录，返回 token 和用户信息） */
-export function register(email, password, displayName, companyName) {
+export function register(email, password, displayName) {
   const body = { email, password };
   if (displayName) body.display_name = displayName;
-  if (companyName) body.company_name = companyName;
   return request('/auth/register', {
     method: 'POST',
+    skipAuth: true,
     body: JSON.stringify(body),
   });
 }
@@ -206,6 +210,7 @@ export function register(email, password, displayName, companyName) {
 export function login(emailOrUsername, password) {
   return request('/auth/login', {
     method: 'POST',
+    skipAuth: true,
     body: JSON.stringify({ username: emailOrUsername, password }),
   });
 }
@@ -503,8 +508,30 @@ export function uploadPersonalAvatar(file) {
   }).then(keysToCamelCase);
 }
 
+export function addFavorite(itemType, itemId, title, meta, description) {
+  return request('/personal/favorites', {
+    method: 'POST',
+    body: JSON.stringify({
+      item_type: itemType,
+      item_id: itemId,
+      title,
+      meta,
+      description,
+    }),
+  }).then(keysToCamelCase);
+}
+
+export function checkFavorite(itemType, itemId) {
+  return request(`/personal/favorites/check?item_type=${encodeURIComponent(itemType)}&item_id=${itemId}`)
+    .then(keysToCamelCase);
+}
+
 export function deleteFavorite(id) {
   return request(`/personal/favorites/${id}`, { method: 'DELETE' });
+}
+
+export function permanentDeleteFavorite(id) {
+  return request(`/personal/favorites/${id}/permanent`, { method: 'DELETE' });
 }
 
 export function updateFavoriteNote(id, note) {
@@ -535,6 +562,38 @@ export function markNotificationRead(id) {
 
 export function revokeOtherSessions() {
   return request('/personal/sessions/revoke-others', { method: 'PUT' });
+}
+
+
+export function getImportItems(companyId) {
+  return request(`/v2/imports?companyId=${companyId}`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
+    return response;
+  });
+}
+
+export function uploadImportFiles(companyId, files) {
+  const formData = new FormData();
+  formData.append('company_id', companyId);
+  Array.from(files || []).forEach((file) => formData.append('files', file, file.webkitRelativePath || file.name));
+  return request('/v2/imports/upload', {
+    method: 'POST',
+    body: formData,
+  }).then(keysToCamelCase);
+}
+
+export function organizeImportItem(id, data) {
+  return request(`/v2/imports/${id}/organize`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }).then(keysToCamelCase);
+}
+
+export function organizeImportGroup(data) {
+  return request('/v2/imports/organize-group', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }).then(keysToCamelCase);
 }
 
 export function getCompanyProducts(companyId) {
@@ -599,4 +658,16 @@ export function uploadProductImage(id, file) {
     method: 'POST',
     body: formData,
   }).then(keysToCamelCase);
+}
+
+export function deleteImportItem(id) {
+  return request(`/v2/imports/${id}`, { method: 'DELETE' });
+}
+
+export function reopenImportItem(id) {
+  return request(`/v2/imports/${id}/reopen`, { method: 'POST' });
+}
+
+export function deleteDocument(id) {
+  return request(`/v2/documents/${id}`, { method: 'DELETE' });
 }

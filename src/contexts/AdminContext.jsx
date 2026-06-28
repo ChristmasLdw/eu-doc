@@ -97,10 +97,10 @@ export function AdminProvider({ children }) {
   }, []);
 
   // 注册方法（注册成功后自动登录）
-  const register = useCallback(async (email, password, displayName, companyName) => {
+  const register = useCallback(async (email, password, displayName) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      const data = await api.register(email, password, displayName, companyName);
+      const data = await api.register(email, password, displayName);
       localStorage.setItem('admin_token', data.token);
       dispatch({ type: 'LOGIN_SUCCESS', payload: { admin: data.user, token: data.token } });
     } catch (error) {

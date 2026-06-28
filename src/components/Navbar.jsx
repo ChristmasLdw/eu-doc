@@ -12,7 +12,7 @@
  * 设计: 半透明背景 + 模糊效果（毛玻璃），滚动时显示底部边框
  */
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
@@ -21,6 +21,7 @@ import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { admin, isAdmin, logout } = useAdmin();
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
@@ -219,7 +220,7 @@ export default function Navbar() {
               <button
                 type="button"
                 className={`${styles.textButton} ${styles.adminButton} ${(location.pathname.startsWith('/admin') || location.pathname.startsWith('/admin-v2')) ? styles.active : ''}`}
-                onClick={() => setShowAdminMenu(!showAdminMenu)}
+                onClick={() => { setShowAdminMenu(false); navigate('/admin'); }}
               >
                 {isAdmin ? t('nav.admin') : '我的上传'}
               </button>
