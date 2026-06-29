@@ -21,6 +21,13 @@ function ensurePersonalTables() {
   addColumn('user_code', 'TEXT');
   addColumn('session_version', 'INTEGER DEFAULT 0');
 
+  const ensureColumns = (table, definitions) => {
+    const existing = db.prepare(`PRAGMA table_info(${table})`).all().map((col) => col.name);
+    Object.entries(definitions).forEach(([name, definition]) => {
+      if (!existing.includes(name)) db.prepare(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`).run();
+    });
+  };
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_favorites (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,6 +75,36 @@ function ensurePersonalTables() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
+
+  ensureColumns('user_favorites', {
+    item_id: 'INTEGER',
+    meta: 'TEXT',
+    description: 'TEXT',
+    note: 'TEXT',
+    status: "TEXT DEFAULT '正常'",
+    deleted_at: 'DATETIME',
+    updated_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+  });
+
+  ensureColumns('user_history', {
+    item_id: 'INTEGER',
+    company: 'TEXT',
+    action_label: "TEXT DEFAULT '查看'",
+    viewed_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+  });
+
+  ensureColumns('user_notification_settings', {
+    history_enabled: 'INTEGER DEFAULT 1',
+    updated_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+  });
+
+  ensureColumns('user_notifications', {
+    description: 'TEXT',
+    status: "TEXT DEFAULT '未读'",
+    tone: "TEXT DEFAULT 'blue'",
+    pinned: 'INTEGER DEFAULT 0',
+    created_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+  });
 }
 
 function ensureUserCode(userId) {
