@@ -114,12 +114,14 @@ router.get('/', (req, res) => {
 
   const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-  const { total } = db.prepare(`SELECT COUNT(*) as total FROM companies ${whereClause}`).get(...params);
+  const { total } = db.prepare(`SELECT COUNT(*) as total FROM companies c ${whereClause}`).get(...params);
 
   const offset = (Number(page) - 1) * Number(pageSize);
   const companies = db.prepare(`
     SELECT c.*,
-      (SELECT COUNT(*) FROM documents d WHERE d.company_id = c.id AND d.document_type = 'certificate') as cert_count
+      (SELECT COUNT(*) FROM documents d WHERE d.company_id = c.id AND d.document_type = 'certificate' AND COALESCE(d.status, 'active') != 'deleted') as cert_count,
+      (SELECT COUNT(*) FROM documents d WHERE d.company_id = c.id AND COALESCE(d.status, 'active') != 'deleted') as document_count,
+      (SELECT COUNT(*) FROM products p WHERE p.company_id = c.id AND COALESCE(p.status, 'active') = 'active') as product_count
     FROM companies c
     ${whereClause}
     ORDER BY c.created_at DESC
@@ -136,6 +138,41 @@ router.get('/', (req, res) => {
       totalPages: Math.ceil(total / Number(pageSize)),
     },
   });
+});
+
+/**
+ * GET /api/v2/companies/verifications
+ * 获取企业认证申请列表（仅管理员）
+ */
+router.get('/verifications', authMiddleware, requireAdmin, (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let whereClause = '';
+    const params = [];
+
+    if (status) {
+      if (status === 'pending') {
+        whereClause = "WHERE c.verification_status = ? AND COALESCE(c.status, '') != 'draft'";
+      } else {
+        whereClause = 'WHERE c.verification_status = ?';
+      }
+      params.push(status);
+    }
+
+    const companies = db.prepare(`
+      SELECT c.id as company_id, c.name as company_name, c.business_license_no, c.contact_person,
+             c.contact_email, c.verification_status, c.created_at, c.updated_at
+      FROM companies c
+      ${whereClause}
+      ORDER BY c.updated_at DESC
+    `).all(...params);
+
+    res.json({ success: true, data: companies });
+  } catch (err) {
+    console.error('获取认证列表失败:', err);
+    res.status(500).json({ success: false, message: '获取失败' });
+  }
 });
 
 /**
@@ -454,34 +491,43 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
   const membership = db.prepare('SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = ?')
     .get(req.admin.id, companyId, 'active');
 
-  if (!membership || !['owner', 'admin'].includes(membership.role)) {
-    return res.status(403).json({ success: false, message: '只有企业所有者或管理员可以申请认证' });
+  if (!membership || !['applicant', 'owner', 'admin'].includes(membership.role)) {
+    return res.status(403).json({ success: false, message: '只有企业申请人、所有者或管理员可以申请认证' });
   }
 
   // 检查是否已经认证或待审核
   if (company.verification_status === 'verified') {
     return res.status(400).json({ success: false, message: '企业已通过认证' });
   }
-  if (company.verification_status === 'pending') {
+  if (company.verification_status === 'pending' && company.status !== 'draft') {
     return res.status(400).json({ success: false, message: '认证申请审核中，请耐心等待' });
   }
 
-  if (!req.files || !req.files.business_license) {
-    return res.status(400).json({ success: false, message: '请上传营业执照' });
-  }
-
   try {
-    // 保存文件到 company_verification_documents 表
-    const businessLicenseFile = req.files.business_license[0];
-    const businessLicensePath = `/logos/${businessLicenseFile.filename}`;
+    const { business_license_no, contact_person, contact_email } = req.body || {};
+    if (business_license_no || contact_person || contact_email) {
+      db.prepare(`
+        UPDATE companies
+        SET business_license_no = COALESCE(?, business_license_no),
+            contact_person = COALESCE(?, contact_person),
+            contact_email = COALESCE(?, contact_email),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(business_license_no || null, contact_person || null, contact_email || null, companyId);
+    }
 
-    db.prepare(`
-      INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by, review_status)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(companyId, 'business_license', businessLicensePath, businessLicenseFile.size, req.admin.id, 'pending');
+    // 当前阶段允许先提交审核申请，文件后续可补；如果上传了文件，则一并保存。
+    if (req.files && req.files.business_license) {
+      const businessLicenseFile = req.files.business_license[0];
+      const businessLicensePath = `/logos/${businessLicenseFile.filename}`;
+      db.prepare(`
+        INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by, review_status)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(companyId, 'business_license', businessLicensePath, businessLicenseFile.size, req.admin.id, 'pending');
+    }
 
     // 如果有授权书
-    if (req.files.authorization_letter) {
+    if (req.files && req.files.authorization_letter) {
       const authLetterFile = req.files.authorization_letter[0];
       const authLetterPath = `/logos/${authLetterFile.filename}`;
       db.prepare(`
@@ -490,9 +536,9 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
       `).run(companyId, 'authorization_letter', authLetterPath, authLetterFile.size, req.admin.id, 'pending');
     }
 
-    // 更新企业认证状态为待审核
-    db.prepare('UPDATE companies SET verification_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .run('pending', companyId);
+    // 更新企业状态：从草稿进入平台待审核
+    db.prepare('UPDATE companies SET verification_status = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run('pending', 'pending_review', companyId);
 
     // 记录审计日志
     db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
@@ -505,36 +551,7 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
   }
 });
 
-/**
- * GET /api/v2/companies/verifications
- * 获取企业认证申请列表（仅管理员）
- */
-router.get('/verifications', authMiddleware, requireAdmin, (req, res) => {
-  try {
-    const { status } = req.query;
 
-    let whereClause = '';
-    const params = [];
-
-    if (status) {
-      whereClause = 'WHERE c.verification_status = ?';
-      params.push(status);
-    }
-
-    const companies = db.prepare(`
-      SELECT c.id as company_id, c.name as company_name, c.business_license_no, c.contact_person,
-             c.contact_email, c.verification_status, c.created_at, c.updated_at
-      FROM companies c
-      ${whereClause}
-      ORDER BY c.updated_at DESC
-    `).all(...params);
-
-    res.json({ success: true, data: companies });
-  } catch (err) {
-    console.error('获取认证列表失败:', err);
-    res.status(500).json({ success: false, message: '获取失败' });
-  }
-});
 
 /**
  * PUT /api/companies/:id/verification
@@ -562,9 +579,23 @@ router.put('/:id/verification', authMiddleware, requireAdmin, (req, res) => {
 
     db.prepare(`
       UPDATE companies
-      SET verification_status = ?, verified_at = CURRENT_TIMESTAMP, verified_by = ?, verification_note = ?, updated_at = CURRENT_TIMESTAMP
+      SET verification_status = ?,
+          status = CASE WHEN ? = 'verified' THEN 'active' ELSE status END,
+          public_visible = CASE WHEN ? = 'verified' THEN 1 ELSE public_visible END,
+          verified_at = CASE WHEN ? = 'verified' THEN CURRENT_TIMESTAMP ELSE verified_at END,
+          verified_by = ?,
+          verification_note = ?,
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(newStatus, req.admin.id, note || null, companyId);
+    `).run(newStatus, newStatus, newStatus, newStatus, req.admin.id, note || null, companyId);
+
+    if (newStatus === 'verified') {
+      db.prepare(`
+        UPDATE company_members
+        SET role = 'owner', updated_at = CURRENT_TIMESTAMP
+        WHERE company_id = ? AND role = 'applicant' AND status = 'active'
+      `).run(companyId);
+    }
 
     // 记录审计日志
     db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')

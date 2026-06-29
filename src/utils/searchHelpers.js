@@ -37,7 +37,10 @@ export function getSuggestionTypeLabel(type, t) {
     product: t('certificate.productName'),
     model: t('certificate.model'),
     company: t('certificate.company'),
-    certNo: t('certificate.certNo')
+    certNo: t('certificate.certNo'),
+    doc: 'DoC声明',
+    manual: '说明书',
+    file: '文件'
   };
   return labels[type] || type;
 }

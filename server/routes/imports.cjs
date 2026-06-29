@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware } = require('../middleware/auth.cjs');
+const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE } = require('../utils/uploadLimits.cjs');
 
 const router = Router();
 
@@ -163,7 +164,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: 80 * 1024 * 1024, files: 80 } });
+const upload = multer({ storage, limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE, files: 80 } });
 
 
 function buildDuplicateInfo(row) {
@@ -231,6 +232,13 @@ router.post('/upload', authMiddleware, upload.array('files', 80), (req, res) => 
   if (!canManageCompany(req.admin, companyId)) return res.status(403).json({ success: false, message: '无权向该公司导入资料' });
   const files = req.files || [];
   if (!files.length) return res.status(400).json({ success: false, message: '请选择要上传的文件' });
+
+  try {
+    assertUnverifiedCompanyUploadAllowed(companyId, files, files.length);
+  } catch (error) {
+    removeUploadedFiles(files);
+    return res.status(400).json({ success: false, message: error.message });
+  }
 
   const insert = db.prepare(`
     INSERT INTO import_items (company_id, original_name, file_path, file_size, mime_type, guessed_type, guessed_language, guessed_model, guessed_models, suggested_product_name, guessed_cert_no, guessed_standard, guessed_issuer, guessed_valid_until, extracted_text_status, uploaded_by)

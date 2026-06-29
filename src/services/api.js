@@ -354,6 +354,39 @@ export function getMyCompanies() {
   });
 }
 
+
+/** 提交企业认证申请 */
+export function submitCompanyVerification(companyId, payload = {}) {
+  const formData = new FormData();
+  if (payload.businessLicenseNo) formData.append('business_license_no', payload.businessLicenseNo);
+  if (payload.contactPerson) formData.append('contact_person', payload.contactPerson);
+  if (payload.contactEmail) formData.append('contact_email', payload.contactEmail);
+  if (payload.businessLicenseFile) formData.append('business_license', payload.businessLicenseFile);
+  if (payload.authorizationLetterFile) formData.append('authorization_letter', payload.authorizationLetterFile);
+  return request(`/companies/${companyId}/verification`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+/** 获取企业认证审核列表 */
+export function getCompanyVerifications(status = '') {
+  const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
+  return request(`/v2/company-verifications${query}`).then((data) => {
+    if (Array.isArray(data)) return data.map(keysToCamelCase);
+    if (data && Array.isArray(data.data)) return data.data.map(keysToCamelCase);
+    return [];
+  });
+}
+
+/** 平台管理员审核企业认证 */
+export function reviewCompanyVerification(companyId, action, note = '') {
+  return request(`/companies/${companyId}/verification`, {
+    method: 'PUT',
+    body: JSON.stringify({ action, note }),
+  });
+}
+
 /** 获取企业详情（包含该企业的所有证书） */
 export function getCompany(id) {
   return request(`/companies/${id}`).then((data) => {
@@ -400,6 +433,14 @@ export function uploadCompanyLogo(id, file) {
     method: 'POST',
     body: formData,
   });
+}
+
+// ===== 搜索相关 API =====
+
+/** 获取统一搜索建议 */
+export function getSearchSuggestions(query, limit = 12) {
+  const qs = new URLSearchParams({ q: query || '', limit: String(limit) });
+  return request(`/search/suggestions?${qs.toString()}`).then((data) => Array.isArray(data) ? data.map(keysToCamelCase) : []);
 }
 
 // ===== 统计相关 API =====

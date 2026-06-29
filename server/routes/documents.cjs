@@ -16,6 +16,7 @@ const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 const { requireCompanyRole } = require('../middleware/companyRole.cjs');
+const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE } = require('../utils/uploadLimits.cjs');
 
 const router = Router();
 
@@ -37,7 +38,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE }, // 20MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     if (allowedTypes.includes(file.mimetype)) {
@@ -278,6 +279,13 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
     }
   }
 
+  try {
+    assertUnverifiedCompanyUploadAllowed(company_id, req.file ? [req.file] : [], req.file ? 1 : 0);
+  } catch (error) {
+    removeUploadedFiles(req.file ? [req.file] : []);
+    return res.status(400).json({ success: false, message: error.message });
+  }
+
   // 文档类型校验
   const validTypes = ['certificate', 'declaration_of_conformity', 'manual', 'test_report', 'other'];
   if (!validTypes.includes(document_type)) {
@@ -462,6 +470,13 @@ router.post('/:id/replace', authMiddleware, upload.single('file'), (req, res) =>
 
   if (!req.file) {
     return res.status(400).json({ success: false, message: '请选择要替换的文件' });
+  }
+
+  try {
+    assertUnverifiedCompanyUploadAllowed(document.company_id, [req.file], 0);
+  } catch (error) {
+    removeUploadedFiles([req.file]);
+    return res.status(400).json({ success: false, message: error.message });
   }
 
   const filePath = `/documents/${req.file.filename}`;

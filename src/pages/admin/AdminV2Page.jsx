@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import * as api from '../../services/api';
@@ -111,6 +111,54 @@ function importStepClass(styles, confirmedStep = 0, step) {
   return `${styles.importQuestion} ${styles.questionWaiting}`;
 }
 
+
+function splitProductTitle(title) {
+  const fallback = title || '未命名产品';
+  const text = String(fallback).trim();
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length < 3) return [fallback];
+
+  const modelLike = (word) => /\d/.test(word) && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(word);
+  const modelLeadWords = new Set(['model', 'type', 'series', 'no.', 'no']);
+  const firstModelIndex = words.findIndex((word, index) => index >= 1 && modelLike(word));
+
+  if (firstModelIndex >= 2) {
+    let splitIndex = firstModelIndex;
+    const previous = words[firstModelIndex - 1]?.toLowerCase();
+    if (firstModelIndex >= 3 && modelLeadWords.has(previous)) {
+      splitIndex = firstModelIndex - 1;
+    }
+    return [words.slice(0, splitIndex).join(' '), words.slice(splitIndex).join(' ')];
+  }
+
+  return [text];
+}
+
+function SmartProductTitle({ title }) {
+  const parts = splitProductTitle(title);
+  return (
+    <>
+      {parts.map((part, index) => <span key={`${part}-${index}`} className={styles.smartTitleLine}>{part}</span>)}
+    </>
+  );
+}
+
+function getVerificationDisplay(company = {}) {
+  const rawStatus = company.verificationStatus || company.verification_status || '';
+  const lifecycleStatus = company.rawStatus || company.statusRaw || company.companyStatus || company.status || '';
+  if (rawStatus === 'verified' || company.status === '已认证') {
+    return { label: '已认证', tone: 'verified', step: 4, desc: '企业认证已通过，公司资料可公开展示。' };
+  }
+  if (rawStatus === 'rejected') {
+    return { label: '未通过', tone: 'rejected', step: 2, desc: '认证资料未通过审核，请修改后重新提交。' };
+  }
+  if (rawStatus === 'pending') {
+    const isDraft = lifecycleStatus === 'draft';
+    return { label: isDraft ? '草稿待审核' : '待平台审核', tone: 'pending', step: 3, desc: isDraft ? '公司已创建，但尚未通过平台审核，暂不会公开展示。' : '认证资料已提交，正在等待平台审核。' };
+  }
+  return { label: '待提交认证', tone: 'draft', step: 1, desc: '请补充企业资料并提交认证材料。' };
+}
+
 function splitImportModels(modelText) {
   return (modelText || '').split(/[,，/\n]+/).map((item) => item.trim()).filter(Boolean);
 }
@@ -187,7 +235,7 @@ function buildImportFileStacks(items) {
 
 function MenuIcon({ type }) {
   const paths = {
-    import: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
+    import: <><path d="M12 21V9" /><path d="m7 14 5-5 5 5" /><path d="M5 3h14" /></>,
     profile: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>,
     security: <><circle cx="8" cy="15" r="3" /><path d="M10.5 12.5 21 2" /><path d="m18 5 3 3" /></>,
     favorites: <path d="m12 17.3-5.5 3 1.1-6.2L3 9.8l6.3-.9L12 3.2l2.7 5.7 6.3.9-4.6 4.3 1.1 6.2z" />,
@@ -219,6 +267,7 @@ function MenuIcon({ type }) {
 export default function AdminV2Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { admin, logout } = useAdmin();
   const [activeGroup, setActiveGroup] = useState('personal');
   const [companies, setCompanies] = useState(fallbackCompanies);
@@ -266,11 +315,19 @@ export default function AdminV2Page() {
   const [companyProducts, setCompanyProducts] = useState(products);
   const [companyDocuments, setCompanyDocuments] = useState(documents);
   const [fileFilters, setFileFilters] = useState({ query: '', type: 'all', product: 'all', language: 'all', status: 'all' });
+  const [workspaceViewMode, setWorkspaceViewMode] = useState('standard');
+  const [workspaceExpandedProduct, setWorkspaceExpandedProduct] = useState(null);
+  const [workspaceExpandedPile, setWorkspaceExpandedPile] = useState('全部文件');
+  const [productStatusFilter, setProductStatusFilter] = useState('all');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const emptyProductModal = { open: false, product: null, name: '', nameEn: '', models: [''], categoryPrimaryId: '', status: 'active', description: '', descriptionEn: '' };
   const [productModal, setProductModal] = useState(emptyProductModal);
   const [documentModal, setDocumentModal] = useState({ open: false, mode: 'upload', doc: null, title: '', productId: '', documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null });
   const [passwordModal, setPasswordModal] = useState({ open: false, oldPassword: '', newPassword: '', confirmPassword: '' });
   const [companyModal, setCompanyModal] = useState({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' });
+  const [verificationForm, setVerificationForm] = useState({ businessLicenseNo: '', contactPerson: '', contactEmail: '' });
+  const [verificationItems, setVerificationItems] = useState([]);
+  const [verificationFilter, setVerificationFilter] = useState('pending');
   const [importItems, setImportItems] = useState([]);
   const [importSelection, setImportSelection] = useState({});
   const [splitImportGroups, setSplitImportGroups] = useState({});
@@ -354,13 +411,19 @@ export default function AdminV2Page() {
           setExpandedCompanies([]);
           return;
         }
-        const mappedCompanies = items.map((company) => ({
-          id: Number(company.id),
-          name: company.name,
-          code: `c-${String(company.id).padStart(6, '0')}`,
-          status: company.verificationStatus === 'verified' ? '已认证' : '待认证',
-          memberRole: company.memberRole || 'owner',
-        }));
+        const mappedCompanies = items.map((company) => {
+          const verification = getVerificationDisplay(company);
+          return {
+            id: Number(company.id),
+            name: company.name,
+            nameEn: company.nameEn || '',
+            code: `c-${String(company.id).padStart(6, '0')}`,
+            status: verification.label,
+            verificationStatus: company.verificationStatus || 'pending',
+            rawStatus: company.status || 'draft',
+            memberRole: company.memberRole || 'owner',
+          };
+        });
         setCompanies(mappedCompanies);
         setActiveCompany((current) => mappedCompanies.some((company) => String(company.id) === String(current)) ? Number(current) : mappedCompanies[0].id);
         setExpandedCompanies((current) => current.filter((id) => mappedCompanies.some((company) => String(company.id) === String(id))));
@@ -408,6 +471,18 @@ export default function AdminV2Page() {
           description: company.description || '',
           publicVisible: company.publicVisible !== 0,
         });
+        setVerificationForm({
+          businessLicenseNo: company.businessLicenseNo || '',
+          contactPerson: company.contactPerson || '',
+          contactEmail: company.contactEmail || '',
+        });
+        const verification = getVerificationDisplay(company);
+        setCompanies((list) => list.map((item) => String(item.id) === String(companyId) ? {
+          ...item,
+          status: verification.label,
+          verificationStatus: company.verificationStatus || 'pending',
+          rawStatus: company.status || item.rawStatus || 'draft',
+        } : item));
         setCompanyLogoUrl(company.logoUrl || '');
       })
       .catch((error) => {
@@ -471,9 +546,65 @@ export default function AdminV2Page() {
     }
   };
 
+
+  const refreshCompanyVerifications = async () => {
+    try {
+      const items = await api.getCompanyVerifications(verificationFilter);
+      setVerificationItems(items);
+    } catch (error) {
+      showAction(error.message || '企业审核列表读取失败');
+    }
+  };
+
+  const submitCurrentCompanyVerification = async () => {
+    if (!currentCompany?.id) return;
+    try {
+      await api.submitCompanyVerification(currentCompany.id, verificationForm);
+      showAction('认证申请已提交，等待平台审核');
+      setCompanies((list) => list.map((item) => String(item.id) === String(currentCompany.id) ? {
+        ...item,
+        status: '待平台审核',
+        verificationStatus: 'pending',
+        rawStatus: item.rawStatus || 'draft',
+      } : item));
+    } catch (error) {
+      showAction(error.message || '提交认证失败');
+    }
+  };
+
+  const reviewCompany = async (companyId, action) => {
+    const note = action === 'reject' ? window.prompt('请输入拒绝/补充原因', '资料不完整，请补充后重新提交') || '' : '';
+    try {
+      await api.reviewCompanyVerification(companyId, action, note);
+      showAction(action === 'approve' ? '企业认证已通过' : '已拒绝该认证申请');
+      await refreshCompanyVerifications();
+      const items = await api.getMyCompanies();
+      setCompanies(items.map((company) => {
+        const verification = getVerificationDisplay(company);
+        return {
+          id: Number(company.id),
+          name: company.name,
+          nameEn: company.nameEn || '',
+          code: `c-${String(company.id).padStart(6, '0')}`,
+          status: verification.label,
+          verificationStatus: company.verificationStatus || 'pending',
+          rawStatus: company.status || 'draft',
+          memberRole: company.memberRole || 'owner',
+        };
+      }));
+    } catch (error) {
+      showAction(error.message || '审核操作失败');
+    }
+  };
+
   useEffect(() => {
-    if (activeCompany && activePage === 'bulk-import') refreshImportItems();
+    if (activeCompany && (activePage === 'bulk-import' || activePage === 'products')) refreshImportItems();
   }, [activeCompany, activePage]);
+
+
+  useEffect(() => {
+    if (activePage === 'company-review') refreshCompanyVerifications();
+  }, [activePage, verificationFilter]);
 
   const uploadImportFiles = async (files) => {
     if (!activeCompany) {
@@ -968,10 +1099,40 @@ export default function AdminV2Page() {
     input.click();
   };
 
+  const renderUploadPanel = ({ compact = false } = {}) => {
+    const pendingCount = importItems.filter((item) => item.status === 'pending').length;
+    return (
+      <div className={`${styles.workspaceUploadPanel} ${compact ? styles.workspaceUploadCompact : ''}`}>
+        <div>
+          <h3>上传资料</h3>
+          <p>支持批量上传 PDF / 图片或整个文件夹。上传后会进入待整理文件池，再归档到产品。</p>
+          <div className={styles.importStats}>
+            <span><strong>{importItems.length}</strong>全部文件</span>
+            <span><strong>{pendingCount}</strong>待整理</span>
+            <span><strong>{importItems.length - pendingCount}</strong>已关联</span>
+          </div>
+        </div>
+        <div className={styles.importActions}>
+          <label className={styles.importCompanyPicker}>
+            <span>导入公司</span>
+            <select value={activeCompany || ''} onChange={(event) => setActiveCompany(Number(event.target.value))}>
+              {companies.map((company) => <option key={company.id} value={company.id}>{company.name} · {company.code}</option>)}
+            </select>
+          </label>
+          <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
+          <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择文件批量上传</button>
+          <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
+          <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新</button>
+        </div>
+      </div>
+    );
+  };
+
   const pageTitle = useMemo(() => {
     const all = [...personalMenus, ...companyMenus, ...platformMenus];
-    return all.find((item) => item.id === activePage)?.label || '后台 v2';
-  }, [activePage]);
+    const current = all.find((item) => item.id === activePage);
+    return current?.labelKey ? t(current.labelKey) : '后台';
+  }, [activePage, t]);
 
   const renderContent = () => {
     if (activeGroup === 'personal') {
@@ -1348,29 +1509,7 @@ export default function AdminV2Page() {
       const activeImportGroup = importGroups.find((group) => group.key === activeImportGroupKey && !group.isDuplicateGroup);
       return (
         <Section title="批量导入" desc="先把文件一股脑上传到待整理资料池，再慢慢关联到产品。">
-          <div className={styles.importHero}>
-            <div>
-              <h3>低门槛上传入口</h3>
-              <p>支持一次选择多个 PDF / 图片文件。系统会先按文件名猜测类型、语言、型号和证书编号。</p>
-              <div className={styles.importStats}>
-                <span><strong>{importItems.length}</strong>全部文件</span>
-                <span><strong>{pendingCount}</strong>待整理</span>
-                <span><strong>{importItems.length - pendingCount}</strong>已关联</span>
-              </div>
-            </div>
-            <div className={styles.importActions}>
-              <label className={styles.importCompanyPicker}>
-                <span>导入公司</span>
-                <select value={activeCompany || ''} onChange={(event) => setActiveCompany(Number(event.target.value))}>
-                  {companies.map((company) => <option key={company.id} value={company.id}>{company.name} · {company.code}</option>)}
-                </select>
-              </label>
-              <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
-              <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择文件批量上传</button>
-              <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
-              <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新列表</button>
-            </div>
-          </div>
+          {renderUploadPanel()}
 
           <div className={styles.importDropHint} onClick={() => importInputRef.current?.click()}>
             <strong>点击这里选择多个文件</strong>
@@ -1387,7 +1526,7 @@ export default function AdminV2Page() {
                     const typeValue = form.documentType || inferImportType(group.items[0], group.type);
                     const confidence = getImportConfidence(group);
                     return (
-                      <button key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => group.isDuplicateGroup ? showAction('这是重复文件卡片，可直接删除重复文件') : setActiveImportGroupKey(group.key)}>
+                      <button key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复文件卡片，可直接删除重复文件'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
                         <div className={styles.importMiniTop}>
                           <span className={styles.fileTypeIcon}>{typeValue.slice(0, 3)}</span>
                           <span className={`${styles.confidenceDot} ${styles[confidence.tone]}`} />
@@ -1669,57 +1808,119 @@ export default function AdminV2Page() {
 
       if (activePage === 'products') {
         return (
-          <Section title="产品资料" desc="按产品查看资料完整度，并直接管理该产品下的证书、DoC 和说明书。">
-            <div className={styles.productHeaderPanel}>
+          <Section>
+            <div className={styles.stackFormalHero}>
               <div>
-                <h3>产品总览</h3>
-                <p>产品资料页负责回答：这个产品的资料是否完整、缺什么、已有文件在哪里。</p>
+                <h1>产品资料桌面</h1>
+                <p>用“产品卡 + 文件行 + 缺失提示”替代复杂表格，快速检查资料是否完整。</p>
               </div>
               <div className={styles.headerActionsInline}>
-                <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量导入</button>
+                <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量上传</button>
                 <button className={styles.primaryBtn} onClick={() => openProductModal()}>新增产品</button>
               </div>
             </div>
 
-            <div className={styles.productTools}>
-              <input placeholder="搜索产品名称、型号、文件名" />
-              <select defaultValue="all"><option value="all">全部完整度</option><option value="complete">资料完整</option><option value="missing">资料缺失</option></select>
-              <select defaultValue="all"><option value="all">全部分类</option><option value="helmet">个人防护用品 / 马术头盔</option><option value="other">其他 / 待分类</option></select>
-            </div>
+            <div className={styles.workspaceProductsPanel}>
 
-            <div className={styles.productOverviewGrid}>
-              {companyProducts.map((product) => {
-                const status = getProductFileStatus(product, companyDocuments);
-                const models = splitImportModels(product.model);
-                return (
-                  <article key={product.id || product.model} className={styles.productOverviewCard}>
-                    <div className={styles.productOverviewTop}>
-                      <div className={styles.productThumb}>{product.imageUrl ? <img src={product.imageUrl} alt={product.name} /> : '产品图'}</div>
-                      <span className={status.missing.length ? styles.warnTag : styles.safeTag}>{status.label}</span>
-                    </div>
-                    <h3>{product.name}</h3>
-                    <div className={styles.modelTagList}>{(models.length ? models : [product.model]).map((model) => <span key={model}>{model}</span>)}</div>
-                    <div className={styles.fileCompletenessRow}>
-                      <span className={status.hasCert ? styles.doneMini : styles.missMini}>证书</span>
-                      <span className={status.hasDoc ? styles.doneMini : styles.missMini}>DoC</span>
-                      <span className={status.hasManual ? styles.doneMini : styles.missMini}>说明书</span>
-                    </div>
-                    <div className={styles.productFileList}>
-                      {status.productDocs.length ? status.productDocs.slice(0, 4).map((doc) => (
-                        <button key={doc.id} onClick={() => editDocumentInfo(doc)}>
-                          <strong>{doc.type}</strong><span>{doc.name}</span><em>{doc.lang}</em>
-                        </button>
-                      )) : <p>暂无文件，建议通过批量导入或文件管理上传。</p>}
-                      {status.productDocs.length > 4 && <p>+{status.productDocs.length - 4} 个文件</p>}
-                    </div>
-                    <div className={styles.productActionsCompact}>
-                      <button className={styles.secondaryBtn} onClick={() => openProductModal(product)}>编辑产品</button>
-                      <button className={styles.secondaryBtn} onClick={() => uploadDocumentFile()}>添加文件</button>
-                      <button className={styles.secondaryBtn} onClick={() => navigate(`/products/${product.id}`)}>预览</button>
-                    </div>
-                  </article>
-                );
-              })}
+              <div className={styles.productTools}>
+                <input placeholder="搜索产品名称、型号、文件名" />
+              </div>
+
+              <div className={styles.productFilterButtons}>
+                <div>
+                  {[
+                    ['all', '全部'],
+                    ['complete', '资料完整'],
+                    ['missing', '缺资料'],
+                  ].map(([value, label]) => <button key={value} className={productStatusFilter === value ? styles.stackFilterActive : ''} onClick={() => setProductStatusFilter(value)}>{label}</button>)}
+                </div>
+                <div>
+                  {[
+                    ['all', '全部分类'],
+                    ['helmet', '头盔'],
+                    ['other', '其他 / 待分类'],
+                  ].map(([value, label]) => <button key={value} className={productCategoryFilter === value ? styles.stackFilterActive : ''} onClick={() => setProductCategoryFilter(value)}>{label}</button>)}
+                </div>
+              </div>
+
+              <div className={styles.workspaceViewTools}>
+                <div className={styles.stackViewSwitch}>
+                  {['overview', 'standard', 'detail'].map((mode) => (
+                    <button key={mode} className={workspaceViewMode === mode ? styles.stackFilterActive : ''} onClick={() => setWorkspaceViewMode(mode)}>{mode === 'overview' ? '概览' : mode === 'standard' ? '标准' : '详细'}</button>
+                  ))}
+                </div>
+                <span>{workspaceViewMode === 'overview' ? '快速巡检资料缺失。' : workspaceViewMode === 'standard' ? '日常整理和归档。' : '核对型号、文件名、语言和状态。'}</span>
+              </div>
+
+              <div className={`${styles.workspaceProductGrid} ${styles[`stackView_${workspaceViewMode}`]}`}>
+                {companyProducts.filter((product) => {
+                  const productStatus = getProductFileStatus(product, companyDocuments);
+                  const statusMatch = productStatusFilter === 'all' || (productStatusFilter === 'complete' ? !productStatus.missing.length : productStatus.missing.length);
+                  const categoryMatch = productCategoryFilter === 'all' || (productCategoryFilter === 'helmet' ? String(product.category || '').includes('头盔') : String(product.category || '').includes('其他'));
+                  return statusMatch && categoryMatch;
+                }).map((product) => {
+                  const status = getProductFileStatus(product, companyDocuments);
+                  const models = splitImportModels(product.model);
+                  const isExpanded = String(workspaceExpandedProduct || '') === String(product.id || product.model);
+                  const productKey = product.id || product.model;
+                  const completedTypes = [status.hasCert, status.hasDoc, status.hasManual].filter(Boolean).length;
+                  const health = {
+                    progress: Math.round((completedTypes / 3) * 100),
+                    progressClass: completedTypes === 3 ? styles.progressGood : completedTypes === 2 ? styles.progressWarn : completedTypes === 1 ? styles.progressPoor : styles.progressEmpty,
+                    className: status.missing.length ? styles.stackMissing : styles.stackOk,
+                    label: status.missing.length ? '缺资料' : '资料完整',
+                  };
+                  const fileRows = [
+                    ['资质证书', 'certificate', status.productDocs.filter((doc) => doc.documentType === 'certificate' || doc.type === '资质证书')],
+                    ['DoC声明', 'declaration_of_conformity', status.productDocs.filter((doc) => doc.documentType === 'declaration_of_conformity' || doc.type === 'DoC声明文件')],
+                    ['说明书', 'manual', status.productDocs.filter((doc) => doc.documentType === 'manual' || doc.type === '使用说明书')],
+                  ];
+                  return (
+                    <article key={productKey} className={`${styles.stackProductCard} ${isExpanded ? styles.stackProductSelected : ''}`}>
+                      <button className={styles.stackProductClickLayer} onClick={() => { setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile(isExpanded ? workspaceExpandedPile : '全部文件'); }} aria-label={`查看 ${product.name}`} />
+                      <div className={styles.stackProductHead}>
+                        <div>
+                          <h3 className={styles.smartProductTitle}><SmartProductTitle title={product.name} /></h3>
+                          <p>{product.category} · {product.updatedAt || '未记录时间'}</p>
+                        </div>
+                        <span className={health.className}>{health.label}</span>
+                      </div>
+                      <div className={`${styles.stackProgressTrack} ${health.progressClass}`}><span style={{ width: `${health.progress}%` }} /></div>
+                      {workspaceViewMode !== 'overview' && <div className={styles.stackNextAction}>{status.missing.length ? `下一步建议：补充${status.missing[0]}` : '资料完整：可以直接对外展示，也适合生成二维码。'}</div>}
+                      <div className={styles.stackFileRows}>
+                        {fileRows.map(([label, type, docs]) => {
+                          const active = isExpanded && workspaceExpandedPile === label;
+                          const shouldShowFiles = workspaceViewMode === 'detail' || (workspaceViewMode === 'standard' && active);
+                          return (
+                            <div key={label} className={`${styles.stackFileRowWrap} ${!docs.length ? styles.stackFileRowMissing : ''} ${active || workspaceViewMode === 'detail' ? styles.stackFileRowOpen : ''}`}>
+                              <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); docs.length ? (setWorkspaceExpandedProduct(productKey), setWorkspaceExpandedPile(active ? '全部文件' : label)) : uploadDocumentFile(); }}>
+                                <span>{label}</span>
+                                <strong>{docs.length || '+'}</strong>
+                              </button>
+                              {shouldShowFiles && docs.length > 0 && (
+                                <div className={styles.stackRowFiles}>
+                                  {docs.map((doc) => <button key={doc.id} onClick={(event) => { event.stopPropagation(); editDocumentInfo(doc); }}><span>{doc.name}</span><em>{doc.lang} · {doc.backup}</em></button>)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {workspaceViewMode === 'detail' && (
+                        <>
+                          <div className={styles.stackInlineModels}>{(models.length ? models : [product.model]).map((model) => <span key={model}>{model}</span>)}</div>
+                          <div className={styles.stackDetailMeta}><span>分类：{product.category}</span><span>文件：{status.productDocs.length} 个</span></div>
+                        </>
+                      )}
+                      {workspaceViewMode !== 'overview' && <div className={styles.stackCardActions}>
+                        <button onClick={(event) => { event.stopPropagation(); setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile('全部文件'); }}>展开详情</button>
+                        <button onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>编辑产品</button>
+                        <button onClick={(event) => { event.stopPropagation(); navigate(`/products/${product.id}`); }}>预览</button>
+                      </div>}
+                    </article>
+                  );
+                })}
+              </div>
             </div>
           </Section>
         );
@@ -1909,33 +2110,41 @@ export default function AdminV2Page() {
       }
 
       if (activePage === 'verification') {
+        const verification = getVerificationDisplay(currentCompany);
+        const stepTitles = [
+          ['1', '填写企业资料', '公司名称、联系方式、地址等基础资料。'],
+          ['2', '上传资质文件', '营业执照、法人证明或授权书。'],
+          ['3', '平台审核', '平台管理员核对资料真实性。'],
+          ['4', '认证通过', '公司主页展示认证状态。'],
+        ];
         return (
           <Section title={t('admin.verification.title')} desc={t('admin.verification.desc')}>
             <div className={styles.verifyHero}>
               <div>
-                <span className={styles.verifyBadge}>当前状态：已认证</span>
+                <span className={`${styles.verifyBadge} ${styles[`verifyBadge_${verification.tone}`] || ''}`}>当前状态：{verification.label}</span>
                 <h3>{currentCompany.name}</h3>
-                <p>企业认证用于证明你有权管理该公司，并对上传资料的真实性负责。</p>
+                <p>{verification.desc}</p>
               </div>
               <button className={styles.secondaryBtn}>查看认证记录</button>
             </div>
 
             <div className={styles.verifySteps}>
-              {[
-                ['1', '填写企业资料', '公司名称、联系方式、地址等基础资料。', '已完成'],
-                ['2', '上传资质文件', '营业执照、法人证明或授权书。', '已完成'],
-                ['3', '平台审核', '平台管理员核对资料真实性。', '已完成'],
-                ['4', '认证通过', '公司主页展示认证状态。', '已完成'],
-              ].map(([num, title, desc, status]) => (
-                <div key={num} className={styles.verifyStepCard}>
-                  <strong>{num}</strong>
-                  <div>
-                    <h4>{title}</h4>
-                    <p>{desc}</p>
+              {stepTitles.map(([num, title, desc], index) => {
+                const stepNumber = index + 1;
+                const done = verification.step > stepNumber || verification.label === '已认证';
+                const current = verification.step === stepNumber && verification.label !== '已认证';
+                const status = done ? '已完成' : current ? verification.label : '待完成';
+                return (
+                  <div key={num} className={`${styles.verifyStepCard} ${done ? styles.verifyStepDone : current ? styles.verifyStepCurrent : styles.verifyStepTodo}`}>
+                    <strong>{num}</strong>
+                    <div>
+                      <h4>{title}</h4>
+                      <p>{desc}</p>
+                    </div>
+                    <span>{status}</span>
                   </div>
-                  <span>{status}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className={styles.verifyContentGrid}>
@@ -1945,7 +2154,7 @@ export default function AdminV2Page() {
                     <h3>认证资料</h3>
                     <p>如果公司信息变化，后续可重新提交认证。</p>
                   </div>
-                  <button className={styles.primaryBtn}>重新提交认证</button>
+                  <button className={styles.primaryBtn} onClick={submitCurrentCompanyVerification}>{verification.label === '已认证' ? '重新提交认证' : '提交认证申请'}</button>
                 </div>
                 <div className={styles.editGrid}>
                   <label>
@@ -1954,15 +2163,15 @@ export default function AdminV2Page() {
                   </label>
                   <label>
                     <span>统一社会信用代码 / 注册号</span>
-                    <input placeholder="后续填写企业注册编号" />
+                    <input value={verificationForm.businessLicenseNo} onChange={(event) => setVerificationForm((form) => ({ ...form, businessLicenseNo: event.target.value }))} placeholder="后续填写企业注册编号" />
                   </label>
                   <label>
                     <span>法人 / 负责人姓名</span>
-                    <input value={profileForm.realName} onChange={(event) => setProfileForm((form) => ({ ...form, realName: event.target.value }))} placeholder="例如：张三" />
+                    <input value={verificationForm.contactPerson} onChange={(event) => setVerificationForm((form) => ({ ...form, contactPerson: event.target.value }))} placeholder="例如：张三" />
                   </label>
                   <label>
                     <span>联系邮箱</span>
-                    <input placeholder="verification@example.com" />
+                    <input value={verificationForm.contactEmail} onChange={(event) => setVerificationForm((form) => ({ ...form, contactEmail: event.target.value }))} placeholder="verification@example.com" />
                   </label>
                 </div>
               </div>
@@ -2129,14 +2338,20 @@ export default function AdminV2Page() {
     }
 
     if (activePage === 'company-review') {
+      const counts = verificationItems.reduce((acc, item) => {
+        const status = item.verificationStatus || 'pending';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+      const statusLabel = (status) => status === 'verified' ? '已通过' : status === 'rejected' ? '已拒绝' : '待审核';
       return (
         <Section title={t('admin.companyReview.title')} desc={t('admin.companyReview.desc')}>
           <div className={styles.reviewSummaryGrid}>
             {[
-              ['待审核', '6', '需要平台处理'],
-              ['已通过', '28', '认证成功企业'],
-              ['已拒绝', '3', '资料不完整或不通过'],
-              ['需补充', '2', '等待企业重新提交'],
+              ['待审核', String(counts.pending || 0), '需要平台处理'],
+              ['已通过', String(counts.verified || 0), '认证成功企业'],
+              ['已拒绝', String(counts.rejected || 0), '资料不完整或不通过'],
+              ['当前筛选', verificationFilter === 'all' ? '全部' : statusLabel(verificationFilter), '可切换审核状态'],
             ].map(([name, count, desc]) => (
               <div key={name} className={styles.reviewSummaryCard}>
                 <strong>{count}</strong>
@@ -2148,45 +2363,41 @@ export default function AdminV2Page() {
 
           <div className={styles.reviewToolbar}>
             <input placeholder="搜索公司名称、申请人、公司编号" />
-            <select defaultValue="pending">
+            <select value={verificationFilter} onChange={(event) => setVerificationFilter(event.target.value)}>
               <option value="pending">待审核</option>
-              <option value="approved">已通过</option>
+              <option value="verified">已通过</option>
               <option value="rejected">已拒绝</option>
-              <option value="needs_more">需补充材料</option>
               <option value="all">全部状态</option>
             </select>
-            <select defaultValue="newest">
-              <option value="newest">最新提交</option>
-              <option value="oldest">最早提交</option>
-              <option value="risk">风险优先</option>
-            </select>
+            <button className={styles.secondaryBtn} onClick={refreshCompanyVerifications}>刷新</button>
           </div>
 
           <div className={styles.reviewList}>
-            {[
-              ['Guangzhou Safety Equipment Co., Ltd.', 'c-8f3k29', 'admin@legacy.local', '营业执照、授权书', '待审核', '今天 15:20'],
-              ['EU Riding Gear GmbH', 'c-2m7q91', 'owner@example.com', '注册文件、法人证明', '需补充', '昨天 18:45'],
-              ['New Safety Products Ltd.', 'c-9x1p02', 'contact@example.com', '营业执照', '待审核', '昨天 11:12'],
-            ].map(([company, code, applicant, files, status, time]) => (
-              <article key={code} className={styles.reviewCard}>
-                <div className={styles.reviewCompanyBlock}>
-                  <h3>{company}</h3>
-                  <p>{code}</p>
-                </div>
-                <div className={styles.reviewInfoGrid}>
-                  <span><strong>申请人</strong><em>{applicant}</em></span>
-                  <span><strong>提交材料</strong><em>{files}</em></span>
-                  <span><strong>提交时间</strong><em>{time}</em></span>
-                  <span><strong>审核状态</strong><em className={status === '待审核' ? styles.reviewStatusPending : status === '需补充' ? styles.reviewStatusMore : status === '已通过' ? styles.reviewStatusPass : status === '已拒绝' ? styles.reviewStatusReject : styles.statusMuted}>{status}</em></span>
-                </div>
-                <div className={styles.reviewActions}>
-                  <button className={styles.primaryBtn}>查看材料</button>
-                  <button className={styles.secondaryBtn}>通过</button>
-                  <button className={styles.secondaryBtn}>要求补充材料</button>
-                  <button className={styles.reviewRejectBtn}>拒绝</button>
-                </div>
-              </article>
-            ))}
+            {verificationItems.length === 0 && <div className={styles.emptyState}>当前没有需要显示的企业认证申请。</div>}
+            {verificationItems.map((item) => {
+              const status = statusLabel(item.verificationStatus);
+              const companyId = item.companyId || item.id;
+              const code = `c-${String(companyId).padStart(6, '0')}`;
+              return (
+                <article key={companyId} className={styles.reviewCard}>
+                  <div className={styles.reviewCompanyBlock}>
+                    <h3>{item.companyName || item.name}</h3>
+                    <p>{code}</p>
+                  </div>
+                  <div className={styles.reviewInfoGrid}>
+                    <span><strong>申请人</strong><em>{item.contactPerson || '-'}</em></span>
+                    <span><strong>注册号</strong><em>{item.businessLicenseNo || '待补充'}</em></span>
+                    <span><strong>提交时间</strong><em>{item.updatedAt || item.createdAt || '-'}</em></span>
+                    <span><strong>审核状态</strong><em className={status === '待审核' ? styles.reviewStatusPending : status === '已通过' ? styles.reviewStatusPass : status === '已拒绝' ? styles.reviewStatusReject : styles.statusMuted}>{status}</em></span>
+                  </div>
+                  <div className={styles.reviewActions}>
+                    <button className={styles.primaryBtn} onClick={() => showAction('查看材料功能待完善')}>查看材料</button>
+                    {item.verificationStatus === 'pending' && <button className={styles.secondaryBtn} onClick={() => reviewCompany(companyId, 'approve')}>通过</button>}
+                    {item.verificationStatus === 'pending' && <button className={styles.reviewRejectBtn} onClick={() => reviewCompany(companyId, 'reject')}>拒绝/要求补充</button>}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </Section>
       );
@@ -2489,6 +2700,10 @@ export default function AdminV2Page() {
     return <Placeholder title={pageTitle} desc="平台管理员功能入口，后续接入真实审核、用户、举报和系统设置数据。" />;
   };
 
+  if (location.pathname === '/admin/test-stacklands-products') {
+    return <StacklandsProductsTestPage onBack={() => navigate('/admin')} />;
+  }
+
   return (
     <div className={styles.page}>
       <aside className={styles.sidebar}>
@@ -2500,7 +2715,7 @@ export default function AdminV2Page() {
           <div className={styles.quickImportBox}>
             <button className={activeGroup === 'import' ? styles.quickImportActive : ''} onClick={() => openPage('import', 'bulk-import', activeCompany || companies[0]?.id)}>
               <MenuIcon type="import" />
-              <span>批量导入</span>
+              <span>批量上传</span>
             </button>
           </div>
           <MenuGroup title={t('admin.menu.personal')} items={personalMenus} activePage={activePage} onSelect={(id) => openPage('personal', id)} />
@@ -2766,4 +2981,218 @@ function DataTable({ columns, rows }) {
       </table>
     </div>
   );
+}
+
+
+function StacklandsProductsTestPage({ onBack }) {
+  const initialProducts = [
+    {
+      id: 'f66',
+      name: 'Product F66 Series',
+      company: 'Cavali Safety Equipment',
+      models: ['F66-660', 'F66-661', 'F66-662', 'F66-663'],
+      status: '缺说明书',
+      updated: '今天 10:42',
+      files: [
+        { id: 'f66-cert-1', type: '资质证书', name: 'F66 CE Certificate.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f66-cert-2', type: '资质证书', name: 'F66 UKCA Certificate.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f66-doc-1', type: 'DoC声明', name: 'F66 DoC EN.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f66-doc-2', type: 'DoC声明', name: 'F66 DoC DE.pdf', lang: 'DE', status: '已归档' },
+      ],
+    },
+    {
+      id: 'f20',
+      name: 'Equestrian Helmet F20',
+      company: 'Guangzhou Safety Equipment',
+      models: ['F20-201AL', 'F20-201AE', 'F20-202AL'],
+      status: '资料完整',
+      updated: '昨天 18:20',
+      files: [
+        { id: 'f20-cert-1', type: '资质证书', name: 'F20 CE Certificate.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f20-cert-2', type: '资质证书', name: 'F20 Test Report.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f20-doc-1', type: 'DoC声明', name: 'F20 DoC EN.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f20-doc-2', type: 'DoC声明', name: 'F20 DoC FR.pdf', lang: 'FR', status: '已归档' },
+        { id: 'f20-manual-1', type: '说明书', name: 'F20 User Manual.pdf', lang: 'EN', status: '已归档' },
+      ],
+    },
+    {
+      id: 'f60',
+      name: 'Riding Helmet F60',
+      company: 'RIF Riding Gear',
+      models: ['F60-608', 'F60-609'],
+      status: '待整理',
+      updated: '2 天前',
+      files: [
+        { id: 'f60-cert-1', type: '资质证书', name: 'F60 Certificate.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f60-manual-1', type: '说明书', name: 'F60 Manual.pdf', lang: 'EN', status: '已归档' },
+      ],
+    },
+  ];
+  const initialPendingFiles = [
+    { id: 'p1', name: 'F66_manual_EN.pdf', desc: '疑似说明书 · EN', type: '说明书', target: 'f66' },
+    { id: 'p2', name: 'F66_manual_DE.pdf', desc: '疑似说明书 · DE', type: '说明书', target: 'f66' },
+    { id: 'p3', name: 'F60_DOC_EN.pdf', desc: '疑似 DoC · EN', type: 'DoC声明', target: 'f60' },
+    { id: 'p4', name: 'duplicate_F20.pdf', desc: '疑似重复 · F20', type: '资质证书', target: 'f20', duplicate: true },
+  ];
+
+  const [products, setProducts] = useState(initialProducts);
+  const [pendingFiles, setPendingFiles] = useState(initialPendingFiles);
+  const [selectedProductId, setSelectedProductId] = useState('f66');
+  const [selectedPile, setSelectedPile] = useState('全部文件');
+  const [focusMode, setFocusMode] = useState('all');
+  const [viewMode, setViewMode] = useState('standard');
+  const visibleProducts = products.filter((product) => focusMode === 'all' || getStackProductHealth(product).status === focusMode);
+
+  const addPendingToProduct = (pendingFile) => {
+    setProducts((items) => items.map((product) => product.id === pendingFile.target ? {
+      ...product,
+      files: [...product.files, { id: `new-${pendingFile.id}`, type: pendingFile.type, name: pendingFile.name, lang: pendingFile.name.includes('_DE') ? 'DE' : 'EN', status: '刚归档' }],
+      status: '刚更新',
+      updated: '刚刚',
+    } : product));
+    setPendingFiles((items) => items.filter((item) => item.id !== pendingFile.id));
+    setSelectedProductId(pendingFile.target);
+    setSelectedPile(pendingFile.type);
+  };
+
+  const removePendingFile = (pendingFile) => {
+    setPendingFiles((items) => items.filter((item) => item.id !== pendingFile.id));
+  };
+
+  const addMissingFile = (productId, type) => {
+    setProducts((items) => items.map((product) => product.id === productId ? {
+      ...product,
+      files: [...product.files, { id: `mock-${Date.now()}`, type, name: `${product.name} ${type}.pdf`, lang: 'EN', status: '模拟新增' }],
+      status: '刚更新',
+      updated: '刚刚',
+    } : product));
+    setSelectedProductId(productId);
+    setSelectedPile(type);
+  };
+
+  return (
+    <div className={styles.stackPage}>
+      <div className={styles.stackTopbar}>
+        <div>
+          <span className={styles.stackEyebrow}>TEST PAGE · Stacklands style</span>
+          <h1>产品资料桌面</h1>
+          <p>用“产品卡 + 文件堆 + 空卡槽”替代复杂表格，先体验效率和缺陷。</p>
+        </div>
+        <div className={styles.stackTopActions}>
+          <button className={styles.secondaryBtn} onClick={() => setProducts(initialProducts)}>重置产品</button>
+          <button className={styles.secondaryBtn} onClick={onBack}>返回正式后台</button>
+        </div>
+      </div>
+
+      <div className={styles.stackBoard}>
+        <aside className={styles.stackInbox}>
+          <div className={styles.stackPanelTitle}>待整理文件堆</div>
+          <p>点击“归档”会模拟把文件放进推荐产品；重复文件可直接删除。</p>
+          <div className={styles.stackPendingPile}>
+            {pendingFiles.length ? pendingFiles.map((file, index) => (
+              <div key={file.id} className={`${styles.stackPendingCard} ${file.duplicate ? styles.stackDuplicatePending : ''}`} style={{ '--tilt': `${index % 2 ? 1.5 : -1.2}deg` }}>
+                <strong>{file.name}</strong>
+                <span>{file.desc}</span>
+                <div className={styles.stackPendingActions}>
+                  {!file.duplicate && <button onClick={() => addPendingToProduct(file)}>归档</button>}
+                  <button onClick={() => removePendingFile(file)}>{file.duplicate ? '删除重复' : '删除'}</button>
+                </div>
+              </div>
+            )) : <div className={styles.stackEmptyPile}>待整理文件已清空</div>}
+          </div>
+        </aside>
+
+        <main className={styles.stackDesk}>
+          <div className={styles.stackDeskHeader}>
+            <div>
+              <h2>产品卡片</h2>
+              <p>默认只看产品名、完整度和文件堆；缺失资料会直接变成空卡槽。</p>
+            </div>
+            <div className={styles.stackFilters}>
+              {['all', '资料完整', '缺资料', '待整理'].map((item) => <button key={item} className={focusMode === item ? styles.stackFilterActive : ''} onClick={() => setFocusMode(item)}>{item === 'all' ? '全部' : item}</button>)}
+            </div>
+          </div>
+
+          <div className={styles.stackViewTools}>
+            <div className={styles.stackViewSwitch}>
+              {['overview', 'standard', 'detail'].map((mode) => (
+                <button key={mode} className={viewMode === mode ? styles.stackFilterActive : ''} onClick={() => setViewMode(mode)}>{mode === 'overview' ? '概览' : mode === 'standard' ? '标准' : '详细'}</button>
+              ))}
+            </div>
+            <span>{viewMode === 'overview' ? '快速看哪些产品缺资料。' : viewMode === 'standard' ? '日常整理用，信息和效率平衡。' : '核对文件名、语言和型号时使用。'}</span>
+          </div>
+
+          <div className={`${styles.stackProductGrid} ${styles[`stackView_${viewMode}`]}`}>
+            {visibleProducts.map((product) => {
+              const health = getStackProductHealth(product);
+              return (
+                <article key={product.id} className={`${styles.stackProductCard} ${selectedProductId === product.id ? styles.stackProductSelected : ''}`}>
+                  <button className={styles.stackProductClickLayer} onClick={() => { setSelectedProductId(product.id); setSelectedPile(selectedProductId === product.id ? selectedPile : '全部文件'); }} aria-label={`查看 ${product.name}`} />
+                  <div className={styles.stackProductHead}>
+                    <div>
+                      <h3 className={styles.smartProductTitle}><SmartProductTitle title={product.name} /></h3>
+                      <p>{product.company} · {product.updated}</p>
+                    </div>
+                    <span className={health.className}>{health.status}</span>
+                  </div>
+
+                  <div className={`${styles.stackProgressTrack} ${health.progressClass}`}><span style={{ width: `${health.progress}%` }} /></div>
+
+                  {viewMode !== 'overview' && <div className={styles.stackNextAction}>{getStackNextAction(product)}</div>}
+
+                  <div className={styles.stackFileRows}>
+                    {['资质证书', 'DoC声明', '说明书'].map((type) => {
+                      const files = product.files.filter((file) => file.type === type);
+                      const active = selectedProductId === product.id && selectedPile === type;
+                      const shouldShowFiles = viewMode === 'detail' || (viewMode === 'standard' && active);
+                      return (
+                        <div key={type} className={`${styles.stackFileRowWrap} ${active || viewMode === 'detail' ? styles.stackFileRowOpen : ''}`}>
+                          <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); viewMode === 'overview' ? setSelectedProductId(product.id) : files.length ? (setSelectedProductId(product.id), setSelectedPile(active ? '全部文件' : type)) : addMissingFile(product.id, type); }}>
+                            <span>{type}</span>
+                            <strong>{files.length || '+'}</strong>
+                          </button>
+                          {shouldShowFiles && files.length > 0 && (
+                            <div className={styles.stackRowFiles}>
+                              {files.map((file) => <button key={file.id}><span>{file.name}</span><em>{file.lang} · {file.status}</em></button>)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {viewMode === 'detail' && (
+                    <>
+                      <div className={styles.stackInlineModels}>{product.models.map((model) => <span key={model}>{model}</span>)}</div>
+                      <div className={styles.stackDetailMeta}><span>公司：{product.company}</span><span>更新：{product.updated}</span></div>
+                    </>
+                  )}
+
+                  {viewMode !== 'overview' && <div className={styles.stackCardActions}>
+                    <button onClick={(event) => { event.stopPropagation(); setSelectedProductId(product.id); setSelectedPile('全部文件'); }}>展开详情</button>
+                    <button onClick={(event) => event.stopPropagation()}>编辑产品</button>
+                    <button onClick={(event) => event.stopPropagation()}>预览</button>
+                  </div>}
+                </article>
+              );
+            })}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function getStackNextAction(product) {
+  const missing = ['资质证书', 'DoC声明', '说明书'].filter((type) => !product.files.some((file) => file.type === type));
+  if (!missing.length) return '资料完整：可以直接对外展示，也适合生成二维码。';
+  return `下一步建议：补充${missing[0]}，让产品资料更完整。`;
+}
+
+function getStackProductHealth(product) {
+  const required = ['资质证书', 'DoC声明', '说明书'];
+  const presentCount = required.filter((type) => product.files.some((file) => file.type === type)).length;
+  if (presentCount === required.length) return { status: '资料完整', progress: 100, className: styles.stackOk };
+  if (product.status === '待整理') return { status: '待整理', progress: Math.round((presentCount / required.length) * 100), className: styles.stackWarn };
+  return { status: '缺资料', progress: Math.round((presentCount / required.length) * 100), className: styles.stackMissing };
 }

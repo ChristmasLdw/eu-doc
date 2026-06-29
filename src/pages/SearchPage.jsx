@@ -14,7 +14,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getCertificates, getStats, getCompanies } from '../services/api';
+import { getCertificates, getStats, getCompanies, getSearchSuggestions } from '../services/api';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
@@ -46,6 +46,7 @@ export default function SearchPage() {
 
   // 组件内部状态
   const [query, setQuery] = useState(initialQuery);
+  const [submittedQuery, setSubmittedQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [activeStatus, setActiveStatus] = useState(initialStatus);
   const [activeIssuer, setActiveIssuer] = useState(initialIssuer);
@@ -63,8 +64,9 @@ export default function SearchPage() {
   // 匹配的公司（搜索时自动查找）
   const [matchedCompanies, setMatchedCompanies] = useState([]);
 
-  // 搜索建议数据源（从 API 获取，缓存在前端用于实时过滤）
-  const [suggestionData, setSuggestionData] = useState([]);
+  // 搜索建议由后端统一返回，避免不同来源先后刷新导致跳动
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   // 分类列表（从 API 获取）
   const [categories, setCategories] = useState([]);
@@ -83,15 +85,6 @@ export default function SearchPage() {
 
   // 组件挂载时获取搜索建议数据源和筛选选项列表
   useEffect(() => {
-    // 获取搜索建议数据源（按id升序，优先显示有缩略图的早期证书）
-    getCertificates({ pageSize: 100, sortBy: 'id', sortOrder: 'ASC' })
-      .then((result) => {
-        if (result && Array.isArray(result.data)) {
-          setSuggestionData(result.data);
-        }
-      })
-      .catch(() => {});
-
     // 获取发证机构和认证标准列表（从统计 API 获取）
     getStats()
       .then((data) => {
@@ -108,49 +101,35 @@ export default function SearchPage() {
       .catch(() => {});
   }, []);
 
-  // 搜索建议：根据输入实时匹配（前端过滤，保证实时响应）
-  const suggestions = useMemo(() => {
-    if (!query || query.length < 1) return [];
-    const q = query.toLowerCase();
-    const seen = new Set();
-    const results = [];
-    suggestionData.forEach((cert) => {
-      const fields = [
-        { type: 'company', value: cert.companyName },
-        { type: 'product', value: cert.productName },
-        { type: 'model', value: cert.model },
-        { type: 'certNo', value: cert.certNo },
-      ];
-      fields.forEach(({ type, value }) => {
-        if (value && value.toLowerCase().includes(q) && !seen.has(value)) {
-          // 计算匹配度：开头匹配 > 单词边界匹配 > 包含匹配
-          const valueLower = value.toLowerCase();
-          let matchScore = 0;
-          if (valueLower.startsWith(q)) {
-            matchScore = 3; // 开头匹配，最高优先级
-          } else if (valueLower.includes(' ' + q) || valueLower.includes('-' + q)) {
-            matchScore = 2; // 单词边界匹配
-          } else {
-            matchScore = 1; // 普通包含匹配
-          }
-          seen.add(value);
-          results.push({ type, value, matchScore });
-        }
-      });
-      if (results.length >= 30) return;
-    });
-    // 排序：匹配度优先 > 类型优先（公司>产品>型号>证书号）> 自然排序
-    const typeOrder = { company: 0, product: 1, model: 2, certNo: 3 };
-    results.sort((a, b) => {
-      // 先按匹配度排序
-      if (a.matchScore !== b.matchScore) return b.matchScore - a.matchScore;
-      // 再按类型排序
-      if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
-      // 最后按字母数字顺序排序
-      return a.value.localeCompare(b.value, 'zh-CN', { numeric: true });
-    });
-    return results.slice(0, 20); // 最多显示20条
-  }, [query, suggestionData]);
+  useEffect(() => {
+    const keyword = query.trim();
+    if (!keyword) {
+      setSuggestions([]);
+      setSuggestionsLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setSuggestionsLoading(true);
+    const timer = window.setTimeout(() => {
+      getSearchSuggestions(keyword, 12)
+        .then((items) => {
+          if (!cancelled) setSuggestions(items);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSuggestionsLoading(false);
+        });
+    }, 35);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
 
   // 点击外部关闭建议下拉
   useEffect(() => {
@@ -171,8 +150,8 @@ export default function SearchPage() {
 
     const params = { page: currentPage, pageSize: PAGE_SIZE };
 
-    // 搜索关键词
-    if (query) params.search = query;
+    // 正式搜索词：输入过程中不刷新结果，只有提交搜索后才更新
+    if (submittedQuery) params.search = submittedQuery;
 
     // 筛选条件
     if (activeCategory) params.category = activeCategory;
@@ -193,8 +172,8 @@ export default function SearchPage() {
     // 否则不传排序参数，后端使用默认排序
 
     // 同时搜索公司（仅在第一页且有搜索关键词时）
-    const companyPromise = (query && currentPage === 1)
-      ? getCompanies({ search: query, pageSize: 3 }).catch(() => ({ data: [] }))
+    const companyPromise = (submittedQuery && currentPage === 1)
+      ? getCompanies({ search: submittedQuery, pageSize: 3 }).catch(() => ({ data: [] }))
       : Promise.resolve({ data: [] });
 
     const certPromise = getCertificates(params);
@@ -204,7 +183,7 @@ export default function SearchPage() {
         // 处理公司结果
         if (companyResult && Array.isArray(companyResult.data)) {
           // 只显示名称真正匹配的公司
-          const q = query.toLowerCase();
+          const q = submittedQuery.toLowerCase();
           const matched = companyResult.data.filter(
             (c) => c.name.toLowerCase().includes(q) || (c.nameEn && c.nameEn.toLowerCase().includes(q))
           );
@@ -215,12 +194,12 @@ export default function SearchPage() {
         if (certResult) {
           let data = certResult.data || [];
           // relevance 排序：有搜索词时，匹配字段越多越靠前（前端二次排序）
-          if (sortBy === 'relevance' && query) {
+          if (sortBy === 'relevance' && submittedQuery) {
             data = [...data].sort((a, b) => {
               const scoreA = [a.productName, a.model, a.companyName, a.certNo]
-                .filter((f) => f && f.toLowerCase().includes(query.toLowerCase())).length;
+                .filter((f) => f && f.toLowerCase().includes(submittedQuery.toLowerCase())).length;
               const scoreB = [b.productName, b.model, b.companyName, b.certNo]
-                .filter((f) => f && f.toLowerCase().includes(query.toLowerCase())).length;
+                .filter((f) => f && f.toLowerCase().includes(submittedQuery.toLowerCase())).length;
               return scoreB - scoreA;
             });
           }
@@ -236,21 +215,21 @@ export default function SearchPage() {
         setTotalPages(1);
       })
       .finally(() => setLoading(false));
-  }, [query, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage]);
+  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage]);
 
   // 搜索参数变化时重新获取数据
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
 
-  // 搜索词变化时重置到第 1 页
-  useEffect(() => { setCurrentPage(1); }, [query]);
+  // 正式搜索词变化时重置到第 1 页，输入过程不刷新结果页
+  useEffect(() => { setCurrentPage(1); }, [submittedQuery]);
 
   // 同步所有筛选条件到 URL
   // pageOverride: 当需要立即同步页码时传入（因为 setState 是异步的）
-  const syncUrl = (pageOverride) => {
+  const syncUrl = (pageOverride, queryOverride = submittedQuery) => {
     const params = {};
-    if (query) params.q = query;
+    if (queryOverride) params.q = queryOverride;
     if (activeCategory) params.category = activeCategory;
     if (activeStatus) params.status = activeStatus;
     if (activeIssuer) params.issuer = activeIssuer;
@@ -263,30 +242,36 @@ export default function SearchPage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (query.trim()) {
-      addSearchHistory(query);
+    const nextQuery = query.trim();
+    if (nextQuery) {
+      addSearchHistory(nextQuery);
       setSearchHistory(getSearchHistory());
     }
+    setSubmittedQuery(nextQuery);
     setCurrentPage(1);
-    syncUrl(1);
+    syncUrl(1, nextQuery);
     setShowSuggestions(false);
   };
 
   const handleSuggestionClick = (value) => {
+    const nextQuery = value.trim();
     setQuery(value);
-    if (value.trim()) {
-      addSearchHistory(value);
+    if (nextQuery) {
+      addSearchHistory(nextQuery);
       setSearchHistory(getSearchHistory());
     }
+    setSubmittedQuery(nextQuery);
     setShowSuggestions(false);
     setCurrentPage(1);
-    syncUrl(1);
+    syncUrl(1, nextQuery);
   };
 
   const handleHistoryClick = (historyItem) => {
     setQuery(historyItem);
+    setSubmittedQuery(historyItem.trim());
     setShowSuggestions(false);
     setCurrentPage(1);
+    syncUrl(1, historyItem.trim());
     // 不再添加到历史，因为已经存在
   };
 
@@ -309,8 +294,8 @@ export default function SearchPage() {
 
   // 高亮匹配文本
   const highlightText = (text) => {
-    if (!query || !text) return text;
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    if (!submittedQuery || !text) return text;
+    const regex = new RegExp(`(${submittedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     const parts = text.split(regex);
     return parts.map((part, i) =>
       regex.test(part) ? <mark key={i} className={styles.highlight}>{part}</mark> : part
@@ -475,7 +460,7 @@ export default function SearchPage() {
                   {/* 无建议和无历史时的提示 */}
                   {query && suggestions.length === 0 && (
                     <div className={styles.noSuggestions}>
-                      <div>{t('search.noSuggestions')}</div>
+                      <div>{suggestionsLoading ? '正在匹配相关结果...' : t('search.noSuggestions')}</div>
                       <div className={styles.searchTip}>{t('search.searchTipsContent')}</div>
                     </div>
                   )}
@@ -608,6 +593,10 @@ export default function SearchPage() {
                 <>{t('search.searching')}</>
               ) : error ? (
                 <>{t('common.loadFailed')}</>
+              ) : matchedCompanies.length > 0 && totalResults === 0 ? (
+                <>找到 <strong>{matchedCompanies.length}</strong> 个公司结果</>
+              ) : matchedCompanies.length > 0 ? (
+                <>找到 <strong>{matchedCompanies.length + totalResults}</strong> 条结果 <em>包含 {matchedCompanies.length} 个公司、{totalResults} 份证书</em></>
               ) : (
                 <>{t('search.foundResults', { count: totalResults }).replace('<strong>', '').replace('</strong>', '')
                   .split(totalResults.toString())
@@ -666,8 +655,9 @@ export default function SearchPage() {
                   )}
                 </div>
                 <div className={styles.companyBadge}>
-                  <span className={styles.companyCertCount}>{company.certCount || 0} 份证书</span>
-                  <span className={styles.companyViewBtn}>查看全部 →</span>
+                  <span className={styles.companyCertCount}>{company.productCount || 0} 个产品</span>
+                  <span className={styles.companyDocCount}>{company.documentCount || company.certCount || 0} 份资料</span>
+                  <span className={styles.companyViewBtn}>查看公司 →</span>
                 </div>
               </Link>
             ))}
@@ -734,7 +724,7 @@ export default function SearchPage() {
             {/* 分页 */}
             {renderPagination()}
           </>
-        ) : !error && !loading ? (
+        ) : !error && !loading && matchedCompanies.length === 0 ? (
           <div className={styles.emptyState}>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" />

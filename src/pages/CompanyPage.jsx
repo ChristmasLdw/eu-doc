@@ -20,6 +20,8 @@ export default function CompanyPage() {
   const { t, i18n } = useTranslation();
 
   const [company, setCompany] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,13 +47,19 @@ export default function CompanyPage() {
     setLoading(true);
     setError(null);
     getCompany(id)
-      .then((data) => {
+      .then(async (data) => {
         console.log('Company data received:', data);
         console.log('Certificates:', data?.certificates);
         if (data?.certificates?.[0]) {
           console.log('First cert keys:', Object.keys(data.certificates[0]));
         }
         setCompany(data);
+        const [productResult, documentResult] = await Promise.all([
+          api.getCompanyProducts(id).catch(() => ({ data: [] })),
+          api.getCompanyDocuments(id).catch(() => ({ data: [] })),
+        ]);
+        setProducts(productResult.data || []);
+        setDocuments((documentResult.data || []).filter((doc) => doc.status !== 'deleted'));
         // 加载收藏状态
         loadFavoriteStatus(id);
       })
@@ -119,6 +127,48 @@ export default function CompanyPage() {
       alert('分享链接：' + shareUrl);
     }
   };
+
+
+  const getDocType = (doc) => doc.documentType || doc.document_type || 'other';
+  const productPackages = useMemo(() => {
+    const docsByProduct = documents.reduce((acc, doc) => {
+      const productId = String(doc.productId || doc.product_id || '');
+      if (!acc[productId]) acc[productId] = [];
+      acc[productId].push(doc);
+      return acc;
+    }, {});
+    let list = products.map((product) => {
+      const docs = docsByProduct[String(product.id)] || [];
+      const certs = docs.filter((doc) => getDocType(doc) === 'certificate');
+      const declarations = docs.filter((doc) => ['declaration_of_conformity', 'declaration'].includes(getDocType(doc)));
+      const manuals = docs.filter((doc) => getDocType(doc) === 'manual');
+      const completed = [certs.length, declarations.length, manuals.length].filter(Boolean).length;
+      return { ...product, docs, certs, declarations, manuals, completed, completeness: Math.round((completed / 3) * 100) };
+    });
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((product) => [product.name, product.nameEn, product.name_en, product.model, product.categoryName, product.category_name]
+        .some((value) => String(value || '').toLowerCase().includes(q))
+        || product.docs.some((doc) => String(doc.title || doc.name || '').toLowerCase().includes(q)));
+    }
+
+    switch (sortBy) {
+      case 'name-asc':
+        list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN'));
+        break;
+      case 'name-desc':
+        list.sort((a, b) => String(b.name || '').localeCompare(String(a.name || ''), 'zh-CN'));
+        break;
+      default:
+        list.sort((a, b) => new Date(b.updatedAt || b.updated_at || b.createdAt || b.created_at || 0) - new Date(a.updatedAt || a.updated_at || a.createdAt || a.created_at || 0));
+        break;
+    }
+    return list;
+  }, [products, documents, searchQuery, sortBy]);
+
+  const totalDocuments = documents.length;
+  const totalProducts = products.length;
 
   // 过滤和排序后的证书列表
   const filteredCertificates = useMemo(() => {
@@ -309,101 +359,63 @@ export default function CompanyPage() {
 
             <div className={styles.companyStats}>
               <div className={styles.statItem}>
-                <span className={styles.statNumber}>{company.certificates?.length || 0}</span>
-                <span className={styles.statLabel}>{t('company.certCount')}</span>
+                <span className={styles.statNumber}>{totalProducts}</span>
+                <span className={styles.statLabel}>产品资料包</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statNumber}>{formatDate(company.createdAt)}</span>
-                <span className={styles.statLabel}>{t('company.joinedDate')}</span>
+                <span className={styles.statNumber}>{totalDocuments}</span>
+                <span className={styles.statLabel}>公开资料</span>
               </div>
             </div>
           </div>
 
-          {/* 证书列表 */}
+          {/* 产品资料包 */}
           <div className={styles.certSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                  <polyline points="10 9 9 9 8 9" />
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <path d="m3.3 7 8.7 5 8.7-5" />
+                  <path d="M12 22V12" />
                 </svg>
-                {t('company.certList')}
+                产品资料包
               </h2>
-              <span className={styles.resultCount}>
-                {searchQuery ? `${filteredCertificates.length} / ${company.certificates?.length || 0}` : company.certificates?.length || 0} {t('company.certCountText')}
-              </span>
+              <span className={styles.resultCount}>{searchQuery ? `${productPackages.length} / ${totalProducts}` : totalProducts} 个产品 · {totalDocuments} 份资料</span>
             </div>
 
-            {/* 搜索和排序工具栏 */}
             <div className={styles.toolbar}>
               <div className={styles.searchBox}>
                 <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <input
-                  type="text"
-                  className={styles.searchInput}
-                  placeholder={t('company.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <button
-                    className={styles.clearBtn}
-                    onClick={() => setSearchQuery('')}
-                  >
-                    ✕
-                  </button>
-                )}
+                <input type="text" className={styles.searchInput} placeholder="搜索产品名称、型号、资料文件" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                {searchQuery && <button className={styles.clearBtn} onClick={() => setSearchQuery('')}>✕</button>}
               </div>
-              <select
-                className={styles.sortSelect}
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                {sortOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+              <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                {sortOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
 
-            {filteredCertificates.length > 0 ? (
-              <div className={styles.certList}>
-                {filteredCertificates.map((cert) => (
-                  <Link
-                    key={cert.id}
-                    to={`/certificate/${cert.id}`}
-                    className={styles.certCard}
-                  >
-                    <div className={styles.certInfo}>
-                      <div className={styles.certHeader}>
-                        <span className={styles.certNo}>{cert.certNo}</span>
-                        <StatusBadge status={cert.status} />
-                      </div>
-                      <h3 className={styles.certName}>{cert.productName}</h3>
-                      <div className={styles.certMeta}>
-                        {cert.category && (
-                          <span className={styles.certTag}>{cert.category}</span>
-                        )}
-                        {cert.standard && (
-                          <span className={styles.certTag}>{cert.standard}</span>
-                        )}
-                        {cert.issueDate && (
-                          <span className={styles.certDate}>{t('company.issueDate')}: {cert.issueDate}</span>
-                        )}
-                        {cert.expiryDate && (
-                          <span className={styles.certDate}>{t('company.expiryDate')}: {cert.expiryDate}</span>
-                        )}
-                      </div>
+            {productPackages.length > 0 ? (
+              <div className={styles.productPackageGrid}>
+                {productPackages.map((product) => (
+                  <Link key={product.id} to={`/products/${product.id}`} className={styles.productPackageCard}>
+                    <div className={styles.packageTopline}>
+                      <span className={product.completed === 3 ? styles.packageStatusGood : styles.packageStatusWarn}>{product.completed === 3 ? '资料完整' : `缺 ${3 - product.completed} 类资料`}</span>
+                      <span className={styles.packagePercent}>{product.completeness}%</span>
                     </div>
-                    <div className={styles.certArrow}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
+                    <h3>{product.name}</h3>
+                    <p>{product.model || product.categoryName || product.category_name || '产品资料包'}</p>
+                    <div className={styles.packageProgress}><span style={{ width: `${product.completeness}%` }} /></div>
+                    <div className={styles.packageTypes}>
+                      <span className={product.certs.length ? styles.typeReady : styles.typeMissing}>资质证书 <strong>{product.certs.length || '+'}</strong></span>
+                      <span className={product.declarations.length ? styles.typeReady : styles.typeMissing}>DoC声明 <strong>{product.declarations.length || '+'}</strong></span>
+                      <span className={product.manuals.length ? styles.typeReady : styles.typeMissing}>说明书 <strong>{product.manuals.length || '+'}</strong></span>
+                    </div>
+                    <div className={styles.packageFooter}>
+                      <span>{product.docs.length} 份资料</span>
+                      <em>查看产品资料 →</em>
                     </div>
                   </Link>
                 ))}
@@ -414,12 +426,8 @@ export default function CompanyPage() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <p>{searchQuery ? t('company.noResults') : t('company.noCerts')}</p>
-                {searchQuery && (
-                  <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>
-                    {t('company.clearSearch')}
-                  </button>
-                )}
+                <p>{searchQuery ? '没有匹配的产品资料包' : '该公司暂未公开产品资料包'}</p>
+                {searchQuery && <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>清除搜索</button>}
               </div>
             )}
           </div>

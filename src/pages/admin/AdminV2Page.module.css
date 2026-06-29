@@ -6284,3 +6284,1924 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 }
+
+.stackPage {
+  min-height: calc(100vh - 72px);
+  padding: 34px;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(59, 130, 246, 0.14), transparent 28%),
+    radial-gradient(circle at 86% 8%, rgba(245, 158, 11, 0.13), transparent 24%),
+    linear-gradient(135deg, var(--bg-page), var(--bg-soft));
+  color: var(--text-primary);
+}
+
+.stackTopbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1480px;
+  margin: 0 auto 22px;
+}
+
+.stackEyebrow {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.stackTopbar h1 {
+  margin: 0 0 8px;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.stackTopbar p,
+.stackInbox p,
+.stackDeskHeader p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.stackBoard {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 20px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.stackInbox,
+.stackDesk {
+  border: 1px solid var(--border-color);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+:global([data-theme='dark']) .stackInbox,
+:global([data-theme='dark']) .stackDesk {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.stackInbox {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  padding: 18px;
+}
+
+.stackPanelTitle {
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.stackPendingPile {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.stackPendingCard {
+  min-height: 84px;
+  padding: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  border-radius: 18px;
+  background: linear-gradient(145deg, var(--bg-card), var(--bg-input));
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transform: rotate(var(--tilt));
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
+}
+
+.stackPendingCard strong,
+.stackPendingCard span {
+  display: block;
+}
+
+.stackPendingCard strong {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.stackPendingCard span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.stackDesk {
+  padding: 20px;
+}
+
+.stackDeskHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.stackDeskHeader h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.stackLegend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stackLegend span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.stackLegend span:nth-of-type(2) { background: #f59e0b; }
+.stackLegend span:nth-of-type(3) { background: #3b82f6; }
+
+.stackProductGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 18px;
+}
+
+.stackProductCard {
+  position: relative;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
+    var(--bg-card);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+}
+
+:global([data-theme='dark']) .stackProductCard {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.62));
+}
+
+.stackProductHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stackProductHead h3 {
+  margin: 0 0 5px;
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.stackProductHead p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.stackOk,
+.stackWarn,
+.stackMissing {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 28px;
+  white-space: nowrap;
+}
+
+.stackOk { background: rgba(34, 197, 94, 0.13); color: #15803d; }
+.stackWarn { background: rgba(59, 130, 246, 0.13); color: #2563eb; }
+.stackMissing { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+
+.stackModels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 32px;
+  margin-bottom: 16px;
+}
+
+.stackModels span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stackFilePiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stackFilePile {
+  position: relative;
+  min-height: 118px;
+  padding: 16px 12px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stackPileBack,
+.stackPileMid {
+  position: absolute;
+  inset: 8px 10px auto;
+  height: 24px;
+  border: 1px solid currentColor;
+  border-radius: 14px;
+  opacity: 0.16;
+  transform: translateY(-8px) rotate(-2deg);
+}
+
+.stackPileMid {
+  inset: 14px 8px auto;
+  opacity: 0.22;
+  transform: translateY(-5px) rotate(2deg);
+}
+
+.stackFilePile strong,
+.stackFilePile em {
+  position: relative;
+  display: block;
+}
+
+.stackFilePile strong {
+  margin-top: 28px;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.stackFilePile em {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.stackTone_blue { color: #2563eb; background: rgba(59, 130, 246, 0.08); }
+.stackTone_green { color: #16a34a; background: rgba(34, 197, 94, 0.08); }
+.stackTone_gold { color: #b45309; background: rgba(245, 158, 11, 0.1); }
+.stackTone_empty {
+  border-style: dashed;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.stackCardActions {
+  display: flex;
+  gap: 8px;
+}
+
+.stackCardActions button {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .stackPage { padding: 18px; }
+  .stackTopbar,
+  .stackDeskHeader { flex-direction: column; }
+  .stackBoard { grid-template-columns: 1fr; }
+  .stackInbox { position: static; }
+  .stackFilePiles { grid-template-columns: 1fr; }
+}
+
+.stackTopActions,
+.stackFilters,
+.stackDetailTabs,
+.stackPendingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.stackFilters button,
+.stackDetailTabs button,
+.stackPendingActions button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.stackFilterActive {
+  border-color: rgba(59, 130, 246, 0.42) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--accent-blue) !important;
+}
+
+.stackBoard {
+  grid-template-columns: 280px minmax(0, 1fr) 320px;
+}
+
+.stackDetailPanel {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+:global([data-theme='dark']) .stackDetailPanel {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.stackDetailPanel h3 {
+  margin: 10px 0 4px;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.stackDetailPanel p {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.stackDetailTabs {
+  margin-bottom: 12px;
+}
+
+.stackDetailFiles {
+  display: grid;
+  gap: 9px;
+}
+
+.stackDetailFiles button {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stackDetailFiles strong,
+.stackDetailFiles span {
+  display: block;
+}
+
+.stackDetailFiles strong {
+  overflow: hidden;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackDetailFiles span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.stackDuplicatePending {
+  border-color: rgba(239, 68, 68, 0.32) !important;
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.08), var(--bg-card)) !important;
+}
+
+.stackPendingActions {
+  margin-top: 12px;
+}
+
+.stackPendingActions button {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.stackEmptyPile {
+  padding: 18px;
+  border: 1px dashed var(--border-color);
+  border-radius: 18px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.stackProductCard {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.stackProductCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.14);
+}
+
+.stackProductSelected {
+  border-color: rgba(59, 130, 246, 0.54) !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 24px 48px rgba(15, 23, 42, 0.12) !important;
+}
+
+.stackProductClickLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.stackProductHead,
+.stackModels,
+.stackFilePiles,
+.stackCardActions,
+.stackProgressTrack {
+  position: relative;
+  z-index: 2;
+}
+
+.stackProgressTrack {
+  height: 8px;
+  margin: -4px 0 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-soft);
+}
+
+.stackProgressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+}
+
+.stackFilePile {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.stackFilePile:hover {
+  transform: translateY(-2px) rotate(-0.5deg);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+}
+
+@media (max-width: 1180px) {
+  .stackBoard {
+    grid-template-columns: 1fr;
+  }
+
+  .stackInbox,
+  .stackDetailPanel {
+    position: static;
+  }
+}
+
+/* Stacklands test polish: make file piles feel like real stacked cards. */
+.stackProductCard .stackModels {
+  display: none;
+}
+
+.stackNextAction {
+  position: relative;
+  z-index: 2;
+  margin: -4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(59, 130, 246, 0.16);
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.06);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.stackFilePile {
+  isolation: isolate;
+  min-height: 132px;
+  padding: 18px 12px 12px;
+  overflow: visible;
+}
+
+.stackPileBack,
+.stackPileMid {
+  top: -8px;
+  left: 14px;
+  right: 14px;
+  height: 74px;
+  border-radius: 18px;
+  background: currentColor;
+  opacity: 0.09;
+  z-index: -2;
+  transform: translateY(3px) rotate(-4deg);
+}
+
+.stackPileMid {
+  top: -2px;
+  left: 10px;
+  right: 10px;
+  opacity: 0.13;
+  z-index: -1;
+  transform: translateY(5px) rotate(3deg);
+}
+
+.stackPileCount {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+:global([data-theme='dark']) .stackPileCount {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.stackTone_empty {
+  min-height: 132px;
+  border-width: 2px;
+  border-style: dashed;
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(148, 163, 184, 0.08) 9px 18px),
+    transparent;
+}
+
+.stackTone_empty .stackPileBack,
+.stackTone_empty .stackPileMid {
+  display: none;
+}
+
+.stackTone_empty .stackPileCount {
+  border: 1px dashed currentColor;
+  background: transparent;
+}
+
+.stackDetailModels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 14px;
+}
+
+.stackDetailModels span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stackDetailPanel {
+  padding: 20px;
+}
+
+.stackDetailPanel > p {
+  padding: 10px 12px;
+  border: 1px solid rgba(59, 130, 246, 0.16);
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.06);
+}
+
+/* Stacklands test alignment fix: reduce visual noise and keep cards comparable. */
+.stackPendingCard {
+  transform: none !important;
+}
+
+.stackDuplicatePending {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06), var(--bg-card)) !important;
+}
+
+.stackPendingCard strong {
+  min-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackPendingActions {
+  min-height: 32px;
+}
+
+.stackProductGrid {
+  align-items: stretch;
+}
+
+.stackProductCard {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  min-height: 520px;
+}
+
+.stackProductHead {
+  min-height: 76px;
+}
+
+.stackProductHead h3 {
+  min-height: 48px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.stackProductHead p {
+  min-height: 18px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.stackNextAction {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.stackFilePiles {
+  align-items: stretch;
+}
+
+.stackFilePile {
+  display: grid;
+  grid-template-rows: 42px 34px 38px;
+  min-height: 124px;
+  padding-top: 14px;
+  overflow: hidden;
+}
+
+.stackPileBack,
+.stackPileMid {
+  left: 18px;
+  right: 18px;
+  height: 58px;
+  border-radius: 18px;
+  opacity: 0.08;
+  transform: translateY(4px);
+}
+
+.stackPileMid {
+  left: 14px;
+  right: 14px;
+  opacity: 0.12;
+  transform: translateY(8px);
+}
+
+.stackPileCount {
+  width: 38px;
+  height: 38px;
+  margin-bottom: 0;
+  font-size: 19px;
+}
+
+.stackFilePile strong {
+  margin-top: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: flex-end;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.stackFilePile em {
+  min-height: 34px;
+  margin-top: 0;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.35;
+}
+
+.stackTone_empty {
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.stackViewTools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+
+.stackViewTools button {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.stackViewTools span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.stackProductGridCompact {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.stackProductGridCompact .stackProductCard {
+  min-height: 300px;
+  padding: 14px;
+}
+
+.stackProductGridCompact .stackProductHead {
+  min-height: 68px;
+}
+
+.stackProductGridCompact .stackNextAction,
+.stackProductGridCompact .stackProgressTrack {
+  display: none;
+}
+
+.stackProductGridCompact .stackFilePiles {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.stackProductGridCompact .stackFilePile {
+  min-height: 48px;
+  grid-template-columns: 34px 1fr auto;
+  grid-template-rows: 1fr;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.stackProductGridCompact .stackPileBack,
+.stackProductGridCompact .stackPileMid,
+.stackProductGridCompact .stackFilePile em {
+  display: none;
+}
+
+.stackProductGridCompact .stackPileCount {
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+}
+
+.stackProductGridCompact .stackFilePile strong {
+  min-height: auto;
+  align-items: center;
+}
+
+.stackProductGridCompact .stackCardActions {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .stackViewTools {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Stacklands test simplification: single-layer document cards, less empty space. */
+.stackProductCard {
+  min-height: 420px !important;
+  grid-template-rows: auto auto auto 1fr auto !important;
+}
+
+.stackProductHead {
+  min-height: 66px !important;
+  margin-bottom: 10px !important;
+}
+
+.stackProductHead h3 {
+  min-height: 42px !important;
+  font-size: 19px !important;
+}
+
+.stackProductHead p {
+  font-size: 12px !important;
+}
+
+.stackProgressTrack {
+  height: 7px !important;
+  margin: -2px 0 10px !important;
+}
+
+.stackNextAction {
+  min-height: 38px !important;
+  margin-bottom: 12px !important;
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+}
+
+.stackFilePiles {
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.stackFilePile {
+  min-height: 132px !important;
+  display: grid !important;
+  grid-template-rows: 34px auto auto !important;
+  align-content: start !important;
+  padding: 12px !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+.stackPileBack,
+.stackPileMid {
+  display: none !important;
+}
+
+.stackPileCount {
+  width: 34px !important;
+  height: 34px !important;
+  margin-bottom: 8px !important;
+  border-radius: 12px !important;
+  font-size: 17px !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+}
+
+.stackFilePile::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  opacity: 0.16;
+}
+
+.stackFilePile strong {
+  min-height: 24px !important;
+  align-items: center !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+
+.stackFilePile em {
+  min-height: auto !important;
+  margin-top: 4px !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+.stackTone_empty {
+  border-width: 1px !important;
+  background: rgba(148, 163, 184, 0.035) !important;
+}
+
+.stackCardActions button {
+  height: 34px !important;
+}
+
+.stackProductGridCompact .stackProductCard {
+  min-height: 280px !important;
+}
+
+/* Stacklands two-column workspace: details expand inside product cards. */
+.stackBoard {
+  grid-template-columns: 280px minmax(0, 1fr) !important;
+}
+
+.stackDetailPanel {
+  display: none !important;
+}
+
+.stackProductGrid {
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+}
+
+.stackProductCard {
+  min-height: auto !important;
+  grid-template-rows: auto auto auto auto auto !important;
+}
+
+.stackFilePileActive {
+  outline: 3px solid rgba(59, 130, 246, 0.14);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+}
+
+.stackInlineDetail {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06), var(--bg-card));
+}
+
+.stackInlineHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.stackInlineHead strong {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.stackInlineHead span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.stackInlineModels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.stackInlineModels span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stackInlineFiles {
+  display: grid;
+  gap: 8px;
+}
+
+.stackInlineFiles button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stackInlineFiles strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackInlineFiles span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.stackProductGridCompact {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.stackProductGridCompact .stackInlineDetail {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .stackBoard {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .stackProductGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Narrow product card experiment: file types become vertical expandable rows. */
+.stackProductGrid {
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)) !important;
+}
+
+.stackProductCard {
+  padding: 16px !important;
+  border-radius: 22px !important;
+}
+
+.stackProductHead {
+  min-height: 72px !important;
+}
+
+.stackProductHead h3 {
+  min-height: 44px !important;
+  font-size: 18px !important;
+  line-height: 1.15 !important;
+}
+
+.stackProductHead p {
+  font-size: 11px !important;
+}
+
+.stackOk,
+.stackWarn,
+.stackMissing {
+  height: 26px !important;
+  padding: 0 9px !important;
+  font-size: 11px !important;
+  line-height: 26px !important;
+}
+
+.stackNextAction {
+  display: none !important;
+}
+
+.stackFilePiles {
+  display: none !important;
+}
+
+.stackFileRows {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.stackFileRowWrap {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  background: var(--bg-input);
+}
+
+.stackFileRowWrap:nth-child(1) { color: #2563eb; background: rgba(59, 130, 246, 0.06); }
+.stackFileRowWrap:nth-child(2) { color: #16a34a; background: rgba(34, 197, 94, 0.06); }
+.stackFileRowWrap:nth-child(3) { color: #b45309; background: rgba(245, 158, 11, 0.07); }
+
+.stackFileRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stackFileRow span {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 14px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackFileRow strong {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  color: currentColor;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.stackFileRowOpen {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.stackRowFiles {
+  display: grid;
+  gap: 6px;
+  padding: 0 9px 9px;
+}
+
+.stackRowFiles button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.54);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+:global([data-theme='dark']) .stackRowFiles button,
+:global([data-theme='dark']) .stackFileRow strong {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.stackRowFiles span {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackRowFiles em {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.stackInlineModels {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 12px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  background: var(--bg-soft);
+}
+
+.stackCardActions {
+  gap: 7px !important;
+}
+
+.stackCardActions button {
+  height: 32px !important;
+  font-size: 11px !important;
+}
+
+.stackProductGridCompact {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+}
+
+/* Three density modes for product workspace. */
+.stackViewSwitch {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+}
+
+.stackViewSwitch button {
+  min-width: 56px;
+}
+
+.stackView_overview {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) !important;
+}
+
+.stackView_overview .stackProductCard {
+  min-height: 184px !important;
+  padding: 12px !important;
+  border-radius: 18px !important;
+}
+
+.stackView_overview .stackProductHead {
+  min-height: 58px !important;
+  margin-bottom: 8px !important;
+}
+
+.stackView_overview .stackProductHead h3 {
+  min-height: 34px !important;
+  font-size: 14px !important;
+  line-height: 1.18 !important;
+  -webkit-line-clamp: 2;
+}
+
+.stackView_overview .stackProductHead p {
+  display: none !important;
+}
+
+.stackView_overview .stackOk,
+.stackView_overview .stackWarn,
+.stackView_overview .stackMissing {
+  height: 22px !important;
+  padding: 0 7px !important;
+  font-size: 10px !important;
+  line-height: 22px !important;
+}
+
+.stackView_overview .stackProgressTrack {
+  height: 6px !important;
+  margin: 0 0 9px !important;
+}
+
+.stackView_overview .stackFileRows {
+  gap: 5px !important;
+  margin: 0 !important;
+}
+
+.stackView_overview .stackFileRowWrap {
+  border-radius: 11px !important;
+}
+
+.stackView_overview .stackFileRow {
+  min-height: 32px !important;
+  padding: 5px 7px 5px 9px !important;
+  grid-template-columns: minmax(0, 1fr) 24px !important;
+}
+
+.stackView_overview .stackFileRow span {
+  font-size: 12px !important;
+}
+
+.stackView_overview .stackFileRow strong {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+}
+
+.stackView_standard {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+}
+
+.stackView_detail {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+}
+
+.stackView_detail .stackProductCard {
+  padding: 18px !important;
+}
+
+.stackView_detail .stackProductHead h3 {
+  font-size: 20px !important;
+}
+
+.stackView_detail .stackFileRow {
+  min-height: 48px !important;
+}
+
+.stackView_detail .stackRowFiles {
+  display: grid !important;
+}
+
+.stackView_detail .stackInlineModels {
+  display: flex !important;
+}
+
+/* Make the three view modes differ by information hierarchy, not only size. */
+.stackView_overview .stackProductHead p,
+.stackView_overview .stackNextAction,
+.stackView_overview .stackRowFiles,
+.stackView_overview .stackInlineModels,
+.stackView_overview .stackDetailMeta,
+.stackView_overview .stackCardActions {
+  display: none !important;
+}
+
+.stackView_overview .stackFileRowWrap {
+  background: var(--bg-input) !important;
+}
+
+.stackView_overview .stackFileRow span {
+  color: var(--text-secondary) !important;
+  font-weight: 900 !important;
+}
+
+.stackView_standard .stackInlineModels,
+.stackView_standard .stackDetailMeta {
+  display: none !important;
+}
+
+.stackView_detail .stackNextAction {
+  display: flex !important;
+}
+
+.stackView_detail .stackRowFiles {
+  display: grid !important;
+}
+
+.stackDetailMeta {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-soft);
+}
+
+.stackDetailMeta span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackView_detail .stackCardActions {
+  margin-top: 2px;
+}
+
+.workspaceUploadPanel,
+.workspacePendingPanel,
+.workspaceProductsPanel {
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.workspaceUploadPanel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.07), var(--bg-card));
+}
+
+.workspaceUploadPanel h3,
+.workspacePanelHeader h3 {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.workspaceUploadPanel p,
+.workspacePanelHeader p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.workspacePanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.workspacePendingScroller {
+  display: grid;
+  grid-auto-columns: minmax(210px, 250px);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+}
+
+.workspacePendingCard,
+.workspaceMoreCard {
+  min-height: 146px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workspacePendingCard strong,
+.workspacePendingCard p,
+.workspacePendingCard > span {
+  display: block;
+}
+
+.workspacePendingCard strong {
+  overflow: hidden;
+  margin: 10px 0 6px;
+  font-size: 15px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspacePendingCard p {
+  min-height: 34px;
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.workspacePendingCard > span,
+.workspaceMoreCard {
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.workspaceMoreCard {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  text-align: center;
+}
+
+.workspaceEmptyPending {
+  padding: 24px;
+  border: 1px dashed var(--border-color);
+  border-radius: 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 850;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .workspaceUploadPanel,
+  .workspacePanelHeader {
+    flex-direction: column;
+  }
+}
+
+.workspaceViewTools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+
+.workspaceViewTools span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.workspaceProductGrid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.workspaceProductGrid .stackProductCard {
+  min-height: auto !important;
+}
+
+@media (max-width: 760px) {
+  .workspaceViewTools {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.workspaceFlow {
+  display: grid;
+  gap: 18px;
+  scroll-snap-type: y proximity;
+}
+
+.workspaceUploadStage,
+.workspaceProductStage {
+  scroll-snap-align: start;
+}
+
+.workspacePendingBridge {
+  margin-top: 16px;
+}
+
+.workspacePendingSticky {
+  position: sticky;
+  top: 82px;
+  z-index: 12;
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.workspacePendingSticky .workspacePanelHeader {
+  margin-bottom: 10px;
+}
+
+.workspacePendingCardMini {
+  min-height: 104px;
+  padding: 10px;
+}
+
+.workspacePendingCardMini strong {
+  margin: 7px 0 4px;
+  font-size: 13px;
+}
+
+.workspacePendingCardMini p {
+  min-height: auto;
+  margin-bottom: 0;
+  font-size: 11px;
+}
+
+@media (max-width: 980px) {
+  .workspacePendingSticky {
+    position: static;
+  }
+}
+
+/* Formal product page: move closer to the Stacklands-style test page. */
+.stackFormalHero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 18px;
+  padding: 6px 2px 8px;
+}
+
+.stackFormalHero h1 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: clamp(34px, 4vw, 56px);
+  font-weight: 950;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.stackFormalHero p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.workspaceProductsPanel {
+  padding: 24px !important;
+  border-radius: 28px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08) !important;
+}
+
+:global([data-theme='dark']) .workspaceProductsPanel {
+  background: rgba(15, 23, 42, 0.72) !important;
+}
+
+.workspaceProductsPanel > .productTools {
+  margin-bottom: 14px;
+}
+
+.workspaceViewTools {
+  margin-bottom: 18px !important;
+  padding: 12px 14px !important;
+  border-radius: 18px !important;
+  background: var(--bg-card) !important;
+}
+
+.workspaceProductGrid.stackView_overview {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+}
+
+.workspaceProductGrid.stackView_standard {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+}
+
+.workspaceProductGrid.stackView_detail {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+}
+
+.workspaceProductGrid .stackProductCard {
+  border-radius: 24px !important;
+  background: var(--bg-card) !important;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08) !important;
+}
+
+.workspaceProductGrid .stackProductHead h3 {
+  font-size: 20px !important;
+}
+
+.workspaceProductGrid.stackView_overview .stackProductHead h3 {
+  font-size: 16px !important;
+}
+
+.workspaceProductGrid .stackFileRowWrap {
+  background: var(--bg-soft) !important;
+}
+
+.workspaceProductGrid .stackFileRowWrap:nth-child(1) { background: rgba(59, 130, 246, 0.07) !important; }
+.workspaceProductGrid .stackFileRowWrap:nth-child(2) { background: rgba(34, 197, 94, 0.07) !important; }
+.workspaceProductGrid .stackFileRowWrap:nth-child(3) { background: rgba(245, 158, 11, 0.08) !important; }
+
+@media (max-width: 900px) {
+  .stackFormalHero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.stackFileRowMissing {
+  border-style: dashed !important;
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 8px, rgba(245, 158, 11, 0.08) 8px 16px),
+    rgba(245, 158, 11, 0.06) !important;
+  color: #b45309 !important;
+}
+
+.stackFileRowMissing .stackFileRow span::after {
+  content: " · 待补充";
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.stackFileRowMissing .stackFileRow strong {
+  width: 36px !important;
+  border: 1px dashed rgba(180, 83, 9, 0.45) !important;
+  background: rgba(255, 247, 237, 0.88) !important;
+  color: #b45309 !important;
+  font-size: 12px !important;
+}
+
+.stackFileRowMissing:hover {
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1) !important;
+}
+
+.stackFileRowMissing .stackFileRow {
+  min-height: 46px;
+}
+
+/* Missing file rows should feel like quiet empty slots, not warning labels. */
+.stackFileRowMissing {
+  color: var(--text-muted) !important;
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 8px, rgba(148, 163, 184, 0.07) 8px 16px),
+    rgba(148, 163, 184, 0.045) !important;
+}
+
+.stackFileRowMissing .stackFileRow span {
+  color: var(--text-muted) !important;
+}
+
+.stackFileRowMissing .stackFileRow span::after {
+  content: "" !important;
+}
+
+.stackFileRowMissing .stackFileRow strong {
+  border: 1px dashed var(--border-color) !important;
+  background: rgba(255, 255, 255, 0.64) !important;
+  color: var(--text-muted) !important;
+  font-size: 15px !important;
+}
+
+.stackFileRowMissing:hover {
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.08) !important;
+}
+
+/* Make missing slots visually emptier than existing file rows. */
+.workspaceProductGrid .stackFileRowMissing {
+  border-color: rgba(148, 163, 184, 0.24) !important;
+  background:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.28), rgba(248, 250, 252, 0.5)),
+    repeating-linear-gradient(-45deg, transparent 0 10px, rgba(148, 163, 184, 0.045) 10px 20px) !important;
+  opacity: 0.72;
+  filter: saturate(0.45);
+}
+
+.workspaceProductGrid .stackFileRowMissing .stackFileRow {
+  min-height: 44px;
+}
+
+.workspaceProductGrid .stackFileRowMissing .stackFileRow span {
+  color: rgba(100, 116, 139, 0.56) !important;
+}
+
+.workspaceProductGrid .stackFileRowMissing .stackFileRow strong {
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  background: rgba(255, 255, 255, 0.38) !important;
+  color: rgba(100, 116, 139, 0.62) !important;
+}
+
+.workspaceProductGrid .stackFileRowMissing:hover {
+  opacity: 0.95;
+  filter: saturate(0.75);
+  background:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.42), rgba(248, 250, 252, 0.72)),
+    repeating-linear-gradient(-45deg, transparent 0 10px, rgba(148, 163, 184, 0.06) 10px 20px) !important;
+}
+
+:global([data-theme='dark']) .workspaceProductGrid .stackFileRowMissing {
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.36)),
+    repeating-linear-gradient(-45deg, transparent 0 10px, rgba(148, 163, 184, 0.05) 10px 20px) !important;
+}
+
+/* Product completeness progress should communicate status by color, not only length. */
+.workspaceProductGrid .stackProgressTrack {
+  background: rgba(148, 163, 184, 0.18) !important;
+}
+
+.workspaceProductGrid .stackProgressTrack span {
+  transition: width 180ms ease;
+}
+
+.progressGood span {
+  background: linear-gradient(90deg, #22c55e, #16a34a) !important;
+}
+
+.progressWarn span {
+  background: linear-gradient(90deg, #3b82f6, #f59e0b) !important;
+}
+
+.progressPoor span {
+  background: linear-gradient(90deg, #f59e0b, #f97316) !important;
+}
+
+.progressEmpty span {
+  background: linear-gradient(90deg, #cbd5e1, #94a3b8) !important;
+}
+
+.productFilterButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+
+.productFilterButtons > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.productFilterButtons button {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* Product title wrapping: allow natural two-line titles without awkward overflow. */
+.workspaceProductGrid .stackProductHead h3 {
+  max-width: 100%;
+  min-height: 52px !important;
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+  line-height: 1.16 !important;
+}
+
+.workspaceProductGrid.stackView_overview .stackProductHead h3 {
+  min-height: 38px !important;
+  -webkit-line-clamp: 2;
+  font-size: 15px !important;
+}
+
+.workspaceProductGrid.stackView_detail .stackProductHead h3 {
+  min-height: 56px !important;
+  font-size: 21px !important;
+}
+
+.workspaceProductGrid .stackProductHead > div {
+  min-width: 0;
+}
+
+/* Smart product titles: keep product category/name on line one and model-like suffix on line two. */
+.workspaceProductGrid .stackProductHead h3.smartProductTitle,
+.stackProductGrid .stackProductHead h3.smartProductTitle {
+  display: block !important;
+  min-height: 54px !important;
+  overflow: hidden !important;
+  line-height: 1.12 !important;
+  word-break: normal;
+}
+
+.smartTitleLine {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smartTitleLine + .smartTitleLine {
+  margin-top: 2px;
+}
+
+.workspaceProductGrid.stackView_overview .smartTitleLine,
+.stackProductGrid.stackView_overview .smartTitleLine {
+  white-space: normal;
+}
+
+.verifyBadge_pending,
+.verifyBadge_draft {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #d97706 !important;
+}
+
+.verifyBadge_rejected {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #dc2626 !important;
+}
+
+.verifyStepDone > strong {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+}
+
+.verifyStepCurrent {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: rgba(245, 158, 11, 0.06) !important;
+}
+
+.verifyStepCurrent > strong {
+  background: linear-gradient(135deg, #f59e0b, #fb923c) !important;
+}
+
+.verifyStepCurrent span {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #d97706 !important;
+}
+
+.verifyStepTodo {
+  opacity: 0.72;
+}
+
+.verifyStepTodo > strong {
+  background: #cbd5e1 !important;
+}
+
+.verifyStepTodo span {
+  background: rgba(148, 163, 184, 0.16) !important;
+  color: #64748b !important;
+}

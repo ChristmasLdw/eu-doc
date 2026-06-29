@@ -85,6 +85,7 @@ app.use('/api/companies', require('./routes/companies.cjs'));
 app.use('/api/stats', require('./routes/stats.cjs'));
 app.use('/api/reports', require('./routes/reports.cjs'));
 app.use('/api/personal', require('./routes/personal.cjs'));
+app.use('/api/search', require('./routes/search.cjs'));
 
 // v2.0 新 API
 app.use('/api/v2/products', require('./routes/products.cjs'));
@@ -92,6 +93,7 @@ app.use('/api/v2/documents', require('./routes/documents.cjs'));
 app.use('/api/v2/categories', require('./routes/categories.cjs'));
 app.use('/api/v2/tags', require('./routes/tags.cjs'));
 app.use('/api/v2/company-members', require('./routes/company-members.cjs'));
+app.use('/api/v2/company-verifications', require('./routes/company-verifications.cjs'));
 app.use('/api/v2/upload-confirmations', require('./routes/upload-confirmations.cjs'));
 app.use('/api/v2/imports', require('./routes/imports.cjs'));
 
