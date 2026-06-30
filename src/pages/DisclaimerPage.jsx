@@ -99,7 +99,7 @@ export default function DisclaimerPage() {
           </p>
           <p>
             邮箱：327114305@qq.com<br />
-            电话：18257701700
+            电话：18069839326
           </p>
         </section>
 

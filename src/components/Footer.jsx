@@ -10,6 +10,7 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.container}>
         <div className={styles.links}>
+          <Link to="/solutions">解决方案</Link>
           <Link to="/guide">使用指南</Link>
           <Link to="/terms">服务条款</Link>
           <Link to="/privacy">隐私政策</Link>

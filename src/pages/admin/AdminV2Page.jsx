@@ -2757,7 +2757,7 @@ export default function AdminV2Page() {
                 </label>
                 <label>
                   <span>入驻咨询联系方式</span>
-                  <input placeholder="327114305@qq.com / 18257701700" />
+                  <input placeholder="327114305@qq.com / 18069839326" />
                 </label>
                 <label className={styles.fullField}>
                   <span>维护提醒文案</span>

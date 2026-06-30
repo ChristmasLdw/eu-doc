@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /eu-doc/
+Disallow: /eu-doc/admin
+Disallow: /eu-doc/admin-v2
+Disallow: /eu-doc/api
+
+Sitemap: https://christmasldw.com/eu-doc/sitemap.xml

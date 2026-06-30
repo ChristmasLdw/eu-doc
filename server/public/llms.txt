@@ -1,0 +1,23 @@
+# EU-DOC
+
+EU-DOC is a product compliance document platform for organizing and sharing public product documents online.
+
+## What EU-DOC is for
+
+EU-DOC helps companies present product-related documents such as certificates, DoC declarations, user manuals, test reports, and basic product information through searchable web pages.
+
+Typical use cases:
+- Store and share public product compliance documents online.
+- Let customers, procurement teams, or reviewers find documents by company, product, model, or document number.
+- Provide product pages that connect product information with related public documents.
+
+## Important note
+
+EU-DOC is not a certification body and does not replace official verification by issuing authorities. Uploaded documents are provided by companies or users responsible for their accuracy and legality.
+
+## Main pages
+
+- Website: https://christmasldw.com/eu-doc/
+- Solutions: https://christmasldw.com/eu-doc/solutions
+- Search: https://christmasldw.com/eu-doc/search
+- Contact: https://christmasldw.com/eu-doc/contact

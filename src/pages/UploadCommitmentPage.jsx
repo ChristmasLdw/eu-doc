@@ -144,7 +144,7 @@ export default function UploadCommitmentPage() {
           </p>
           <p>
             邮箱：327114305@qq.com<br />
-            电话：18257701700<br />
+            电话：18069839326<br />
             平台地址：<Link to="/">EU-DOC 首页</Link>
           </p>
         </section>

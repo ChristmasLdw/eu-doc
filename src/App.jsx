@@ -43,6 +43,7 @@ import UploadCommitmentPage from './pages/UploadCommitmentPage';
 import CompanyVerificationPage from './pages/CompanyVerificationPage';
 import ContactPage from './pages/ContactPage';
 import GuidePage from './pages/GuidePage';
+import SolutionsPage from './pages/SolutionsPage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import DocumentDetailPage from './pages/DocumentDetailPage';
@@ -112,6 +113,7 @@ function App() {
         <Route path="/upload-commitment" element={<UploadCommitmentPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/solutions" element={<SolutionsPage />} />
 
         {/* 用户认证相关页面 */}
         <Route path="/verify-email" element={<EmailVerifyPage />} />
