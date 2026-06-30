@@ -143,7 +143,8 @@ export default function UploadCommitmentPage() {
             如对本承诺书有任何疑问，请联系我们：
           </p>
           <p>
-            邮箱：contact@eu-doc.com<br />
+            邮箱：327114305@qq.com<br />
+            电话：18257701700<br />
             平台地址：<Link to="/">EU-DOC 首页</Link>
           </p>
         </section>

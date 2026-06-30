@@ -580,23 +580,23 @@
     "businessInquiry": {
       "title": "企业入驻咨询",
       "description": "如果您希望将企业的产品合规文档上传至本平台，请通过以下方式联系我们：",
-      "email": "邮箱：business@eu-doc.com",
-      "phone": "电话：+86 xxx-xxxx-xxxx",
+      "email": "邮箱：327114305@qq.com",
+      "phone": "电话：18257701700",
       "response": "我们将在1-2个工作日内回复您的咨询。"
     },
     "technicalSupport": {
       "title": "技术支持",
       "description": "如您在使用平台过程中遇到技术问题，请联系我们的技术支持团队：",
-      "email": "邮箱：support@eu-doc.com"
+      "email": "邮箱：327114305@qq.com"
     },
     "partnership": {
       "title": "合作洽谈",
       "description": "如您有商务合作、媒体采访或其他合作需求，请联系：",
-      "email": "邮箱：contact@eu-doc.com"
+      "email": "邮箱：327114305@qq.com"
     },
     "reportError": {
       "title": "错误报告",
-      "description": "如您发现平台上的文档存在错误或虚假信息，请使用证书详情页的\"报告错误\"功能，或发送邮件至 report@eu-doc.com。"
+      "description": "如您发现平台上的文档存在错误或虚假信息，请使用证书详情页的\"报告错误\"功能，或发送邮件至 327114305@qq.com。"
     },
     "officeAddress": {
       "title": "办公地址",
@@ -992,7 +992,7 @@
       "officialWebsite": "官网",
       "websitePlaceholder": "例如：https://www.example.com",
       "contactMethod": "联系方式",
-      "contactPlaceholder": "邮箱 / 电话 / 表单链接",
+      "contactPlaceholder": "327114305@qq.com / 18257701700",
       "officeAddress": "办公地址",
       "addressPlaceholder": "国家、省/州、城市、详细地址",
       "registrationInfo": "注册信息",

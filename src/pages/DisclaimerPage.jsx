@@ -98,8 +98,8 @@ export default function DisclaimerPage() {
             如您对本免责声明有任何疑问，请通过以下方式联系我们：
           </p>
           <p>
-            邮箱：contact@eu-doc.com<br />
-            地址：[待填写]
+            邮箱：327114305@qq.com<br />
+            电话：18257701700
           </p>
         </section>
 

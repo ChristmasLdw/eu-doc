@@ -2749,7 +2749,7 @@ export default function AdminV2Page() {
                 </label>
                 <label>
                   <span>平台联系邮箱</span>
-                  <input placeholder="support@example.com" />
+                  <input placeholder="327114305@qq.com" />
                 </label>
                 <label>
                   <span>帮助中心链接</span>
@@ -2757,7 +2757,7 @@ export default function AdminV2Page() {
                 </label>
                 <label>
                   <span>入驻咨询联系方式</span>
-                  <input placeholder="邮箱 / 电话 / 表单链接" />
+                  <input placeholder="327114305@qq.com / 18257701700" />
                 </label>
                 <label className={styles.fullField}>
                   <span>维护提醒文案</span>

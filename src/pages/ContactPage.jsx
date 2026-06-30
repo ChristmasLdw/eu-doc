@@ -53,6 +53,7 @@ export default function ContactPage() {
           </p>
         </section>
 
+
         <div className={styles.footer}>
           <Link to="/">{t('common.backToHome')}</Link>
           <Link to="/terms">{t('footer.terms')}</Link>
