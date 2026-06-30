@@ -61,7 +61,7 @@ function createHeaders(customHeaders = {}, options = {}) {
  * 处理所有 HTTP 请求的公共逻辑：token 附加、401 跳转、JSON 解析
  */
 async function request(url, options = {}) {
-  const { headers: customHeaders, raw, skipAuth, ...restOptions } = options;
+  const { headers: customHeaders, raw, skipAuth, silentAuth, ...restOptions } = options;
 
   // 如果是 FormData（文件上传），不设置 Content-Type，让浏览器自动设置 boundary
   const isFormData = options.body instanceof FormData;
@@ -75,11 +75,16 @@ async function request(url, options = {}) {
   try {
     const response = await fetch(`${BASE_URL}${url}`, { ...restOptions, headers });
 
-    // 401 未授权 -> 清除 token 并跳转登录页
+    // 401 未授权：后台/个人操作需要跳登录；前台公开页的状态探测可静默失败。
     if (response.status === 401) {
+      if (silentAuth) {
+        throw new Error('UNAUTHORIZED_SILENT');
+      }
       localStorage.removeItem('admin_token');
-      // 只在非登录/注册页时跳转，避免死循环
-      if (!window.location.pathname.includes('/admin/login') && !window.location.pathname.includes('/admin/register')) {
+      // 只在后台相关页面自动跳转，避免未登录用户查看公开页面时被打断。
+      const pathname = window.location.pathname;
+      const shouldRedirectToLogin = pathname.includes('/admin') || pathname.includes('/company-verification');
+      if (shouldRedirectToLogin && !pathname.includes('/admin/login') && !pathname.includes('/admin/register')) {
         window.location.href = `${BASENAME}/admin/login`;
       }
       throw new Error('登录已过期，请重新登录');
@@ -563,8 +568,12 @@ export function addFavorite(itemType, itemId, title, meta, description) {
 }
 
 export function checkFavorite(itemType, itemId) {
-  return request(`/personal/favorites/check?item_type=${encodeURIComponent(itemType)}&item_id=${itemId}`)
-    .then(keysToCamelCase);
+  return request(`/personal/favorites/check?item_type=${encodeURIComponent(itemType)}&item_id=${itemId}`, { silentAuth: true })
+    .then(keysToCamelCase)
+    .catch((error) => {
+      if (error.message === 'UNAUTHORIZED_SILENT') return { isFavorited: false, favoriteId: null };
+      throw error;
+    });
 }
 
 export function deleteFavorite(id) {
