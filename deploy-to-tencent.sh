@@ -45,6 +45,8 @@ rsync -avz --progress \
   --exclude '*.db' \
   --exclude '*.db-shm' \
   --exclude '*.db-wal' \
+  --exclude '*.db-journal' \
+  --exclude '*.backup*' \
   --exclude '.DS_Store' \
   server/ ${SERVER_USER}@${SERVER_IP}:${SERVER_PATH}/server/
 

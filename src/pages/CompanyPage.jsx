@@ -11,7 +11,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCompany } from '../services/api';
 import * as api from '../services/api';
-import StatusBadge from '../components/StatusBadge';
+import ShareModal from '../components/ShareModal';
+import { getPublicStatusLabel } from '../utils/publicStatus';
 import styles from './CompanyPage.module.css';
 
 export default function CompanyPage() {
@@ -24,6 +25,7 @@ export default function CompanyPage() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // 收藏状态
   const [isFavorited, setIsFavorited] = useState(false);
@@ -118,14 +120,7 @@ export default function CompanyPage() {
 
   // 分享功能
   const handleShare = () => {
-    const shareUrl = `${window.location.origin}/eu-doc/company/${id}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert('链接已复制到剪贴板');
-      });
-    } else {
-      alert('分享链接：' + shareUrl);
-    }
+    setShareOpen(true);
   };
 
 
@@ -277,6 +272,17 @@ export default function CompanyPage() {
       day: 'numeric',
     });
   };
+  const displayValue = (value) => value || '企业暂未补充';
+  const companyPublicStatus = getPublicStatusLabel(company, 'company');
+  const companyBasics = [
+    { label: '公开状态', value: companyPublicStatus },
+    { label: '认证状态', value: company.verificationStatus === 'verified' || company.verification_status === 'verified' ? '已完成企业认证' : '认证信息待完善' },
+    { label: '主营方向', value: company.mainCategory || company.main_category },
+    { label: '联系邮箱', value: company.contactEmail || company.contact_email },
+    { label: '企业地址', value: company.address },
+    { label: '入驻时间', value: formatDate(company.createdAt || company.created_at) },
+  ];
+  const website = company.website || company.websiteUrl || company.website_url;
 
   return (
     <div className={styles.page}>
@@ -289,88 +295,92 @@ export default function CompanyPage() {
           {t('company.backButton')}
         </button>
 
-        {/* 公司主卡片 */}
-        <div className={styles.companyCard}>
+        {/* 公司身份卡 */}
+        <section className={styles.companyCard}>
           {/* 公司信息 */}
           <div className={styles.companyInfo}>
-            <div className={styles.companyHeader}>
-              <div className={styles.companyIcon}>
-                {company.logoUrl ? (
-                  <img src={company.logoUrl} alt={company.name} className={styles.companyLogo} />
-                ) : (
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 21h18" />
-                    <path d="M5 21V7l8-4v18" />
-                    <path d="M19 21V11l-6-4" />
-                    <path d="M9 9v.01" />
-                    <path d="M9 12v.01" />
-                    <path d="M9 15v.01" />
-                    <path d="M9 18v.01" />
-                  </svg>
-                )}
-              </div>
-              <div className={styles.companyTitle}>
+            <div className={styles.companyHeroGrid}>
+              <div className={styles.companyCopy}>
+                <span className={styles.companyEyebrow}>企业资料中心</span>
                 <h1 className={styles.companyName}>{company.name}</h1>
                 {company.nameEn && company.nameEn !== company.name && (
                   <p className={styles.companyNameEn}>{company.nameEn}</p>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                <p className={styles.companyIntro}>{company.description || '该页面集中展示企业基础信息、公开产品资料包与合规文件，方便用户确认企业并进入对应产品资料页。'}</p>
+                <div className={styles.companyStats}>
+                  <div className={styles.statItem}>
+                    <span className={styles.statNumber}>{totalProducts}</span>
+                    <span className={styles.statLabel}>产品资料包</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statNumber}>{totalDocuments}</span>
+                    <span className={styles.statLabel}>公开资料</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statNumber}>{companyPublicStatus}</span>
+                    <span className={styles.statLabel}>前台状态</span>
+                  </div>
+                </div>
+              </div>
+
+              <aside className={styles.companyHeroAside}>
+                <div className={styles.companyLogoVisual}>
+                  {company.logoUrl ? (
+                    <img src={company.logoUrl} alt={company.name} className={styles.companyLogo} />
+                  ) : (
+                    <div>
+                      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 21h18" />
+                        <path d="M5 21V7l8-4v18" />
+                        <path d="M19 21V11l-6-4" />
+                        <path d="M9 9v.01" />
+                        <path d="M9 12v.01" />
+                        <path d="M9 15v.01" />
+                        <path d="M9 18v.01" />
+                      </svg>
+                      <span>公司 Logo 待企业补充</span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.companyActions}>
                   <button
                     onClick={handleFavorite}
                     title={isFavorited ? '取消收藏' : '收藏公司'}
-                    style={{
-                      background: 'none',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '14px',
-                      color: isFavorited ? '#ff6b6b' : '#666',
-                      transition: 'all 0.2s'
-                    }}
+                    className={styles.companyActionButton}
                   >
-                    {isFavorited ? '★' : '☆'} {isFavorited ? '已收藏' : '收藏'}
+                    {isFavorited ? '★ 已收藏' : '☆ 收藏'}
                   </button>
                   <button
                     onClick={handleShare}
                     title="分享公司"
-                    style={{
-                      background: 'none',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '14px',
-                      color: '#666',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`${styles.companyActionButton} ${styles.companyActionPrimary}`}
                   >
-                    📤 分享
+                    分享公司
                   </button>
                 </div>
-              </div>
-            </div>
+              </aside>
 
-            <div className={styles.companyStats}>
-              <div className={styles.statItem}>
-                <span className={styles.statNumber}>{totalProducts}</span>
-                <span className={styles.statLabel}>产品资料包</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statNumber}>{totalDocuments}</span>
-                <span className={styles.statLabel}>公开资料</span>
+
+              <div className={styles.companyBasicPills}>
+                {companyBasics.map((item) => (
+                  <div key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{displayValue(item.value)}</strong>
+                  </div>
+                ))}
+                {website && (
+                  <a href={website.startsWith('http') ? website : `https://${website}`} target="_blank" rel="noreferrer">
+                    <span>企业官网</span>
+                    <strong>访问官网</strong>
+                  </a>
+                )}
               </div>
             </div>
           </div>
+        </section>
 
-          {/* 产品资料包 */}
-          <div className={styles.certSection}>
+        {/* 产品资料包 */}
+        <section className={styles.certSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -430,13 +440,21 @@ export default function CompanyPage() {
                 {searchQuery && <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>清除搜索</button>}
               </div>
             )}
-          </div>
-        </div>
+        </section>
 
         {/* 页脚 */}
         <footer className={styles.footer}>
           <p>© 2025 EU-DOC 证书查询系统 · 版本 1.0.4</p>
         </footer>
+        <ShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          typeLabel="企业主页分享"
+          title={company.name}
+          subtitle={company.description || '查看该企业公开的产品资料包、合规文件与企业基础信息。'}
+          url={`${window.location.origin}/eu-doc/companies/${id}`}
+          meta={[company.nameEn || company.name_en, `${totalProducts} 个产品资料包`, companyPublicStatus]}
+        />
       </div>
     </div>
   );

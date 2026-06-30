@@ -127,19 +127,19 @@
 .infoPending {
   background: rgba(251, 146, 60, 0.1);
   border: 1px solid rgba(251, 146, 60, 0.2);
-  color: #ea580c;
+  color: #f59e0b;
 }
 
 .infoSuccess {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  color: #16a34a;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #6366f1;
 }
 
 .infoError {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #dc2626;
+  color: #ef4444;
 }
 
 .infoIcon {

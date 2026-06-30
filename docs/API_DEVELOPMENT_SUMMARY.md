@@ -183,7 +183,7 @@ server/
 │   ├── certificates.cjs          # v2.0 证书API（兼容层）
 │   ├── products.cjs               # v2.0 产品API
 │   ├── documents.cjs              # v2.0 文档API
-│   ├── certificates-v1-legacy.cjs # v1.x 旧版本（备份）
+│   ├── documents.cjs # v2.0 统一文档接口
 │   ├── auth.cjs                   # 认证API
 │   ├── companies.cjs              # 企业API
 │   ├── stats.cjs                  # 统计API

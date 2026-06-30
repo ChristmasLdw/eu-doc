@@ -246,6 +246,13 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
     if (product) company_id = product.company_id;
   }
 
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: '请选择要上传的文件',
+    });
+  }
+
   // 必填字段校验
   if (!company_id || !product_id || !document_type || !title) {
     // 删除已上传的文件
@@ -366,6 +373,13 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
       success: true,
       message: reviewStatus === 'pending' ? '文档已提交，等待管理员审核' : '文档创建成功',
       id: documentId,
+      data: {
+        id: documentId,
+        file_path,
+        file_size,
+        mime_type,
+        review_status: reviewStatus,
+      },
     });
   } catch (error) {
     // 删除已上传的文件
@@ -489,7 +503,11 @@ router.post('/:id/replace', authMiddleware, upload.single('file'), (req, res) =>
   db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
     .run(req.admin.id, 'replace_file', 'document', document.id, JSON.stringify({ old: document.file_path, new: filePath }), req.ip);
 
-  res.json({ success: true, message: '文件已替换', data: { file_path: filePath } });
+  res.json({
+    success: true,
+    message: '文件已替换',
+    data: { file_path: filePath, file_size: req.file.size, mime_type: req.file.mimetype },
+  });
 });
 
 // DELETE /api/v2/documents/:id - 删除文档

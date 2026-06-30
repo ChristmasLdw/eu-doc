@@ -142,6 +142,45 @@ router.get('/', (req, res) => {
   }
 });
 
+// GET /api/v2/products/:id/related - 获取同公司相关产品
+router.get('/:id/related', (req, res) => {
+  try {
+    const product = db.prepare('SELECT id, company_id, category_primary_id FROM products WHERE id = ?').get(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: '产品不存在' });
+    }
+
+    const related = db.prepare(`
+      SELECT
+        p.id,
+        p.name,
+        p.name_en,
+        p.model,
+        p.image_path,
+        cat.name as category_name,
+        (SELECT COUNT(*) FROM documents d WHERE d.product_id = p.id AND COALESCE(d.status, 'active') != 'deleted') as document_count
+      FROM products p
+      LEFT JOIN categories cat ON p.category_primary_id = cat.id
+      WHERE p.company_id = ?
+        AND p.id != ?
+        AND COALESCE(p.status, 'active') != 'deleted'
+      ORDER BY
+        CASE WHEN p.category_primary_id = ? THEN 0 ELSE 1 END,
+        p.updated_at DESC,
+        p.created_at DESC
+      LIMIT 6
+    `).all(product.company_id, product.id, product.category_primary_id || -1);
+
+    res.json({ success: true, data: related });
+  } catch (error) {
+    console.error('[错误] GET /api/v2/products/:id/related:', error);
+    res.status(500).json({
+      success: false,
+      message: '查询相关产品失败: ' + error.message,
+    });
+  }
+});
+
 // GET /api/v2/products/:id - 获取产品详情
 router.get('/:id', (req, res) => {
   try {

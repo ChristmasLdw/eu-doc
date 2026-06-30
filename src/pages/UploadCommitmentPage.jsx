@@ -28,7 +28,7 @@ export default function UploadCommitmentPage() {
             <li>文档中的所有信息均来自合法、可靠的来源</li>
             <li>文档未经篡改、伪造或虚构</li>
             <li>文档的扫描件、照片与原件一致</li>
-            <li>证书编号、有效期、认证标准等关键信息准确无误</li>
+            <li>证书编号、有效期、认证标准、适用型号、语言版本等关键信息准确无误</li>
           </ul>
         </section>
 
@@ -97,7 +97,17 @@ export default function UploadCommitmentPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>7. 记录与审计</h2>
+          <h2>7. 平台状态理解</h2>
+          <p>本人理解并同意：</p>
+          <ul>
+            <li>企业认证、文件公开、平台审核或页面展示，不代表平台对文件真实性或产品合规性作出背书</li>
+            <li>如文件被举报、质疑或监管机构要求核查，平台有权先行隐藏、标记核查中或下架相关文件</li>
+            <li>上传方应在平台要求的合理期限内提供原件、发证机构证明或其他补充资料</li>
+          </ul>
+        </section>
+
+        <section className={styles.section}>
+          <h2>8. 记录与审计</h2>
           <p>本人知晓并同意：</p>
           <ul>
             <li>上传操作将被完整记录，包括时间、IP地址、操作设备等信息</li>
@@ -108,7 +118,7 @@ export default function UploadCommitmentPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>8. 违规处理</h2>
+          <h2>9. 违规处理</h2>
           <p>如发现违反本承诺书的行为，平台有权：</p>
           <ul>
             <li>立即下架或删除相关文档</li>
@@ -120,7 +130,7 @@ export default function UploadCommitmentPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>9. 承诺书效力</h2>
+          <h2>10. 承诺书效力</h2>
           <p>
             本承诺书自上传者点击"确认"时生效，对每一次文档上传行为均具有约束力。
             上传者每次上传文档时都必须重新确认本承诺书。
@@ -128,7 +138,7 @@ export default function UploadCommitmentPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>10. 联系方式</h2>
+          <h2>11. 联系方式</h2>
           <p>
             如对本承诺书有任何疑问，请联系我们：
           </p>

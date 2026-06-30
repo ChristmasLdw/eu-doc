@@ -520,7 +520,7 @@
 
 .productPackageCard:hover {
   border-color: rgba(59, 130, 246, 0.45);
-  box-shadow: 0 22px 60px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 22px 60px rgba(59, 130, 246, 0.14);
   transform: translateY(-3px);
 }
 
@@ -544,8 +544,8 @@
 }
 
 .packageStatusGood {
-  color: #15803d;
-  background: rgba(34, 197, 94, 0.14);
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.14);
 }
 
 .packageStatusWarn {
@@ -592,7 +592,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
 }
 
 .packageTypes {
@@ -623,7 +623,7 @@
 }
 
 .typeReady {
-  color: #2563eb;
+  color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.16);
   background: rgba(59, 130, 246, 0.08);
 }
@@ -736,4 +736,654 @@
 .packageFooter {
   font-size: 13px !important;
   font-weight: 500 !important;
+}
+
+/* ===== 三类详情页统一外壳：公司 / 产品 / 文件 ===== */
+.container {
+  max-width: 1040px !important;
+  padding: 32px 24px 88px !important;
+}
+
+.backButton {
+  min-height: 38px !important;
+  margin-bottom: 16px !important;
+  padding: 0 14px !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+}
+
+.companyCard {
+  padding: 32px !important;
+  margin-bottom: 18px !important;
+  border-radius: var(--radius-xl) !important;
+  background: var(--bg-card) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.companyInfo {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.companyHeader {
+  gap: 18px !important;
+}
+
+.companyIcon {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.companyName {
+  max-width: 720px !important;
+  font-size: clamp(28px, 3.4vw, 42px) !important;
+  font-weight: 750 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.companyNameEn {
+  margin-top: 8px !important;
+  color: var(--text-secondary) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.companyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.companyActionButton {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.companyActionPrimary {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  color: #fff;
+}
+
+.companyStats {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 180px)) !important;
+  gap: 12px !important;
+  margin-top: 22px !important;
+}
+
+.statItem {
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.sectionTitle {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.certSection {
+  padding: 32px !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-xl) !important;
+  background: var(--bg-card) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.sectionHeader {
+  margin-bottom: 2px !important;
+}
+
+.resultCount {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+
+.toolbar {
+  align-items: stretch !important;
+}
+
+.searchInput,
+.sortSelect {
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.productPackageGrid {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.productPackageCard {
+  border-radius: var(--radius-md) !important;
+  background: var(--bg-secondary) !important;
+  box-shadow: none !important;
+}
+
+.packageStatusGood {
+  color: var(--accent-blue) !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.packageStatusWarn {
+  color: var(--text-muted) !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+}
+
+.footer {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .container {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 24px 16px 72px !important;
+  }
+
+  .companyCard {
+    padding: 18px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .certSection {
+    padding: 18px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .sectionHeader {
+    align-items: flex-start !important;
+  }
+
+  .companyStats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ===== 公司详情页 v3：对齐产品详情页 / 文件详情页 ===== */
+.companyHeroGrid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 260px !important;
+  gap: 28px !important;
+  align-items: stretch !important;
+}
+
+.companyHeader {
+  margin-bottom: 0 !important;
+}
+
+.companyTitle {
+  min-width: 0 !important;
+}
+
+.companyEyebrow {
+  display: inline-flex !important;
+  margin-bottom: 10px !important;
+  padding: 5px 10px !important;
+  border-radius: var(--radius-sm) !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: var(--accent-blue) !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+}
+
+.companyStats {
+  grid-template-columns: 1fr !important;
+  margin-top: 0 !important;
+}
+
+.statItem {
+  justify-content: center !important;
+  min-height: 88px !important;
+  padding: 16px !important;
+}
+
+.statNumber {
+  font-size: 24px !important;
+  font-weight: 750 !important;
+}
+
+.statLabel {
+  font-size: 13px !important;
+  font-weight: 650 !important;
+}
+
+.sectionHeader {
+  align-items: flex-start !important;
+  gap: 16px !important;
+}
+
+.toolbar {
+  margin: 4px 0 2px !important;
+}
+
+@media (max-width: 980px) {
+  .companyHeroGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .companyStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .companyHeader {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+  }
+
+  .companyIcon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .companyName {
+    font-size: 26px !important;
+  }
+
+  .companyStats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.companyAboutSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 18px;
+  padding: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.aboutCopy {
+  min-width: 0;
+}
+
+.aboutCopy h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.aboutCopy p {
+  max-width: 560px;
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.websiteLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin-top: 18px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.aboutFacts {
+  display: grid;
+  gap: 9px;
+}
+
+.aboutFacts div {
+  padding: 11px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.aboutFacts span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.aboutFacts strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .companyAboutSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .companyAboutSection {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* ===== 公司页 v3.2：顶部结构对齐产品详情页 ===== */
+.companyHeroGrid {
+  grid-template-columns: minmax(0, 1fr) 248px !important;
+  align-items: start !important;
+}
+
+.companyCopy {
+  min-width: 0 !important;
+}
+
+.companyIntro {
+  max-width: 720px;
+  margin: 16px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.companyHeroAside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.companyLogoVisual {
+  width: 210px;
+  min-height: 172px;
+  margin-left: auto;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(99, 102, 241, 0.05)),
+    var(--bg-secondary);
+  display: grid;
+  place-items: center;
+}
+
+.companyLogoVisual img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 18px;
+}
+
+.companyLogoVisual div {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  padding: 18px;
+  color: var(--accent-blue);
+  text-align: center;
+}
+
+.companyLogoVisual span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.companyHeroAside .companyActions {
+  display: grid !important;
+  gap: 10px !important;
+  margin-top: 0 !important;
+}
+
+.companyStats {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  margin-top: 22px !important;
+}
+
+.statItem {
+  min-height: 78px !important;
+}
+
+.companyAboutSection {
+  grid-template-columns: 360px minmax(0, 1fr) !important;
+}
+
+@media (max-width: 980px) {
+  .companyHeroGrid,
+  .companyAboutSection {
+    grid-template-columns: 1fr !important;
+  }
+
+  .companyHeroAside {
+    max-width: 260px;
+  }
+
+  .companyLogoVisual {
+    margin-left: 0;
+  }
+
+  .companyStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .companyHeroAside,
+  .companyLogoVisual {
+    width: 100%;
+    max-width: none;
+  }
+
+  .companyLogoVisual {
+    min-height: 150px;
+  }
+
+  .companyStats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ===== 公司页 v3.3：合并基础信息到顶部卡片 ===== */
+.companyBasicPills {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.companyBasicPills div,
+.companyBasicPills a {
+  display: grid;
+  gap: 4px;
+  min-width: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.companyBasicPills span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.companyBasicPills strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.companyBasicPills a strong {
+  color: var(--accent-blue);
+}
+
+.companyAboutSection {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .companyBasicPills {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 公司页 v3.4：统计信息上移并压缩高度 ===== */
+.companyStats {
+  grid-column: 1 / 2 !important;
+  grid-row: 2 !important;
+  margin-top: 18px !important;
+  max-width: 760px;
+}
+
+.statItem {
+  min-height: 64px !important;
+  padding: 12px 14px !important;
+}
+
+.statNumber {
+  font-size: 22px !important;
+  line-height: 1.1 !important;
+}
+
+.statLabel {
+  margin-top: 2px;
+}
+
+.companyBasicPills {
+  margin-top: 14px !important;
+}
+
+@media (max-width: 980px) {
+  .companyStats {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    max-width: none;
+  }
+}
+
+/* 基础信息胶囊需要承载邮箱、地址等长文本，默认更宽一些。 */
+.companyBasicPills div,
+.companyBasicPills a {
+  min-width: 230px !important;
+  max-width: 360px;
+  flex: 1 1 230px;
+}
+
+.companyBasicPills strong {
+  white-space: normal;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .companyBasicPills div,
+  .companyBasicPills a {
+    min-width: 0 !important;
+    max-width: none;
+  }
+}
+
+/* ===== 公司页 v3.5：统计卡片跟随左侧简介，消除中段空白 ===== */
+.companyCopy .companyStats {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  margin-top: 18px !important;
+  max-width: 760px;
+}
+
+.companyHeroGrid > .companyStats {
+  display: none !important;
+}
+
+.companyCopy .statItem {
+  min-height: 64px !important;
+}
+
+/* ===== 公司页 v3.6：压缩顶部中段空白 ===== */
+.companyHeroGrid {
+  align-items: start !important;
+  row-gap: 16px !important;
+}
+
+.companyHeroAside {
+  justify-content: flex-start !important;
+  gap: 12px !important;
+}
+
+.companyHeroAside .companyActions {
+  margin-top: 0 !important;
+}
+
+.companyCopy .companyIntro {
+  margin-top: 14px !important;
+}
+
+.companyCopy .companyStats {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 18px !important;
+  max-width: 760px !important;
+}
+
+.companyCopy .statItem {
+  min-height: 60px !important;
+  padding: 11px 14px !important;
+}
+
+.companyCopy .statNumber {
+  font-size: 21px !important;
+}
+
+.companyBasicPills {
+  margin-top: 16px !important;
+}
+
+@media (max-width: 980px) {
+  .companyCopy .companyStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .companyCopy .companyStats {
+    grid-template-columns: 1fr !important;
+  }
 }

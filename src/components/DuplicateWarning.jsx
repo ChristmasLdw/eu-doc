@@ -64,7 +64,7 @@ export default function DuplicateWarning({ existingCert, onCancel, onContinue })
           <button className={styles.cancelBtn} onClick={onCancel}>
             {t('duplicate.cancel')}
           </button>
-          <button className={styles.viewBtn} onClick={() => window.open(`/certificate/${existingCert.id}`, '_blank')}>
+          <button className={styles.viewBtn} onClick={() => window.open(`/documents/${existingCert.id}`, '_blank')}>
             {t('duplicate.viewExisting')}
           </button>
           {onContinue && (

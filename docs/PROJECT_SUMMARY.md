@@ -305,7 +305,7 @@
 
 ### 备份文件
 
-1. `server/routes/certificates-v1-legacy.cjs` - v1.x 旧版本
+1. `server/routes/documents.cjs` - v2.0 统一文档接口
 2. `data/eu-doc.db.backup-v1.x` - v1.x 数据库备份
 
 ---

@@ -57,7 +57,7 @@ export default function RecentViews() {
       <div className={styles.grid}>
         {recentViews.map((cert) => (
           <div key={cert.id} className={styles.card}>
-            <Link to={`/certificate/${cert.id}`} className={styles.cardLink}>
+            <Link to={`/documents/${cert.id}`} className={styles.cardLink}>
               {cert.thumbnailUrl ? (
                 <img src={cert.thumbnailUrl} alt={cert.productName} className={styles.thumbnail} />
               ) : (

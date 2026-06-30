@@ -33,8 +33,6 @@ import Footer from './components/Footer';
 import AdminRoute from './components/AdminRoute';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
-import CertificatePage from './pages/CertificatePage';
-import SharePage from './pages/SharePage';
 import CompanyPage from './pages/CompanyPage';
 import HistoryPage from './pages/HistoryPage';
 import TermsPage from './pages/TermsPage';
@@ -47,6 +45,7 @@ import ContactPage from './pages/ContactPage';
 import GuidePage from './pages/GuidePage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import DocumentDetailPage from './pages/DocumentDetailPage';
 import EmailVerifyPage from './pages/EmailVerifyPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -88,19 +87,22 @@ function App() {
         {/* 产品管理页面 - v2.0 新增 */}
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/documents/:id" element={<DocumentDetailPage />} />
+        <Route path="/files/:id" element={<Navigate to={location.pathname.replace('/files/', '/documents/')} replace />} />
 
         {/*
           证书详情页
           :id 是一个「动态路由参数」，可以匹配任意值
           例如 /certificate/CERT-001 会匹配到这里，params.id = 'CERT-001'
         */}
-        <Route path="/certificate/:id" element={<CertificatePage />} />
+        <Route path="/certificate/:id" element={<Navigate to={location.pathname.replace('/certificate/', '/documents/')} replace />} />
 
         {/* 证书分享页 */}
-        <Route path="/share/:id" element={<SharePage />} />
+        <Route path="/share/:id" element={<Navigate to={location.pathname.replace('/share/', '/documents/')} replace />} />
 
         {/* 公司详情页 */}
-        <Route path="/company/:id" element={<CompanyPage />} />
+        <Route path="/companies/:id" element={<CompanyPage />} />
+        <Route path="/company/:id" element={<Navigate to={location.pathname.replace('/company/', '/companies/')} replace />} />
 
         {/* 法律文档页面 */}
         <Route path="/terms" element={<TermsPage />} />

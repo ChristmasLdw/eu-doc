@@ -48,7 +48,16 @@ export default function EnterpriseAgreementPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>4. 文档上传规范</h2>
+          <h2>4. 认证范围说明</h2>
+          <p>
+            企业认证仅代表平台对企业身份或入驻资料进行形式审核，不代表平台对企业上传的产品合规文档
+            或产品本身作出真实性、有效性、合规性认证。企业不得以平台认证、页面展示或资料公开作为
+            平台对文件真实性或产品合规性的背书。
+          </p>
+        </section>
+
+        <section className={styles.section}>
+          <h2>5. 文档上传规范</h2>
           <p>入驻企业上传的文档需符合以下规范：</p>
           <ul>
             <li>文档内容真实、准确、完整</li>
@@ -60,7 +69,7 @@ export default function EnterpriseAgreementPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>5. 企业责任</h2>
+          <h2>6. 企业责任</h2>
           <p>入驻企业需承担以下责任：</p>
           <ul>
             <li>确保上传文档的真实性和合法性</li>
@@ -72,7 +81,7 @@ export default function EnterpriseAgreementPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>6. 平台权利</h2>
+          <h2>7. 平台权利</h2>
           <p>平台保有以下权利：</p>
           <ul>
             <li>审核、拒绝或下架不符合规范的文档</li>
@@ -83,7 +92,7 @@ export default function EnterpriseAgreementPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>7. 费用与结算</h2>
+          <h2>8. 费用与结算</h2>
           <p>
             平台提供免费和付费两种服务模式。付费服务的具体内容、价格和结算方式
             以平台公布的信息为准。平台有权根据业务发展调整价格策略。
@@ -91,7 +100,7 @@ export default function EnterpriseAgreementPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>8. 协议终止</h2>
+          <h2>9. 协议终止</h2>
           <p>在以下情况下，本协议可能被终止：</p>
           <ul>
             <li>企业主动申请退出</li>
@@ -102,7 +111,7 @@ export default function EnterpriseAgreementPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>9. 争议解决</h2>
+          <h2>10. 争议解决</h2>
           <p>
             因本协议引起的争议，双方应友好协商解决。协商不成的，任何一方均可向
             平台所在地有管辖权的人民法院提起诉讼。

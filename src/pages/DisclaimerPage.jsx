@@ -22,7 +22,20 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>2. 内容声明</h2>
+          <h2>2. 企业认证与文件真实性</h2>
+          <p>
+            平台对企业身份、账号权限或入驻资料进行的审核，仅用于确认企业或账号的基本管理资格，
+            不代表平台对该企业上传的任何证书、DoC声明、说明书、测试报告或其他产品合规文档的
+            真实性、有效性、完整性、合法性或产品合规状态作出认证、保证或背书。
+          </p>
+          <p>
+            除非平台以书面形式明确说明，任何“企业已认证”“资料已公开”“已审核”等状态，均不应被
+            理解为平台确认该文件真实有效或确认相关产品符合法规要求。
+          </p>
+        </section>
+
+        <section className={styles.section}>
+          <h2>3. 内容声明</h2>
           <p>
             平台上展示的所有文档均由企业自行上传，平台仅提供存储和展示服务。平台不对文档
             的真实性、准确性、完整性或合法性做任何保证或担保。
@@ -34,7 +47,7 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>3. 上传者责任</h2>
+          <h2>4. 上传者责任</h2>
           <p>文档上传者声明并保证：</p>
           <ul>
             <li>上传的文档真实、准确、完整</li>
@@ -45,7 +58,7 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>4. 平台责任限制</h2>
+          <h2>5. 平台责任限制</h2>
           <p>在法律允许的最大范围内，平台：</p>
           <ul>
             <li>不对文档内容的真实性、准确性或完整性做出任何保证</li>
@@ -56,7 +69,7 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>5. 知识产权</h2>
+          <h2>6. 知识产权</h2>
           <p>
             平台上的文档版权归原作者或相关企业所有。未经权利人书面许可，任何人不得复制、
             修改、传播或用于商业用途。
@@ -64,7 +77,7 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>6. 隐私保护</h2>
+          <h2>7. 隐私保护</h2>
           <p>
             我们重视用户隐私保护。关于个人信息的收集、使用和保护，请参阅我们的
             <Link to="/privacy">隐私政策</Link>。
@@ -72,7 +85,7 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>7. 免责声明的修改</h2>
+          <h2>8. 免责声明的修改</h2>
           <p>
             我们可能会不时更新本免责声明。更新后的免责声明将在本页面发布，并注明最新
             更新日期。继续使用本平台即表示您同意接受更新后的免责声明。
@@ -80,7 +93,7 @@ export default function DisclaimerPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>8. 联系我们</h2>
+          <h2>9. 联系我们</h2>
           <p>
             如您对本免责声明有任何疑问，请通过以下方式联系我们：
           </p>

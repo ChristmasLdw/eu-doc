@@ -70,8 +70,8 @@ AI 每次处理本项目时，默认只先读：
 
 优先读取：
 
-- `src/pages/CertificatePage.jsx`
-- `src/pages/CertificatePage.module.css`
+- `src/pages/DocumentDetailPage.jsx`
+- `src/pages/DocumentDetailPage.module.css`
 - `src/components/StatusBadge.jsx`
 - `src/components/StatusBadge.module.css`
 

@@ -76,7 +76,7 @@ export default function HistoryPage() {
           <div className={styles.list}>
             {recentViews.map((cert) => (
               <div key={cert.id} className={styles.item}>
-                <Link to={`/certificate/${cert.id}`} className={styles.itemLink}>
+                <Link to={`/documents/${cert.id}`} className={styles.itemLink}>
                   {/* 左侧：缩略图或占位符 */}
                   <div className={styles.thumbnail}>
                     {cert.thumbnailUrl ? (

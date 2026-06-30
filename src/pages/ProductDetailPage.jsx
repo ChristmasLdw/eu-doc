@@ -2,17 +2,24 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as api from '../services/api';
+import ShareModal from '../components/ShareModal';
+import { getPublicStatusLabel } from '../utils/publicStatus';
 import styles from './ProductDetailPage.module.css';
 
 const RESOURCE_TYPES = [
-  { key: 'certificate', label: '资质证书', hint: '证明产品经过合规测试', tone: 'blue' },
-  { key: 'declaration_of_conformity', label: 'DoC声明', hint: '企业符合性声明与语言版本', tone: 'green' },
-  { key: 'manual', label: '使用说明书', hint: '安装、使用、维护和安全说明', tone: 'amber' },
+  { key: 'certificate', label: '资质证书', shortLabel: '证书', hint: 'CE、UKCA、检测认证等', tone: 'blue' },
+  { key: 'declaration_of_conformity', label: 'DoC 声明', shortLabel: 'DoC', hint: '符合性声明、责任主体与语言版本', tone: 'indigo' },
+  { key: 'manual', label: '使用说明书', shortLabel: '说明书', hint: '安装、使用、维护和安全说明', tone: 'cyan' },
+  { key: 'test_report', label: '检测报告', shortLabel: '报告', hint: '实验室测试和技术验证文件', tone: 'slate' },
 ];
+
+const TYPE_LABELS = RESOURCE_TYPES.reduce((map, item) => ({ ...map, [item.key]: item.label }), {});
 
 function normalizeDocType(doc) {
   const type = doc.document_type || doc.documentType || 'other';
-  return type === 'declaration' ? 'declaration_of_conformity' : type;
+  if (type === 'declaration') return 'declaration_of_conformity';
+  if (type === 'report') return 'test_report';
+  return type;
 }
 
 function docFilePath(doc) {
@@ -23,14 +30,61 @@ function docThumbPath(doc) {
   return doc.thumbnail_path || doc.thumbnailPath || '';
 }
 
+function toAssetUrl(path = '') {
+  if (!path) return '';
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  if (path.startsWith('/eu-doc/')) return path;
+  if (path.startsWith('/documents/')) return `/eu-doc/uploads${path}`;
+  return `/eu-doc${path}`;
+}
+
+function productImagePath(product = {}) {
+  const item = product || {};
+  const path = item.image_path || item.imagePath || item.image || '';
+  if (!path) return '';
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  if (path.startsWith('/eu-doc/')) return path;
+  return `/eu-doc${path}`;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function compactDate(dateStr) {
+  if (!dateStr) return '未记录';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '未记录';
+  return date.toLocaleDateString('zh-CN');
 }
 
 function isImageFile(filePath) {
   const ext = String(filePath || '').split('.').pop()?.toLowerCase();
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+}
+
+function valueOrPending(value) {
+  return value || '待企业补充';
+}
+
+function productCode(product = {}) {
+  const item = product || {};
+  return item.product_code || item.productCode || `EU-P-${String(item.id || '').padStart(6, '0')}`;
+}
+
+function documentCode(doc = {}) {
+  const item = doc || {};
+  return item.cert_no || item.certNo || item.document_no || item.documentNo || item.version || item.file_no || item.fileNo || `EU-D-${String(item.id || '').padStart(6, '0')}`;
+}
+
+function splitModels(model) {
+  return String(model || '')
+    .split(/[,，、;；/]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 export default function ProductDetailPage() {
@@ -40,11 +94,13 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedType, setExpandedType] = useState('');
+  const [expandedTypes, setExpandedTypes] = useState([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteId, setFavoriteId] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,17 +108,19 @@ export default function ProductDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const [productResponse, documentsResponse] = await Promise.all([
+        const [productResponse, documentsResponse, relatedResponse] = await Promise.all([
           fetch(`/eu-doc/api/v2/products/${id}`).then((res) => res.json()),
           fetch(`/eu-doc/api/v2/products/${id}/documents`).then((res) => res.json()),
+          fetch(`/eu-doc/api/v2/products/${id}/related`).then((res) => res.json()).catch(() => ({ success: false, data: [] })),
         ]);
         if (!productResponse.success) throw new Error(productResponse.message || t('productDetail.loadFailed'));
         if (cancelled) return;
         setProduct(productResponse.data);
         const activeDocs = (documentsResponse.data || []).filter((doc) => (doc.status || 'active') !== 'deleted');
         setDocuments(activeDocs);
+        setRelatedProducts(relatedResponse.success ? (relatedResponse.data || []) : []);
         const firstFilledType = RESOURCE_TYPES.find((type) => activeDocs.some((doc) => normalizeDocType(doc) === type.key));
-        setExpandedType(firstFilledType?.key || '');
+        setExpandedTypes(firstFilledType?.key ? [firstFilledType.key] : []);
       } catch (err) {
         if (!cancelled) setError(err.message || t('productDetail.networkError'));
       } finally {
@@ -91,9 +149,23 @@ export default function ProductDetailPage() {
     return { ...type, docs, languages };
   }), [documents]);
 
-  const completedCount = groupedResources.filter((item) => item.docs.length > 0).length;
-  const completeness = Math.round((completedCount / RESOURCE_TYPES.length) * 100);
   const latestUpdate = documents.map((doc) => doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt).filter(Boolean).sort().at(-1);
+  const models = splitModels(product?.model);
+  const imageUrl = productImagePath(product);
+  const productPublicStatus = getPublicStatusLabel(product, 'product');
+
+  const detailItems = [
+    { label: '产品编号', value: productCode(product), required: true, group: 'identity' },
+    { label: '产品型号', value: product?.model, required: true, group: 'identity' },
+    { label: '所属公司', value: product?.company_name, companyId: product?.company_id, required: true, group: 'identity' },
+    { label: '产品类别', value: product?.category_name, required: true, group: 'identity' },
+    { label: '产品尺寸', value: product?.dimensions || product?.size, required: true, group: 'physical' },
+    { label: '重量', value: product?.weight, required: true, group: 'physical' },
+    { label: '材质', value: product?.material, required: true, group: 'physical' },
+    { label: '适用场景', value: product?.usage_scenario || product?.usageScenario, required: true, group: 'usage' },
+    { label: '资料更新', value: formatDate(latestUpdate), required: true, group: 'record' },
+  ].filter((item) => item.required || item.value);
+  const shouldShowModelSection = models.length > 1 && models.join(', ') !== String(product?.model || '').trim();
 
   const handleFavorite = async () => {
     if (!product) return;
@@ -113,14 +185,11 @@ export default function ProductDetailPage() {
   };
 
   const handleShare = () => {
-    const shareUrl = `${window.location.origin}/eu-doc/products/${id}`;
-    if (navigator.clipboard) navigator.clipboard.writeText(shareUrl).then(() => alert(t('productDetail.linkCopied')));
-    else alert(`${t('productDetail.share')}：${shareUrl}`);
+    setShareOpen(true);
   };
 
   const openDocument = (doc) => {
-    if (normalizeDocType(doc) === 'certificate') navigate(`/certificate/${doc.id}`);
-    else if (docFilePath(doc)) window.open(`/eu-doc${docFilePath(doc)}`, '_blank');
+    navigate(`/documents/${doc.id}`);
   };
 
   if (loading) {
@@ -138,88 +207,168 @@ export default function ProductDetailPage() {
 
   return (
     <div className={styles.productDetailPage}>
-      <div className={styles.detailContainer}>
-        <button onClick={() => navigate(-1)} className={styles.backButton}>← 返回</button>
+      <div className={styles.productShell}>
+        <button onClick={() => navigate(-1)} className={styles.productBack}>← 返回</button>
 
-        <section className={styles.heroCard}>
-          <div className={styles.heroMain}>
-            <span className={styles.eyebrow}>产品合规资料包</span>
+        <section className={styles.productHeroV3}>
+          <div className={styles.heroCopyV3}>
+            <span className={styles.eyebrowV3}>产品资料中心</span>
             <h1>{product.name}</h1>
-            {product.name_en && <p className={styles.heroSub}>{product.name_en}</p>}
-            <div className={styles.heroMeta}>
-              {product.model && <span>型号：{product.model}</span>}
-              {product.category_name && <span>分类：{product.category_name}</span>}
-              {product.company_name && <Link to={`/company/${product.company_id}`}>公司：{product.company_name}</Link>}
+            {product.name_en && <p className={styles.productEnglishName}>{product.name_en}</p>}
+            <p className={styles.productIntro}>{product.description || '该页面集中展示产品基础信息、适用型号、合规资料和说明文档，方便用户确认产品并进入对应文件详情页。'}</p>
+            <div className={styles.heroMetaV3}>
+              <span>产品编号：{productCode(product)}</span>
+              {product.category_name && <span>{product.category_name}</span>}
+              {product.company_name && <Link to={`/companies/${product.company_id}`}>{product.company_name}</Link>}
+              <span>{documents.length} 份公开资料</span>
+              <span>{productPublicStatus}</span>
             </div>
           </div>
-          <div className={styles.heroActions}>
-            <button onClick={handleFavorite}>{isFavorited ? '★ 已收藏' : '☆ 收藏'}</button>
-            <button onClick={handleShare}>分享</button>
-          </div>
+          <aside className={styles.productHeroAside}>
+            <div className={styles.productVisual}>
+              {imageUrl ? <img src={imageUrl} alt={product.name} /> : <div><strong>PRODUCT</strong><span>产品图片待企业补充</span></div>}
+            </div>
+            <div className={styles.heroActionRow}>
+              <button onClick={handleFavorite}>{isFavorited ? '★ 已收藏' : '☆ 收藏'}</button>
+              <button onClick={handleShare}>分享产品</button>
+            </div>
+          </aside>
         </section>
 
-        <section className={styles.overviewGrid}>
-          <div className={styles.complianceCard}>
-            <div className={styles.complianceHead}>
-              <div>
-                <span>资料完整度</span>
-                <strong>{completeness}%</strong>
+        <div className={styles.platformNoticeV3}>
+          <strong>资料来源说明</strong>
+          <span>本页资料由企业上传并对真实性负责。EU-DOC 提供展示与管理工具，不作为认证机构，不对文件真实性、有效性或产品合规性作出背书。</span>
+        </div>
+
+        <section className={styles.productContentGrid}>
+          <div className={styles.leftColumnV3}>
+            <section className={styles.infoPanelV3}>
+              <div className={styles.sectionHeadV3}>
+                <h2>产品信息</h2>
+                <p>用于让 C 端用户确认是不是自己要找的产品。</p>
               </div>
-              <em>{completedCount}/{RESOURCE_TYPES.length} 类资料</em>
-            </div>
-            <div className={styles.complianceTrack}><span style={{ width: `${completeness}%` }} /></div>
-            <p>{completeness === 100 ? '该产品主要合规资料已完整公开。' : '仍有资料类型未公开，建议联系企业补充。'}</p>
-          </div>
-          <div className={styles.factCard}><span>公开文件</span><strong>{documents.length}</strong><p>证书、DoC、说明书等</p></div>
-          <div className={styles.factCard}><span>最近更新</span><strong>{formatDate(latestUpdate)}</strong><p>以公开资料时间为准</p></div>
-        </section>
+              <div className={styles.infoGridV3}>
+                {detailItems.map((item) => (
+                  <div key={item.label} className={item.value ? styles.infoItemV3 : styles.infoItemPendingV3}>
+                    <span>{item.label}</span>
+                    <strong>{item.companyId ? <Link to={`/companies/${item.companyId}`}>{valueOrPending(item.value)}</Link> : valueOrPending(item.value)}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-        <section className={styles.resourcePanel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <h2>资料总览</h2>
-              <p>先确认资料是否齐全，需要查看细节时再打开具体文件。</p>
-            </div>
+            {shouldShowModelSection && (
+              <section className={styles.infoPanelV3}>
+                <div className={styles.sectionHeadV3}>
+                  <h2>适用型号</h2>
+                  <p>该产品资料覆盖以下具体型号。</p>
+                </div>
+                <div className={styles.modelListV3}>
+                  {models.map((model) => <span key={model}>{model}</span>)}
+                </div>
+              </section>
+            )}
+
+            <section className={styles.infoPanelV3}>
+              <div className={styles.sectionHeadV3}>
+                <h2>资料中心</h2>
+                <p>产品页只做资料总览；点击具体文件后进入独立文件详情页。</p>
+              </div>
+              <div className={styles.resourceListV3}>
+                {groupedResources.map((group) => {
+                  const expanded = expandedTypes.includes(group.key);
+                  return (
+                    <article key={group.key} className={`${styles.resourceGroupV3} ${styles[`resource_${group.tone}`]} ${group.docs.length ? '' : styles.resourceMissingV3}`}>
+                      <button className={styles.resourceSummaryV3} onClick={() => group.docs.length && setExpandedTypes((current) => current.includes(group.key) ? current.filter((key) => key !== group.key) : [...current, group.key])}>
+                        <div>
+                          <span>{group.label}</span>
+                          <p>{group.docs.length ? `${group.docs.length} 份文件${group.languages.length ? ` · ${group.languages.map((lang) => lang.toUpperCase()).join(' / ')}` : ''}` : group.hint}</p>
+                        </div>
+                        <strong>{group.docs.length ? '查看' : '暂未公开'}</strong>
+                      </button>
+
+                      {expanded && group.docs.length > 0 && (
+                        <div className={styles.documentRowsV3}>
+                          {group.docs.map((doc) => {
+                            const filePath = docFilePath(doc);
+                            const thumbPath = docThumbPath(doc);
+                            return (
+                              <button key={doc.id} className={styles.documentRowV3} onClick={() => openDocument(doc)}>
+                                <div className={styles.documentThumbV3}>
+                                  {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={doc.title} /> : isImageFile(filePath) ? <img src={toAssetUrl(filePath)} alt={doc.title} /> : <span>{group.shortLabel}</span>}
+                                </div>
+                                <div>
+                                  <h3>{doc.title || doc.cert_no || `文件 ${doc.id}`}</h3>
+                                  <p>{TYPE_LABELS[normalizeDocType(doc)] || '其他文件'} · 编号：{documentCode(doc)} · {doc.language ? doc.language.toUpperCase() : '未设置语言'} · {compactDate(doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt)}</p>
+                                </div>
+                                <em>进入文件详情 →</em>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
           </div>
 
-          <div className={styles.resourceList}>
-            {groupedResources.map((group) => {
-              const expanded = expandedType === group.key;
-              return (
-                <article key={group.key} className={`${styles.resourceGroup} ${styles[`tone_${group.tone}`]} ${group.docs.length ? '' : styles.resourceMissing}`}>
-                  <button className={styles.resourceSummary} onClick={() => group.docs.length && setExpandedType(expanded ? '' : group.key)}>
-                    <div>
+          <aside className={styles.rightColumnV3}>
+            <section className={styles.sideCardV3}>
+              <h2>快捷查看</h2>
+              <p>适合审核人员快速进入 DoC、证书或说明书。</p>
+              <div className={styles.quickDocList}>
+                {groupedResources.map((group) => {
+                  const firstDoc = group.docs[0];
+                  return firstDoc ? (
+                    <button key={group.key} onClick={() => openDocument(firstDoc)}>
                       <span>{group.label}</span>
-                      <p>{group.docs.length ? `${group.docs.length} 份文件${group.languages.length ? ` · ${group.languages.map((lang) => lang.toUpperCase()).join(' / ')}` : ''}` : group.hint}</p>
+                      <strong>查看</strong>
+                    </button>
+                  ) : (
+                    <div key={group.key} className={styles.emptyQuickDoc}>
+                      <span>{group.label}</span>
+                      <strong>暂未公开</strong>
                     </div>
-                    <strong>{group.docs.length || '+'}</strong>
-                  </button>
-
-                  {expanded && group.docs.length > 0 && (
-                    <div className={styles.fileList}>
-                      {group.docs.map((doc) => {
-                        const filePath = docFilePath(doc);
-                        const thumbPath = docThumbPath(doc);
-                        return (
-                          <button key={doc.id} className={styles.fileCard} onClick={() => openDocument(doc)}>
-                            <div className={styles.filePreview}>
-                              {thumbPath ? <img src={`/eu-doc${thumbPath}`} alt={doc.title} /> : isImageFile(filePath) ? <img src={`/eu-doc${filePath}`} alt={doc.title} /> : <span>{normalizeDocType(doc) === 'certificate' ? 'CERT' : normalizeDocType(doc) === 'manual' ? 'MAN' : 'DOC'}</span>}
-                            </div>
-                            <div className={styles.fileInfo}>
-                              <h3>{doc.title || doc.cert_no || `文件 ${doc.id}`}</h3>
-                              <p>{doc.language ? doc.language.toUpperCase() : '未设置语言'} · {doc.review_status === 'approved' || doc.reviewStatus === 'approved' ? '已审核' : '待审核'}</p>
-                            </div>
-                            <em>{normalizeDocType(doc) === 'certificate' ? '查看详情' : '打开文件'} →</em>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </section>
+          </aside>
         </section>
+
+        {relatedProducts.length > 0 && (
+          <section className={styles.relatedPanelV3}>
+            <div className={styles.sectionHeadV3}>
+              <h2>同公司相关产品</h2>
+              <p>继续查看该企业公开的其他产品资料。</p>
+            </div>
+            <div className={styles.relatedGridV3}>
+              {relatedProducts.map((item) => (
+                <Link key={item.id} to={`/products/${item.id}`} className={styles.relatedCardV3}>
+                  <div className={styles.relatedImageV3}>
+                    {productImagePath(item) ? <img src={productImagePath(item)} alt={item.name} /> : <span>PRODUCT</span>}
+                  </div>
+                  <div>
+                    <h3>{item.name}</h3>
+                    <p>{item.model || '型号待补充'}</p>
+                    <em>{item.document_count || item.documentCount || 0} 份公开资料</em>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+        <ShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          typeLabel="产品分享"
+          title={product.name}
+          subtitle={product.description || '查看产品基础信息、适用型号、公开资料和文件详情。'}
+          url={`${window.location.origin}/eu-doc/products/${id}`}
+          meta={[productCode(product), product.company_name, productPublicStatus]}
+        />
       </div>
     </div>
   );

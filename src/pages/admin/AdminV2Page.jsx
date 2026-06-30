@@ -98,6 +98,76 @@ function getImportConfidence(group) {
   return { label: '低可信', tone: 'red', desc: '识别信息不足，建议仔细检查' };
 }
 
+
+function emptyDocumentModalState(overrides = {}) {
+  return {
+    open: false,
+    mode: 'upload',
+    source: 'generic',
+    doc: null,
+    docs: [],
+    title: '',
+    productId: '',
+    productName: '',
+    documentType: 'certificate',
+    language: 'en',
+    certNo: '',
+    standard: '',
+    issuer: '',
+    file: null,
+    filePreviewUrl: '',
+    lockedProduct: false,
+    lockedType: false,
+    ...overrides,
+  };
+}
+
+function inferLanguageFromFileName(fileName = '') {
+  const text = String(fileName).toLowerCase();
+  const matched = text.match(/(?:^|[_\-. ])(zh|cn|en|de|fr|es|it|nl|pl|pt|cs|sv|da|fi)(?:[_\-. ]|$)/);
+  if (!matched) return 'en';
+  if (matched[1] === 'cn') return 'zh';
+  return matched[1];
+}
+
+function titleFromFileName(fileName = '') {
+  return String(fileName || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+}
+
+function documentFileExt(fileName = '') {
+  const ext = String(fileName || '').split('.').pop();
+  return ext && ext !== fileName ? ext.toUpperCase().slice(0, 4) : 'FILE';
+}
+
+
+function toEuDocAssetUrl(value = '') {
+  if (!value) return '';
+  const text = String(value);
+  if (/^(https?:|blob:|data:)/i.test(text)) return text;
+  if (text.startsWith('/eu-doc/')) return text;
+  if (text.startsWith('/uploads/')) return `/eu-doc${text}`;
+  if (text.startsWith('/documents/') || text.startsWith('/certificates/')) return `/eu-doc/uploads${text}`;
+  if (text.startsWith('/')) return `/eu-doc${text}`;
+  return text;
+}
+
+function getDocumentAssetUrl(item = {}) {
+  if (!item) return '';
+  return toEuDocAssetUrl(item.fileUrl || item.filePath || item.file_path || item.path || '');
+}
+
+function hasDocumentRecord(doc) {
+  return Boolean(doc && (doc.id || doc.name || doc.title || getDocumentAssetUrl(doc)));
+}
+
+function isImageUrl(url = '') {
+  return /\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i.test(url);
+}
+
+function getUploadResultFileUrl(result = {}) {
+  return getDocumentAssetUrl(result.data || result) || getDocumentAssetUrl({ filePath: result.file_path || result.filePath });
+}
+
 function importTypeLabel(type) {
   if (type === 'declaration_of_conformity') return 'DoC声明文件';
   if (type === 'certificate') return '资质证书';
@@ -322,7 +392,8 @@ export default function AdminV2Page() {
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const emptyProductModal = { open: false, product: null, name: '', nameEn: '', models: [''], categoryPrimaryId: '', status: 'active', description: '', descriptionEn: '' };
   const [productModal, setProductModal] = useState(emptyProductModal);
-  const [documentModal, setDocumentModal] = useState({ open: false, mode: 'upload', doc: null, title: '', productId: '', documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null });
+  const [documentModal, setDocumentModal] = useState(() => emptyDocumentModalState());
+  const [documentPreview, setDocumentPreview] = useState({ open: false, url: '', title: '', objectUrl: '' });
   const [passwordModal, setPasswordModal] = useState({ open: false, oldPassword: '', newPassword: '', confirmPassword: '' });
   const [companyModal, setCompanyModal] = useState({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' });
   const [verificationForm, setVerificationForm] = useState({ businessLicenseNo: '', contactPerson: '', contactEmail: '' });
@@ -333,6 +404,7 @@ export default function AdminV2Page() {
   const [splitImportGroups, setSplitImportGroups] = useState({});
   const [activeImportGroupKey, setActiveImportGroupKey] = useState(null);
   const importInputRef = useRef(null);
+  const documentFileInputRef = useRef(null);
   const avatarInputRef = useRef(null);
   const companyLogoInputRef = useRef(null);
   const sidebarScrollTimer = useRef(null);
@@ -523,7 +595,7 @@ export default function AdminV2Page() {
           lang: item.language || '未设置',
           backup: item.backupStatus || '待备份',
           updatedAt: item.updatedAt || item.createdAt || '2026-06-25',
-          fileUrl: item.filePath ? `/eu-doc${item.filePath}` : '',
+          fileUrl: getDocumentAssetUrl(item),
           certNo: item.certNo || '',
           standard: item.standard || '',
           issuer: item.issuer || '',
@@ -943,7 +1015,7 @@ export default function AdminV2Page() {
       lang: item.language || '未设置',
       backup: item.backupStatus || '待备份',
       updatedAt: item.updatedAt || item.createdAt || '2026-06-25',
-      fileUrl: item.filePath ? `/eu-doc${item.filePath}` : '',
+      fileUrl: getDocumentAssetUrl(item),
       certNo: item.certNo || '',
       standard: item.standard || '',
       issuer: item.issuer || '',
@@ -1035,11 +1107,117 @@ export default function AdminV2Page() {
   };
 
   const uploadDocumentFile = async () => {
-    setDocumentModal({ open: true, mode: 'upload', doc: null, title: '', productId: String(companyProducts[0]?.id || ''), documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null });
+    const product = companyProducts[0] || {};
+    setDocumentModal(emptyDocumentModalState({
+      open: true,
+      mode: 'upload',
+      productId: String(product.id || ''),
+      productName: product.name || '',
+    }));
+  };
+
+  const openDocumentSlotModal = (product, documentType, docs = []) => {
+    const firstDoc = docs[0] || null;
+    setDocumentModal(emptyDocumentModalState({
+      open: true,
+      mode: firstDoc ? 'edit' : 'upload',
+      source: 'slot',
+      doc: firstDoc,
+      docs,
+      title: firstDoc?.name || '',
+      productId: String(product?.id || firstDoc?.productId || ''),
+      productName: product?.name || firstDoc?.product || '',
+      documentType,
+      language: firstDoc?.lang || 'en',
+      certNo: firstDoc?.certNo || '',
+      standard: firstDoc?.standard || '',
+      issuer: firstDoc?.issuer || '',
+      lockedProduct: true,
+      lockedType: true,
+    }));
   };
 
   const editDocumentInfo = async (doc) => {
-    setDocumentModal({ open: true, mode: 'edit', doc, title: doc.name || '', productId: String(doc.productId || ''), documentType: doc.documentType || 'certificate', language: doc.lang || 'en', certNo: doc.certNo || '', standard: doc.standard || '', issuer: doc.issuer || '', file: null });
+    const product = companyProducts.find((item) => String(item.id) === String(doc.productId)) || {};
+    setDocumentModal(emptyDocumentModalState({
+      open: true,
+      mode: 'edit',
+      doc,
+      docs: [doc],
+      title: doc.name || '',
+      productId: String(doc.productId || ''),
+      productName: product.name || doc.product || '',
+      documentType: doc.documentType || 'certificate',
+      language: doc.lang || 'en',
+      certNo: doc.certNo || '',
+      standard: doc.standard || '',
+      issuer: doc.issuer || '',
+    }));
+  };
+
+  const selectDocumentInSlotModal = (doc) => {
+    setDocumentModal((form) => {
+      if (form.filePreviewUrl) URL.revokeObjectURL(form.filePreviewUrl);
+      const product = companyProducts.find((item) => String(item.id) === String(doc.productId)) || {};
+      return {
+        ...form,
+        open: true,
+        mode: 'edit',
+        doc,
+        docs: form.docs?.length ? form.docs : [doc],
+        title: doc.name || '',
+        productId: String(doc.productId || form.productId || ''),
+        productName: form.productName || product.name || doc.product || '',
+        documentType: doc.documentType || form.documentType || 'certificate',
+        language: doc.lang || 'en',
+        certNo: doc.certNo || '',
+        standard: doc.standard || '',
+        issuer: doc.issuer || '',
+        file: null,
+        filePreviewUrl: '',
+      };
+    });
+  };
+
+  const openDocumentPreview = () => {
+    if (documentModal.file) {
+      const objectUrl = URL.createObjectURL(documentModal.file);
+      setDocumentPreview({ open: true, url: objectUrl, title: documentModal.file.name, objectUrl });
+      return;
+    }
+    const docUrl = getDocumentAssetUrl(documentModal.doc);
+    if (docUrl) {
+      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || '文件预览', objectUrl: '' });
+      return;
+    }
+    showAction(hasDocumentRecord(documentModal.doc) ? '该文件暂无可预览地址，可点击替换补充文件' : '请先上传或选择文件');
+  };
+
+  const closeDocumentPreview = () => {
+    setDocumentPreview((preview) => {
+      if (preview.objectUrl) URL.revokeObjectURL(preview.objectUrl);
+      return { open: false, url: '', title: '', objectUrl: '' };
+    });
+  };
+
+  const setDocumentModalFile = (file) => {
+    setDocumentModal((form) => {
+      if (form.filePreviewUrl) URL.revokeObjectURL(form.filePreviewUrl);
+      return {
+        ...form,
+        file,
+        filePreviewUrl: file && file.type?.startsWith('image/') ? URL.createObjectURL(file) : '',
+        title: file && !form.title ? titleFromFileName(file.name) : form.title,
+        language: file ? inferLanguageFromFileName(file.name) : form.language,
+      };
+    });
+  };
+
+  const closeDocumentModal = () => {
+    setDocumentModal((form) => {
+      if (form.filePreviewUrl) URL.revokeObjectURL(form.filePreviewUrl);
+      return emptyDocumentModalState();
+    });
   };
 
   const submitDocumentModal = async () => {
@@ -1049,7 +1227,7 @@ export default function AdminV2Page() {
           showAction('请选择要上传的文件');
           return;
         }
-        await api.createDocument({
+        const result = await api.createDocument({
           company_id: activeCompany,
           product_id: documentModal.productId,
           document_type: documentModal.documentType,
@@ -1063,7 +1241,8 @@ export default function AdminV2Page() {
           standard: documentModal.standard,
           issuer: documentModal.issuer,
         });
-        showAction('文件已上传');
+        if (!getUploadResultFileUrl(result)) throw new Error('文件已提交但未返回文件地址，请重新上传');
+        showAction('文件已上传并保存成功');
       } else {
         await api.updateDocument(documentModal.doc.id, {
           title: documentModal.title,
@@ -1072,9 +1251,15 @@ export default function AdminV2Page() {
           standard: documentModal.standard,
           issuer: documentModal.issuer,
         });
-        showAction('文件信息已更新');
+        if (documentModal.file) {
+          const result = await api.replaceDocumentFile(documentModal.doc.id, documentModal.file);
+          if (!getUploadResultFileUrl(result)) throw new Error('文件替换失败：未返回新文件地址');
+          showAction('文件信息和文件本体已更新');
+        } else {
+          showAction('文件信息已更新');
+        }
       }
-      setDocumentModal({ open: false, mode: 'upload', doc: null, title: '', productId: '', documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null });
+      closeDocumentModal();
       await refreshCompanyAssets();
     } catch (error) {
       showAction(error.message || '文件保存失败');
@@ -1363,9 +1548,9 @@ export default function AdminV2Page() {
                         if (type === '产品') {
                           navigate(`/eu-doc/products/${itemId}`);
                         } else if (type === '公司') {
-                          navigate(`/eu-doc/company/${itemId}`);
+                          navigate(`/eu-doc/companies/${itemId}`);
                         } else if (type === '文件') {
-                          navigate(`/eu-doc/certificate/${itemId}`);
+                          navigate(`/eu-doc/documents/${itemId}`);
                         }
                       }}>查看</button>
                       <button className={styles.secondaryBtn} onClick={async () => { const nextNote = window.prompt('请输入备注', note); if (nextNote === null) return; try { await api.updateFavoriteNote(id, nextNote); setFavoriteItems((items) => items.map((item) => item[6] === id ? [item[0], item[1], item[2], item[3], nextNote, item[5], item[6], item[7]] : item)); showAction('备注已保存'); } catch (error) { showAction(error.message || '备注保存失败'); } }}>编辑备注</button>
@@ -1736,7 +1921,7 @@ export default function AdminV2Page() {
                     <h3>基础信息</h3>
                     <p>这些内容会展示在公司详情页，方便用户和审核机构了解企业。</p>
                   </div>
-                  <button className={styles.secondaryBtn} onClick={() => navigate(`/company/${activeCompany}`)}>预览公司主页</button>
+                  <button className={styles.secondaryBtn} onClick={() => navigate(`/companies/${activeCompany}`)}>预览公司主页</button>
                 </div>
 
                 <div className={styles.editGrid}>
@@ -1891,10 +2076,15 @@ export default function AdminV2Page() {
                         {fileRows.map(([label, type, docs]) => {
                           const active = isExpanded && workspaceExpandedPile === label;
                           const shouldShowFiles = workspaceViewMode === 'detail' || (workspaceViewMode === 'standard' && active);
+                          const primaryDoc = docs[0];
                           return (
                             <div key={label} className={`${styles.stackFileRowWrap} ${!docs.length ? styles.stackFileRowMissing : ''} ${active || workspaceViewMode === 'detail' ? styles.stackFileRowOpen : ''}`}>
-                              <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); docs.length ? (setWorkspaceExpandedProduct(productKey), setWorkspaceExpandedPile(active ? '全部文件' : label)) : uploadDocumentFile(); }}>
-                                <span>{label}</span>
+                              <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); openDocumentSlotModal(product, type, docs); }}>
+                                <span className={styles.stackFileThumb}>{primaryDoc ? documentFileExt(primaryDoc.name) : '无'}</span>
+                                <span className={styles.stackFileMain}>
+                                  <em>{label}</em>
+                                  <small>{primaryDoc ? primaryDoc.name : '暂无文件，点击上传'}</small>
+                                </span>
                                 <strong>{docs.length || '+'}</strong>
                               </button>
                               {shouldShowFiles && docs.length > 0 && (
@@ -2012,7 +2202,7 @@ export default function AdminV2Page() {
                     <span className={health.tone === 'safe' ? styles.safeTag : styles.warnTag}>{health.label}</span>
                     <div className={styles.fileActions}>
                       <button className={styles.secondaryBtn} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : showAction('该文件暂无可预览地址')}>预览</button>
-                      <button className={styles.secondaryBtn} onClick={() => editDocumentInfo(doc)}>编辑</button>
+                      <button className={styles.secondaryBtn} onClick={() => selectDocumentInSlotModal(doc)}>编辑</button>
                       <button className={styles.secondaryBtn} onClick={() => replaceFile(doc)}>替换</button>
                     </div>
                   </article>
@@ -2883,7 +3073,7 @@ export default function AdminV2Page() {
                       <div className={styles.productEditBlockTitle}>关联资料</div>
                       <div className={styles.productEditFiles}>
                         {getProductDocuments(productModal.product, companyDocuments).length ? getProductDocuments(productModal.product, companyDocuments).map((doc) => (
-                          <button key={doc.id} onClick={() => editDocumentInfo(doc)}><strong>{doc.type}</strong><span>{doc.name}</span><em>{doc.lang}</em></button>
+                          <button key={doc.id} onClick={() => selectDocumentInSlotModal(doc)}><strong>{doc.type}</strong><span>{doc.name}</span><em>{doc.lang}</em></button>
                         )) : <p>这个产品还没有绑定文件，可通过“添加文件”或“批量导入”补充。</p>}
                       </div>
                       <div className={styles.productEditInlineActions}>
@@ -2904,28 +3094,118 @@ export default function AdminV2Page() {
           )}
 
           {documentModal.open && (
-            <div className={styles.modalBackdrop} onClick={() => setDocumentModal({ open: false, mode: 'upload', doc: null, title: '', productId: '', documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null })}>
-              <div className={styles.adminModal} onClick={(event) => event.stopPropagation()}>
-                <div className={styles.modalHeader}>
-                  <div>
-                    <h3>{documentModal.mode === 'upload' ? '上传文件' : '编辑文件'}</h3>
-                    <p>资质证书、DoC 声明和使用说明书都可以在这里维护。</p>
+            <div className={styles.modalBackdrop} onClick={() => closeDocumentModal()}>
+              <div className={`${styles.adminModal} ${styles.documentSlotModal} ${styles.documentSplitModal}`} onClick={(event) => event.stopPropagation()}>
+                <section className={styles.documentMediaColumn}>
+                  <div className={styles.documentPreviewPanel}>
+                    <div className={styles.documentPreviewCard}>
+                      {(() => {
+                        const docUrl = getDocumentAssetUrl(documentModal.doc);
+                        const hasRecord = hasDocumentRecord(documentModal.doc);
+                        const hasActualFile = Boolean(documentModal.file || docUrl);
+                        const isMissingFile = hasRecord && !hasActualFile;
+                        const canPreview = hasActualFile;
+                        const previewImageUrl = documentModal.filePreviewUrl || (!documentModal.file && isImageUrl(docUrl) ? docUrl : '');
+                        return (
+                          <>
+                            <button type="button" className={`${styles.documentPreviewBody} ${!hasRecord && !documentModal.file ? styles.documentUploadEmpty : ''} ${isMissingFile ? styles.documentFileMissing : ''}`} onClick={() => canPreview ? openDocumentPreview() : documentFileInputRef.current?.click()}>
+                              {previewImageUrl ? (
+                                <img src={previewImageUrl} alt={documentModal.file?.name || documentModal.doc?.name || '文件缩略图'} />
+                              ) : hasActualFile ? (
+                                <strong>{documentModal.file ? documentFileExt(documentModal.file.name) : documentFileExt(documentModal.doc?.name || docUrl || 'FILE')}</strong>
+                              ) : isMissingFile ? (
+                                <span className={styles.documentMissingPrompt}>
+                                  <b>!</b>
+                                  <strong>资料信息已存在</strong>
+                                  <em>但没有找到对应文件，请补传或替换文件</em>
+                                </span>
+                              ) : (
+                                <span className={styles.documentUploadPrompt}>
+                                  <b>+</b>
+                                  <strong>点击上传文件</strong>
+                                  <em>支持 PDF、PNG、JPG，单个文件不超过 20MB</em>
+                                </span>
+                              )}
+                            </button>
+                            <div className={styles.documentPreviewMeta}>
+                              <div>
+                                <span>{documentModal.file?.name || documentModal.doc?.name || '当前槽位暂无文件'}</span>
+                                <em>{hasActualFile ? '点击图片放大查看文件' : isMissingFile ? '已有资料信息，但服务器未关联文件地址' : '上传后会自动带入标题与语言，可继续修改'}</em>
+                              </div>
+                              {(hasRecord || documentModal.file) && <button type="button" onClick={() => documentFileInputRef.current?.click()}>{isMissingFile ? '补传' : '替换'}</button>}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <input ref={documentFileInputRef} className={styles.documentHiddenFile} type="file" accept="application/pdf,image/png,image/jpeg" onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      setDocumentModalFile(file);
+                      event.target.value = '';
+                    }} />
                   </div>
-                  <button className={styles.iconCloseBtn} onClick={() => setDocumentModal({ open: false, mode: 'upload', doc: null, title: '', productId: '', documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null })}>×</button>
+                </section>
+
+                <section className={styles.documentInfoColumn}>
+                  <button className={styles.iconCloseBtn} onClick={() => closeDocumentModal()}>×</button>
+                  <div className={styles.documentSplitHeader}>
+                    <h3>{documentModal.mode === 'upload' ? '补充资料文件' : '维护资料文件'}</h3>
+                    <p>{documentModal.source === 'slot' ? '已根据入口锁定产品和资料类型，只需要上传或校对文件信息。' : '资质证书、DoC 声明和使用说明书都可以在这里维护。'}</p>
+                  </div>
+
+                  {documentModal.docs?.length > 1 && (
+                    <div className={styles.documentPageTabs}>
+                      {documentModal.docs.map((doc, index) => (
+                        <button key={doc.id} className={String(documentModal.doc?.id) === String(doc.id) ? styles.documentPageActive : ''} onClick={() => selectDocumentInSlotModal(doc)}>
+                          <span>文件 {index + 1}</span>
+                          <strong>{doc.name}</strong>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className={`${styles.modalFormGrid} ${styles.documentInfoGrid}`}>
+                    {documentModal.lockedProduct ? (
+                      <label className={styles.documentLockedField}><span>绑定产品</span><input value={documentModal.productName || companyProducts.find((product) => String(product.id) === String(documentModal.productId))?.name || '请选择产品'} readOnly /></label>
+                    ) : (
+                      <label><span>绑定产品</span><select value={documentModal.productId} onChange={(event) => setDocumentModal((form) => ({ ...form, productId: event.target.value, productName: companyProducts.find((product) => String(product.id) === String(event.target.value))?.name || '' }))}>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+                    )}
+                    {documentModal.lockedType ? (
+                      <label className={styles.documentLockedField}><span>文件类型</span><input value={importTypeLabel(documentModal.documentType)} readOnly /></label>
+                    ) : (
+                      <label><span>文件类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他文件</option></select></label>
+                    )}
+                    <label><span>文件标题</span><input value={documentModal.title} placeholder="选择文件后自动带入，可修改" onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
+                    <label><span>语言</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>
+                    {documentModal.documentType === 'certificate' && <label><span>证书编号</span><input value={documentModal.certNo} placeholder="可稍后补充" onChange={(event) => setDocumentModal((form) => ({ ...form, certNo: event.target.value }))} /></label>}
+                    {documentModal.documentType === 'certificate' && <label><span>认证标准</span><input value={documentModal.standard} placeholder="例如 EN 1384 / CE" onChange={(event) => setDocumentModal((form) => ({ ...form, standard: event.target.value }))} /></label>}
+                    {documentModal.documentType === 'certificate' && <label><span>发证机构</span><input value={documentModal.issuer} placeholder="例如 TÜV / SGS" onChange={(event) => setDocumentModal((form) => ({ ...form, issuer: event.target.value }))} /></label>}
+                  </div>
+                  <div className={styles.modalActions}>
+                    <button className={styles.secondaryBtn} onClick={() => closeDocumentModal()}>取消</button>
+                    <button className={styles.primaryBtn} onClick={submitDocumentModal}>{documentModal.mode === 'upload' ? '确认上传' : documentModal.file ? '保存并替换' : '保存信息'}</button>
+                  </div>
+                </section>
+              </div>
+            </div>
+          )}
+
+          {documentPreview.open && (
+            <div className={styles.previewBackdrop} onClick={closeDocumentPreview}>
+              <div className={styles.previewModal} onClick={(event) => event.stopPropagation()}>
+                <div className={styles.previewHeader}>
+                  <div>
+                    <h3>{documentPreview.title || '文件预览'}</h3>
+                    <p>用于快速核对文件内容，不会修改当前资料。</p>
+                  </div>
+                  <button className={styles.iconCloseBtn} onClick={closeDocumentPreview}>×</button>
                 </div>
-                <div className={styles.modalFormGrid}>
-                  <label><span>文件标题</span><input value={documentModal.title} onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
-                  <label><span>绑定产品</span><select value={documentModal.productId} onChange={(event) => setDocumentModal((form) => ({ ...form, productId: event.target.value }))}>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
-                  <label><span>文件类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他文件</option></select></label>
-                  <label><span>语言</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>
-                  {documentModal.documentType === 'certificate' && <label><span>证书编号</span><input value={documentModal.certNo} onChange={(event) => setDocumentModal((form) => ({ ...form, certNo: event.target.value }))} /></label>}
-                  {documentModal.documentType === 'certificate' && <label><span>认证标准</span><input value={documentModal.standard} onChange={(event) => setDocumentModal((form) => ({ ...form, standard: event.target.value }))} /></label>}
-                  {documentModal.documentType === 'certificate' && <label><span>发证机构</span><input value={documentModal.issuer} onChange={(event) => setDocumentModal((form) => ({ ...form, issuer: event.target.value }))} /></label>}
-                  {documentModal.mode === 'upload' && <label className={styles.fullField}><span>选择文件</span><input type="file" accept="application/pdf,image/png,image/jpeg" onChange={(event) => setDocumentModal((form) => ({ ...form, file: event.target.files?.[0] || null }))} /></label>}
-                </div>
-                <div className={styles.modalActions}>
-                  <button className={styles.secondaryBtn} onClick={() => setDocumentModal({ open: false, mode: 'upload', doc: null, title: '', productId: '', documentType: 'certificate', language: 'en', certNo: '', standard: '', issuer: '', file: null })}>取消</button>
-                  <button className={styles.primaryBtn} onClick={submitDocumentModal}>{documentModal.mode === 'upload' ? '上传文件' : '保存文件'}</button>
+                <div className={styles.previewFrameWrap}>
+                  {documentPreview.url.match(/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i) || documentPreview.objectUrl ? (
+                    <img src={documentPreview.url} alt={documentPreview.title || '文件预览'} />
+                  ) : (
+                    <iframe src={documentPreview.url} title={documentPreview.title || '文件预览'} />
+                  )}
                 </div>
               </div>
             </div>

@@ -633,7 +633,7 @@ export default function SearchPage() {
           <div className={styles.companyCards}>
             {matchedCompanies.map((company) => (
               <Link
-                to={`/company/${company.id}`}
+                to={`/companies/${company.id}`}
                 key={`company-${company.id}`}
                 className={styles.companyCard}
               >
@@ -670,7 +670,7 @@ export default function SearchPage() {
             <div className={styles.resultList}>
               {results.map((cert) => (
                 <Link
-                  to={cert.productId ? `/products/${cert.productId}` : `/certificate/${cert.id}`}
+                  to={cert.productId ? `/products/${cert.productId}` : `/documents/${cert.id}`}
                   key={cert.id}
                   className={styles.certCard}
                 >

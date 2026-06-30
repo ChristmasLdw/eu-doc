@@ -867,8 +867,8 @@ tbody tr:last-child td {
 }
 
 .safeTag {
-  color: #16a34a;
-  background: rgba(34, 197, 94, 0.12);
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
 }
 
 .warnTag {
@@ -995,7 +995,7 @@ tbody tr:last-child td {
 }
 
 .orange {
-  background: #f59e0b;
+  background: #eab308;
 }
 
 .gray {
@@ -1217,8 +1217,8 @@ tbody tr:last-child td {
   padding: 9px 14px;
   border: none;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.14);
-  color: #16a34a;
+  background: rgba(99, 102, 241, 0.14);
+  color: #6366f1;
   font-family: var(--font-family);
   font-weight: 800;
   cursor: pointer;
@@ -1872,12 +1872,12 @@ tbody tr:last-child td {
 }
 
 .statusOk::before {
-  background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  background: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
 .statusPending::before {
-  background: #f59e0b;
+  background: #eab308;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
 }
 
@@ -1924,7 +1924,7 @@ tbody tr:last-child td {
   padding: 18px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.10), rgba(59, 130, 246, 0.06));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(59, 130, 246, 0.06));
 }
 
 .verifyBadge {
@@ -1932,8 +1932,8 @@ tbody tr:last-child td {
   margin-bottom: 10px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.14);
-  color: #16a34a;
+  background: rgba(99, 102, 241, 0.14);
+  color: #6366f1;
   font-size: 13px;
   font-weight: 800;
 }
@@ -1988,8 +1988,8 @@ tbody tr:last-child td {
   width: fit-content;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
   font-size: 12px;
   font-weight: 800;
 }
@@ -2219,7 +2219,7 @@ tbody tr:last-child td {
 
 .planBannerCard li::before {
   content: '✓';
-  color: #22c55e;
+  color: #6366f1;
   font-weight: 900;
 }
 
@@ -2365,7 +2365,7 @@ tbody tr:last-child td {
 }
 
 .featureYes {
-  color: #22c55e;
+  color: #6366f1;
 }
 
 .featureNo {
@@ -2508,7 +2508,7 @@ tbody tr:last-child td {
 }
 
 .benefitOn span {
-  color: #22c55e;
+  color: #6366f1;
 }
 
 .benefitOff {
@@ -3101,8 +3101,8 @@ tbody tr:last-child td {
 }
 
 .reviewStatusPass::before {
-  background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.14);
+  background: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
 }
 
 .reviewStatusReject::before {
@@ -3307,7 +3307,7 @@ tbody tr:last-child td {
 .riskNoticePanel strong {
   display: block;
   margin-bottom: 4px;
-  color: #b45309;
+  color: #f59e0b;
 }
 
 .riskNoticePanel p {
@@ -4477,8 +4477,8 @@ tbody tr:last-child td {
 .quickImportBox button {
   width: 100%;
   border: 1px solid rgba(59, 130, 246, 0.24);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.08));
-  color: #2563eb;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.08));
+  color: #3b82f6;
   border-radius: 14px;
   padding: 12px 14px;
   display: flex;
@@ -4486,12 +4486,12 @@ tbody tr:last-child td {
   gap: 10px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.08);
 }
 
 .quickImportBox button:hover,
 .quickImportActive {
-  background: linear-gradient(135deg, #3b82f6, #0ea5e9) !important;
+  background: linear-gradient(135deg, #3b82f6, #6366f1) !important;
   color: #fff !important;
 }
 
@@ -4534,7 +4534,7 @@ tbody tr:last-child td {
 
 .importStats strong {
   display: block;
-  color: #2563eb;
+  color: #3b82f6;
   font-size: 24px;
 }
 
@@ -4557,7 +4557,7 @@ tbody tr:last-child td {
 }
 
 .importDropHint strong {
-  color: #2563eb;
+  color: #3b82f6;
   font-size: 18px;
 }
 
@@ -4733,7 +4733,7 @@ tbody tr:last-child td {
   width: 100%;
   border: 1px solid rgba(239, 68, 68, 0.24);
   background: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
+  color: #ef4444;
   border-radius: 12px;
   padding: 10px 12px;
   font-weight: 800;
@@ -4901,13 +4901,13 @@ tbody tr:last-child td {
 }
 
 .confidenceBadge.green {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
 }
 
 .confidenceBadge.orange {
   background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
+  color: #f59e0b;
 }
 
 .confidenceBadge.red {
@@ -5080,8 +5080,8 @@ tbody tr:last-child td {
   box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.14);
 }
 
-.confidenceDot.green { background: #22c55e; }
-.confidenceDot.orange { background: #f59e0b; }
+.confidenceDot.green { background: #6366f1; }
+.confidenceDot.orange { background: #eab308; }
 .confidenceDot.red { background: #ef4444; }
 
 .importModalBackdrop {
@@ -5201,7 +5201,7 @@ tbody tr:last-child td {
 }
 
 .questionDone .questionIndex {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+  background: linear-gradient(135deg, #6366f1, #6366f1);
 }
 
 .questionWaiting .questionIndex {
@@ -5308,7 +5308,7 @@ tbody tr:last-child td {
 
 .importCompletedCard {
   opacity: 0.76;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), var(--bg-card));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), var(--bg-card));
 }
 
 .importCompletedCard:hover {
@@ -5318,8 +5318,8 @@ tbody tr:last-child td {
 .completedBadge {
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
   font-size: 12px;
   font-weight: 900;
 }
@@ -5345,7 +5345,7 @@ tbody tr:last-child td {
   padding: 5px 8px;
   border-radius: 999px;
   background: rgba(245, 158, 11, 0.16);
-  color: #b45309;
+  color: #f59e0b;
   font-size: 12px;
   font-weight: 900;
 }
@@ -5353,7 +5353,7 @@ tbody tr:last-child td {
 .duplicateReason {
   display: block;
   margin-top: 8px;
-  color: #b45309;
+  color: #f59e0b;
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
@@ -5428,7 +5428,7 @@ tbody tr:last-child td {
   border: 1px dashed rgba(59, 130, 246, 0.38);
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.08);
-  color: #2563eb;
+  color: #3b82f6;
   font-size: 13px;
   font-weight: 900;
   cursor: pointer;
@@ -5488,7 +5488,7 @@ tbody tr:last-child td {
   place-items: center;
   border-radius: 999px !important;
   background: rgba(239, 68, 68, 0.12) !important;
-  color: #dc2626 !important;
+  color: #ef4444 !important;
   font-size: 15px !important;
   line-height: 1 !important;
 }
@@ -5694,7 +5694,7 @@ tbody tr:last-child td {
 
 .matchHint {
   margin-top: 4px;
-  color: #b45309;
+  color: #f59e0b;
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
@@ -5767,13 +5767,13 @@ tbody tr:last-child td {
 }
 
 .fileKeepTag {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
 }
 
 .fileDupTag {
   background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
+  color: #f59e0b;
 }
 
 .importMiniFiles span {
@@ -5822,7 +5822,7 @@ tbody tr:last-child td {
 
 .fileDupStack {
   background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
+  color: #f59e0b;
 }
 
 .fileArchivedTag {
@@ -5836,7 +5836,7 @@ tbody tr:last-child td {
 }
 
 .importDuplicateCard .fileTypeIcon {
-  color: #b45309;
+  color: #f59e0b;
 }
 
 /* Keep normal and duplicate import cards visually aligned. */
@@ -5962,13 +5962,13 @@ tbody tr:last-child td {
 }
 
 .doneMini {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
 }
 
 .missMini {
   background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
+  color: #f59e0b;
 }
 
 .productFileList {
@@ -6204,7 +6204,7 @@ tbody tr:last-child td {
   margin-right: 5px;
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
+  color: #ef4444;
   font-size: 17px;
   line-height: 1;
 }
@@ -6431,10 +6431,10 @@ tbody tr:last-child td {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #6366f1;
 }
 
-.stackLegend span:nth-of-type(2) { background: #f59e0b; }
+.stackLegend span:nth-of-type(2) { background: #eab308; }
 .stackLegend span:nth-of-type(3) { background: #3b82f6; }
 
 .stackProductGrid {
@@ -6491,9 +6491,9 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
-.stackOk { background: rgba(34, 197, 94, 0.13); color: #15803d; }
-.stackWarn { background: rgba(59, 130, 246, 0.13); color: #2563eb; }
-.stackMissing { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+.stackOk { background: rgba(99, 102, 241, 0.13); color: #6366f1; }
+.stackWarn { background: rgba(59, 130, 246, 0.13); color: #3b82f6; }
+.stackMissing { background: rgba(245, 158, 11, 0.16); color: #f59e0b; }
 
 .stackModels {
   display: flex;
@@ -6568,9 +6568,9 @@ tbody tr:last-child td {
   font-weight: 800;
 }
 
-.stackTone_blue { color: #2563eb; background: rgba(59, 130, 246, 0.08); }
-.stackTone_green { color: #16a34a; background: rgba(34, 197, 94, 0.08); }
-.stackTone_gold { color: #b45309; background: rgba(245, 158, 11, 0.1); }
+.stackTone_blue { color: #3b82f6; background: rgba(59, 130, 246, 0.08); }
+.stackTone_green { color: #6366f1; background: rgba(99, 102, 241, 0.08); }
+.stackTone_gold { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
 .stackTone_empty {
   border-style: dashed;
   color: var(--text-muted);
@@ -6775,7 +6775,7 @@ tbody tr:last-child td {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
 }
 
 .stackFilePile {
@@ -7390,9 +7390,9 @@ tbody tr:last-child td {
   background: var(--bg-input);
 }
 
-.stackFileRowWrap:nth-child(1) { color: #2563eb; background: rgba(59, 130, 246, 0.06); }
-.stackFileRowWrap:nth-child(2) { color: #16a34a; background: rgba(34, 197, 94, 0.06); }
-.stackFileRowWrap:nth-child(3) { color: #b45309; background: rgba(245, 158, 11, 0.07); }
+.stackFileRowWrap:nth-child(1) { color: #3b82f6; background: rgba(59, 130, 246, 0.06); }
+.stackFileRowWrap:nth-child(2) { color: #6366f1; background: rgba(99, 102, 241, 0.06); }
+.stackFileRowWrap:nth-child(3) { color: #f59e0b; background: rgba(245, 158, 11, 0.07); }
 
 .stackFileRow {
   display: grid;
@@ -7947,7 +7947,7 @@ tbody tr:last-child td {
 }
 
 .workspaceProductGrid .stackFileRowWrap:nth-child(1) { background: rgba(59, 130, 246, 0.07) !important; }
-.workspaceProductGrid .stackFileRowWrap:nth-child(2) { background: rgba(34, 197, 94, 0.07) !important; }
+.workspaceProductGrid .stackFileRowWrap:nth-child(2) { background: rgba(99, 102, 241, 0.07) !important; }
 .workspaceProductGrid .stackFileRowWrap:nth-child(3) { background: rgba(245, 158, 11, 0.08) !important; }
 
 @media (max-width: 900px) {
@@ -7962,12 +7962,12 @@ tbody tr:last-child td {
   background:
     repeating-linear-gradient(-45deg, transparent 0 8px, rgba(245, 158, 11, 0.08) 8px 16px),
     rgba(245, 158, 11, 0.06) !important;
-  color: #b45309 !important;
+  color: #f59e0b !important;
 }
 
 .stackFileRowMissing .stackFileRow span::after {
   content: " · 待补充";
-  color: #b45309;
+  color: #f59e0b;
   font-size: 11px;
   font-weight: 900;
 }
@@ -7976,7 +7976,7 @@ tbody tr:last-child td {
   width: 36px !important;
   border: 1px dashed rgba(180, 83, 9, 0.45) !important;
   background: rgba(255, 247, 237, 0.88) !important;
-  color: #b45309 !important;
+  color: #f59e0b !important;
   font-size: 12px !important;
 }
 
@@ -8063,15 +8063,15 @@ tbody tr:last-child td {
 }
 
 .progressGood span {
-  background: linear-gradient(90deg, #22c55e, #16a34a) !important;
+  background: linear-gradient(90deg, #6366f1, #6366f1) !important;
 }
 
 .progressWarn span {
-  background: linear-gradient(90deg, #3b82f6, #f59e0b) !important;
+  background: linear-gradient(90deg, #3b82f6, #eab308) !important;
 }
 
 .progressPoor span {
-  background: linear-gradient(90deg, #f59e0b, #f97316) !important;
+  background: linear-gradient(90deg, #eab308, #f97316) !important;
 }
 
 .progressEmpty span {
@@ -8172,11 +8172,11 @@ tbody tr:last-child td {
 
 .verifyBadge_rejected {
   background: rgba(239, 68, 68, 0.12) !important;
-  color: #dc2626 !important;
+  color: #ef4444 !important;
 }
 
 .verifyStepDone > strong {
-  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  background: linear-gradient(135deg, #6366f1, #6366f1) !important;
 }
 
 .verifyStepCurrent {
@@ -8185,7 +8185,7 @@ tbody tr:last-child td {
 }
 
 .verifyStepCurrent > strong {
-  background: linear-gradient(135deg, #f59e0b, #fb923c) !important;
+  background: linear-gradient(135deg, #eab308, #fb923c) !important;
 }
 
 .verifyStepCurrent span {
@@ -8204,4 +8204,986 @@ tbody tr:last-child td {
 .verifyStepTodo span {
   background: rgba(148, 163, 184, 0.16) !important;
   color: #64748b !important;
+}
+
+/* Targeted document maintenance: one style for empty and existing slots. */
+.stackFileRow {
+  grid-template-columns: 34px minmax(0, 1fr) 30px !important;
+  min-height: 54px !important;
+}
+
+.stackFileThumb {
+  display: grid !important;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.64);
+  color: currentColor !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em;
+}
+
+.stackFileMain {
+  display: grid !important;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stackFileMain em {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackFileMain small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackFileRowMissing .stackFileThumb {
+  border: 1px dashed var(--border-color);
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--text-muted) !important;
+}
+
+.stackFileRowMissing .stackFileMain em,
+.stackFileRowMissing .stackFileMain small {
+  color: var(--text-muted) !important;
+}
+
+.documentSlotModal {
+  width: min(860px, 100%) !important;
+}
+
+.documentLockStrip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.documentLockStrip div {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+
+.documentLockStrip span,
+.documentPreviewLabel,
+.documentSiblingList > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.documentLockStrip strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documentSlotLayout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.documentPreviewPanel {
+  display: grid;
+  gap: 10px;
+}
+
+.documentPreviewCard {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-height: 180px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--bg-input), var(--bg-card));
+  color: var(--text-primary);
+  text-align: left;
+}
+
+button.documentPreviewCard {
+  cursor: pointer;
+}
+
+.documentPreviewCard strong {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.documentPreviewCard span {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.documentPreviewCard em {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.documentFilePicker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  border: 1px dashed var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-input);
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.documentFilePicker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.documentSiblingList {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+
+.documentSiblingList button {
+  overflow: hidden;
+  min-height: 30px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .documentLockStrip,
+  .documentSlotLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.documentPageTabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.documentPageTabs button {
+  min-width: 136px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.documentPageTabs span,
+.documentPageTabs strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documentPageTabs span {
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.documentPageTabs strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.documentPageTabs .documentPageActive {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+}
+
+label.documentPreviewPanel {
+  cursor: pointer;
+}
+
+.documentPreviewPanel:hover .documentPreviewCard {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+  transform: translateY(-1px);
+}
+
+.documentPreviewCard {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.documentHiddenFile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.documentInfoGrid {
+  align-content: start;
+}
+
+.documentLockedField input {
+  background: var(--bg-soft) !important;
+  color: var(--text-primary) !important;
+  cursor: default;
+}
+
+.documentPreviewTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.documentPreviewTopline .documentPreviewLabel {
+  margin-bottom: 0;
+}
+
+.documentPreviewTopline button {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.documentPreviewUpload {
+  display: block;
+  cursor: pointer;
+}
+
+.documentPreviewUpload:hover .documentPreviewCard {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+  transform: translateY(-1px);
+}
+
+.previewBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.previewModal {
+  width: min(1080px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: var(--bg-card);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.34);
+}
+
+.previewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.previewHeader h3 {
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.previewHeader p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.previewFrameWrap {
+  min-height: 62vh;
+  padding: 14px;
+  background: var(--bg-soft);
+}
+
+.previewFrameWrap iframe,
+.previewFrameWrap img {
+  width: 100%;
+  height: 70vh;
+  border: 0;
+  border-radius: 16px;
+  background: white;
+}
+
+.previewFrameWrap img {
+  object-fit: contain;
+}
+
+@media (max-width: 760px) {
+  .previewBackdrop {
+    padding: 12px;
+  }
+
+  .previewFrameWrap iframe,
+  .previewFrameWrap img {
+    height: 68vh;
+  }
+}
+
+/* Split document modal: left file preview, right metadata only. */
+.documentSplitModal {
+  width: min(1120px, calc(100vw - 48px)) !important;
+  min-height: 620px;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.72fr) minmax(520px, 1.28fr);
+  gap: 0;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.documentMediaColumn,
+.documentInfoColumn {
+  min-width: 0;
+  padding: 30px;
+}
+
+.documentMediaColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  border-right: 1px solid var(--border-color);
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-soft));
+}
+
+.documentInfoColumn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 86px;
+}
+
+.documentInfoColumn > .iconCloseBtn {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  width: 42px;
+  height: 42px;
+}
+
+.documentSplitHeader h3 {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 950;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.documentSplitHeader p {
+  margin: 0;
+  max-width: 420px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.documentSplitModal .documentPageTabs {
+  margin: 0;
+  padding-bottom: 4px;
+}
+
+.documentSplitModal .documentPageTabs button {
+  min-width: 150px;
+  padding: 10px 12px;
+  border-radius: 18px;
+}
+
+.documentSplitModal .documentPreviewPanel {
+  margin-top: auto;
+}
+
+.documentSplitModal .documentPreviewCard {
+  min-height: 228px;
+  border-radius: 24px;
+}
+
+.documentSplitModal .documentPreviewCard strong {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+}
+
+.documentSplitModal .documentInfoGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 20px;
+}
+
+.documentSplitModal .modalFormGrid label {
+  gap: 10px;
+}
+
+.documentSplitModal .modalFormGrid span {
+  font-size: 14px;
+}
+
+.documentSplitModal .modalFormGrid input,
+.documentSplitModal .modalFormGrid select {
+  min-height: 56px;
+  border-radius: 18px;
+  font-size: 16px;
+}
+
+.documentSplitModal .modalActions {
+  margin-top: auto;
+  padding-top: 34px;
+}
+
+.documentSplitModal .modalActions .primaryBtn,
+.documentSplitModal .modalActions .secondaryBtn {
+  min-height: 46px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+@media (max-width: 980px) {
+  .documentSplitModal {
+    max-height: calc(100vh - 28px);
+    grid-template-columns: 1fr;
+    overflow-y: auto !important;
+  }
+
+  .documentMediaColumn {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .documentInfoColumn {
+    padding-top: 30px;
+  }
+
+  .documentInfoColumn > .iconCloseBtn {
+    top: 18px;
+    right: 18px;
+  }
+}
+
+@media (max-width: 680px) {
+  .documentSplitModal .documentInfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .documentMediaColumn,
+  .documentInfoColumn {
+    padding: 22px;
+  }
+}
+
+/* Refine split modal: left column is only the file preview area. */
+.documentSplitModal .documentMediaColumn {
+  justify-content: center;
+  padding: 34px 28px;
+}
+
+.documentSplitModal .documentInfoColumn {
+  justify-content: flex-start;
+  padding: 70px 34px 30px;
+}
+
+.documentSplitModal .documentInfoColumn .documentSplitHeader {
+  margin: 0 58px 24px 0;
+}
+
+.documentSplitModal .documentInfoColumn .documentPageTabs {
+  margin: 0 0 30px;
+}
+
+.documentSplitModal .documentInfoColumn .documentInfoGrid {
+  margin-top: 0;
+}
+
+.documentSplitModal .documentMediaColumn .documentPreviewPanel {
+  width: 100%;
+  margin: 0;
+}
+
+.documentSplitModal .documentMediaColumn .documentPreviewCard {
+  min-height: 360px;
+}
+
+@media (max-width: 980px) {
+  .documentSplitModal .documentInfoColumn {
+    padding-top: 72px;
+  }
+
+  .documentSplitModal .documentMediaColumn .documentPreviewCard {
+    min-height: 260px;
+  }
+}
+
+/* Compact document modal: reduce unused vertical whitespace. */
+.documentSplitModal {
+  min-height: auto !important;
+  max-height: min(760px, calc(100vh - 48px)) !important;
+}
+
+.documentSplitModal .documentMediaColumn,
+.documentSplitModal .documentInfoColumn {
+  padding-top: 26px !important;
+  padding-bottom: 26px !important;
+}
+
+.documentSplitModal .documentMediaColumn {
+  justify-content: flex-start !important;
+}
+
+.documentSplitModal .documentInfoColumn {
+  justify-content: flex-start !important;
+  padding-top: 58px !important;
+}
+
+.documentSplitModal .documentInfoColumn > .iconCloseBtn {
+  top: 22px !important;
+  right: 24px !important;
+}
+
+.documentSplitModal .documentInfoColumn .documentSplitHeader {
+  margin-bottom: 18px !important;
+}
+
+.documentSplitModal .documentInfoColumn .documentPageTabs {
+  margin-bottom: 22px !important;
+}
+
+.documentSplitModal .documentPreviewTopline {
+  margin-bottom: 12px;
+}
+
+.documentSplitModal .documentMediaColumn .documentPreviewCard {
+  min-height: 290px !important;
+  max-height: 430px;
+}
+
+.documentPreviewCard img {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: white;
+}
+
+.documentPreviewCard:has(img) {
+  padding: 14px !important;
+}
+
+.documentPreviewCard:has(img) span,
+.documentPreviewCard:has(img) em {
+  padding: 0 8px;
+}
+
+.documentSplitModal .modalActions {
+  margin-top: 28px !important;
+  padding-top: 0 !important;
+}
+
+@media (max-width: 980px) {
+  .documentSplitModal {
+    max-height: calc(100vh - 28px) !important;
+  }
+}
+
+/* Existing file: click preview. Empty slot: click upload. Replacement is explicit. */
+.documentPreviewTopline button {
+  min-width: 54px;
+}
+
+button.documentPreviewCard {
+  cursor: pointer;
+}
+
+button.documentPreviewCard:hover {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+  transform: translateY(-1px);
+}
+
+.documentPreviewUpload:hover .documentPreviewCard {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Pure preview card: no title above, replace button beside filename. */
+.documentSplitModal .documentPreviewTopline {
+  display: none !important;
+}
+
+.documentSplitModal .documentMediaColumn {
+  padding-top: 22px !important;
+}
+
+.documentSplitModal .documentPreviewPanel {
+  height: 100%;
+}
+
+.documentSplitModal .documentPreviewCard {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 420px !important;
+  max-height: none !important;
+  padding: 18px !important;
+}
+
+.documentPreviewBody {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 300px;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.documentPreviewBody img {
+  width: 100%;
+  height: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: white;
+}
+
+.documentPreviewBody strong {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 22px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.documentPreviewMeta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.documentPreviewMeta span,
+.documentPreviewMeta em {
+  display: block;
+  overflow: hidden;
+  padding: 0 !important;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documentPreviewMeta span {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.documentPreviewMeta em {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.documentPreviewMeta button {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+button.documentPreviewCard:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.documentPreviewBody:hover {
+  background: rgba(59, 130, 246, 0.035);
+}
+
+/* Empty upload state: dashed drop-zone style instead of a single “无”. */
+.documentUploadEmpty {
+  border: 2px dashed rgba(148, 163, 184, 0.42) !important;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.72), rgba(241, 245, 249, 0.48)),
+    repeating-linear-gradient(-45deg, transparent 0 12px, rgba(148, 163, 184, 0.06) 12px 24px) !important;
+}
+
+.documentUploadEmpty:hover {
+  border-color: rgba(59, 130, 246, 0.46) !important;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.76), rgba(248, 250, 252, 0.64)),
+    repeating-linear-gradient(-45deg, transparent 0 12px, rgba(59, 130, 246, 0.07) 12px 24px) !important;
+}
+
+.documentUploadPrompt {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  max-width: 260px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.documentUploadPrompt b {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+  font-size: 30px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.documentUploadPrompt strong {
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+.documentUploadPrompt em {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.6;
+}
+
+:global([data-theme='dark']) .documentUploadEmpty {
+  background:
+    linear-gradient(180deg, rgba(30, 41, 59, 0.52), rgba(15, 23, 42, 0.42)),
+    repeating-linear-gradient(-45deg, transparent 0 12px, rgba(148, 163, 184, 0.07) 12px 24px) !important;
+}
+
+/* Better empty upload card: compact, centered and clearly actionable. */
+.documentUploadEmpty {
+  min-height: 300px !important;
+  border-width: 1.5px !important;
+  border-radius: 22px !important;
+}
+
+.documentUploadPrompt {
+  gap: 10px !important;
+  max-width: 300px !important;
+}
+
+.documentUploadPrompt b {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 16px !important;
+  font-size: 26px !important;
+}
+
+.documentUploadPrompt strong {
+  font-size: 16px !important;
+  letter-spacing: -0.02em;
+}
+
+.documentUploadPrompt em {
+  max-width: 240px;
+  color: var(--text-secondary) !important;
+  line-height: 1.55 !important;
+}
+
+.documentPreviewMeta span {
+  max-width: 100%;
+}
+
+/* Third state: metadata exists, but the real file is missing. */
+.documentFileMissing {
+  border: 1.5px dashed rgba(245, 158, 11, 0.42) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 235, 0.74), rgba(248, 250, 252, 0.56)),
+    repeating-linear-gradient(-45deg, transparent 0 12px, rgba(245, 158, 11, 0.06) 12px 24px) !important;
+}
+
+.documentFileMissing:hover {
+  border-color: rgba(245, 158, 11, 0.58) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 235, 0.9), rgba(248, 250, 252, 0.66)),
+    repeating-linear-gradient(-45deg, transparent 0 12px, rgba(245, 158, 11, 0.08) 12px 24px) !important;
+}
+
+.documentMissingPrompt {
+  display: grid;
+  place-items: center;
+  gap: 9px;
+  max-width: 300px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.documentMissingPrompt b {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  font-size: 24px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.documentMissingPrompt strong {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+.documentMissingPrompt em {
+  max-width: 250px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.55;
+}
+
+:global([data-theme='dark']) .documentFileMissing {
+  background:
+    linear-gradient(180deg, rgba(120, 83, 24, 0.22), rgba(15, 23, 42, 0.42)),
+    repeating-linear-gradient(-45deg, transparent 0 12px, rgba(245, 158, 11, 0.07) 12px 24px) !important;
+}
+
+/* Restore overview cards: compact rows show only type + count, no file thumbnail/details. */
+.stackView_overview .stackFileRow {
+  grid-template-columns: minmax(0, 1fr) 24px !important;
+}
+
+.stackView_overview .stackFileThumb {
+  display: none !important;
+}
+
+.stackView_overview .stackFileMain {
+  display: block !important;
+  min-width: 0;
+}
+
+.stackView_overview .stackFileMain em {
+  display: block;
+  overflow: hidden;
+  font-size: 12px !important;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackView_overview .stackFileMain small {
+  display: none !important;
+}
+
+.workspaceProductGrid.stackView_overview .stackFileRow {
+  min-height: 32px !important;
+  padding: 5px 7px 5px 9px !important;
 }
