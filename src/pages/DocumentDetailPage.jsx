@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ShareModal from '../components/ShareModal';
+import * as api from '../services/api';
 import { getPublicStatusLabel } from '../utils/publicStatus';
 import styles from './DocumentDetailPage.module.css';
 
@@ -77,6 +78,8 @@ export default function DocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteId, setFavoriteId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +136,43 @@ export default function DocumentDetailPage() {
     return [lang, doc.title || `文件 #${doc.id}`].filter(Boolean).join(' · ');
   };
 
+
+  useEffect(() => {
+    if (!documentData) return;
+    const numericId = parseInt(id, 10);
+    const companyName = documentData.company_name || documentData.companyName || '';
+    api.checkFavorite('文件', numericId)
+      .then((result) => {
+        setIsFavorited(Boolean(result?.isFavorited));
+        setFavoriteId(result?.favoriteId || null);
+      })
+      .catch(() => {});
+    api.recordHistory('文件', numericId, title, companyName, '查看文件').catch(() => {});
+  }, [documentData, id, title]);
+
+  const handleFavorite = async () => {
+    if (!documentData) return;
+    try {
+      if (isFavorited && favoriteId) {
+        await api.deleteFavorite(favoriteId);
+        setIsFavorited(false);
+        setFavoriteId(null);
+      } else {
+        const result = await api.addFavorite(
+          '文件',
+          parseInt(id, 10),
+          title,
+          typeLabel,
+          [documentData.product_name || documentData.productName, documentData.company_name || documentData.companyName].filter(Boolean).join(' · ')
+        );
+        setIsFavorited(true);
+        if (result?.id) setFavoriteId(result.id);
+      }
+    } catch (err) {
+      alert(err.message || '收藏操作失败');
+    }
+  };
+
   const copyLink = () => {
     setShareOpen(true);
   };
@@ -183,6 +223,7 @@ export default function DocumentDetailPage() {
           </div>
           <div className={styles.heroActions}>
             {fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer">打开原文件</a>}
+            <button onClick={handleFavorite}>{isFavorited ? '★ 已收藏' : '☆ 收藏'}</button>
             <button onClick={copyLink}>分享文件</button>
           </div>
         </section>

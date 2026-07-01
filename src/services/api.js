@@ -203,7 +203,7 @@ function mapCertificate(cert) {
 /** 用户注册（注册成功后自动登录，返回 token 和用户信息） */
 export function register(email, password, displayName) {
   const body = { email, password };
-  if (displayName) body.display_name = displayName;
+  if (displayName) body.displayName = displayName;
   return request('/auth/register', {
     method: 'POST',
     skipAuth: true,
@@ -236,7 +236,7 @@ export function getUsers() {
 export function updatePassword(oldPassword, newPassword) {
   return request('/auth/password', {
     method: 'PUT',
-    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+    body: JSON.stringify({ oldPassword, newPassword }),
   });
 }
 
@@ -363,11 +363,11 @@ export function getMyCompanies() {
 /** 提交企业认证申请 */
 export function submitCompanyVerification(companyId, payload = {}) {
   const formData = new FormData();
-  if (payload.businessLicenseNo) formData.append('business_license_no', payload.businessLicenseNo);
-  if (payload.contactPerson) formData.append('contact_person', payload.contactPerson);
-  if (payload.contactEmail) formData.append('contact_email', payload.contactEmail);
-  if (payload.businessLicenseFile) formData.append('business_license', payload.businessLicenseFile);
-  if (payload.authorizationLetterFile) formData.append('authorization_letter', payload.authorizationLetterFile);
+  if (payload.businessLicenseNo) formData.append('businessLicenseNo', payload.businessLicenseNo);
+  if (payload.contactPerson) formData.append('contactPerson', payload.contactPerson);
+  if (payload.contactEmail) formData.append('contactEmail', payload.contactEmail);
+  if (payload.businessLicenseFile) formData.append('businessLicense', payload.businessLicenseFile);
+  if (payload.authorizationLetterFile) formData.append('authorizationLetter', payload.authorizationLetterFile);
   return request(`/companies/${companyId}/verification`, {
     method: 'POST',
     body: formData,
@@ -536,8 +536,8 @@ export function updatePersonalProfile(data) {
   return request('/personal/profile', {
     method: 'PUT',
     body: JSON.stringify({
-      display_name: data.displayName,
-      real_name: data.realName,
+      displayName: data.displayName,
+      realName: data.realName,
       position: data.position,
       department: data.department,
       bio: data.bio,
@@ -558,8 +558,8 @@ export function addFavorite(itemType, itemId, title, meta, description) {
   return request('/personal/favorites', {
     method: 'POST',
     body: JSON.stringify({
-      item_type: itemType,
-      item_id: itemId,
+      itemType,
+      itemId,
       title,
       meta,
       description,
@@ -568,7 +568,7 @@ export function addFavorite(itemType, itemId, title, meta, description) {
 }
 
 export function checkFavorite(itemType, itemId) {
-  return request(`/personal/favorites/check?item_type=${encodeURIComponent(itemType)}&item_id=${itemId}`, { silentAuth: true })
+  return request(`/personal/favorites/check?itemType=${encodeURIComponent(itemType)}&itemId=${itemId}`, { silentAuth: true })
     .then(keysToCamelCase)
     .catch((error) => {
       if (error.message === 'UNAUTHORIZED_SILENT') return { isFavorited: false, favoriteId: null };
@@ -578,6 +578,10 @@ export function checkFavorite(itemType, itemId) {
 
 export function deleteFavorite(id) {
   return request(`/personal/favorites/${id}`, { method: 'DELETE' });
+}
+
+export function restoreFavorite(id) {
+  return request(`/personal/favorites/${id}/restore`, { method: 'PUT' }).then(keysToCamelCase);
 }
 
 export function permanentDeleteFavorite(id) {
@@ -594,8 +598,26 @@ export function updateFavoriteNote(id, note) {
 export function updateHistorySetting(historyEnabled) {
   return request('/personal/history/settings', {
     method: 'PUT',
-    body: JSON.stringify({ history_enabled: historyEnabled }),
+    body: JSON.stringify({ historyEnabled }),
   }).then(keysToCamelCase);
+}
+
+
+export function recordHistory(itemType, itemId, title, company = '', actionLabel = '查看') {
+  return request('/personal/history', {
+    method: 'POST',
+    silentAuth: true,
+    body: JSON.stringify({ itemType, itemId, title, company, actionLabel }),
+  })
+    .then(keysToCamelCase)
+    .catch((error) => {
+      if (error.message === 'UNAUTHORIZED_SILENT') return null;
+      throw error;
+    });
+}
+
+export function deleteHistoryItem(id) {
+  return request(`/personal/history/${id}`, { method: 'DELETE' });
 }
 
 export function clearHistory() {
@@ -624,7 +646,7 @@ export function getImportItems(companyId) {
 
 export function uploadImportFiles(companyId, files) {
   const formData = new FormData();
-  formData.append('company_id', companyId);
+  formData.append('companyId', companyId);
   Array.from(files || []).forEach((file) => formData.append('files', file, file.webkitRelativePath || file.name));
   return request('/v2/imports/upload', {
     method: 'POST',
@@ -653,6 +675,16 @@ export function getCompanyProducts(companyId) {
   });
 }
 
+export function getCategories(taxonomyType = 'consumer', options = {}) {
+  const params = new URLSearchParams();
+  params.set('taxonomyType', taxonomyType);
+  if (options.tree) params.set('tree', 'true');
+  return request(`/v2/categories?${params.toString()}`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
+    return response;
+  });
+}
+
 export function getCompanyDocuments(companyId) {
   return request(`/v2/documents?companyId=${companyId}&reviewStatus=all&status=all&pageSize=500`, { raw: true }).then((response) => {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
@@ -672,6 +704,10 @@ export function updateProduct(id, data) {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+}
+
+export function deleteProduct(id) {
+  return request(`/v2/products/${id}`, { method: 'DELETE' });
 }
 
 export function createDocument(data) {

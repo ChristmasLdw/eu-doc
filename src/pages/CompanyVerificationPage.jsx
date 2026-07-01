@@ -16,8 +16,8 @@ export default function CompanyVerificationPage() {
   const [myCompanies, setMyCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [files, setFiles] = useState({
-    business_license: null,
-    authorization_letter: null,
+    businessLicense: null,
+    authorizationLetter: null,
   });
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function CompanyVerificationPage() {
       return;
     }
 
-    if (!files.business_license) {
+    if (!files.businessLicense) {
       setError('请上传营业执照');
       return;
     }
@@ -72,9 +72,9 @@ export default function CompanyVerificationPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('business_license', files.business_license);
-      if (files.authorization_letter) {
-        formData.append('authorization_letter', files.authorization_letter);
+      formData.append('businessLicense', files.businessLicense);
+      if (files.authorizationLetter) {
+        formData.append('authorizationLetter', files.authorizationLetter);
       }
 
       const token = localStorage.getItem('admin_token');
@@ -142,12 +142,12 @@ export default function CompanyVerificationPage() {
             <input
               type="file"
               accept="image/*,application/pdf"
-              onChange={(e) => handleFileChange('business_license', e)}
+              onChange={(e) => handleFileChange('businessLicense', e)}
               className={styles.fileInput}
               required
             />
-            {files.business_license && (
-              <p className={styles.fileName}>已选择: {files.business_license.name}</p>
+            {files.businessLicense && (
+              <p className={styles.fileName}>已选择: {files.businessLicense.name}</p>
             )}
             <p className={styles.hint}>支持 JPG、PNG、PDF 格式，不超过 5MB</p>
           </div>
@@ -157,11 +157,11 @@ export default function CompanyVerificationPage() {
             <input
               type="file"
               accept="image/*,application/pdf"
-              onChange={(e) => handleFileChange('authorization_letter', e)}
+              onChange={(e) => handleFileChange('authorizationLetter', e)}
               className={styles.fileInput}
             />
-            {files.authorization_letter && (
-              <p className={styles.fileName}>已选择: {files.authorization_letter.name}</p>
+            {files.authorizationLetter && (
+              <p className={styles.fileName}>已选择: {files.authorizationLetter.name}</p>
             )}
             <p className={styles.hint}>如非企业法人申请，请上传企业授权书</p>
           </div>

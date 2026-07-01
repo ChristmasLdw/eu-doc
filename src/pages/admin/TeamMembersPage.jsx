@@ -28,7 +28,7 @@ export default function TeamMembersPage() {
       
       if (companiesData.success && companiesData.data.length > 0) {
         const companyId = companiesData.data[0].id;
-        const res = await fetch(`/eu-doc/api/v2/company-members?company_id=${companyId}`, {
+        const res = await fetch(`/eu-doc/api/v2/company-members?companyId=${companyId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -64,7 +64,7 @@ export default function TeamMembersPage() {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            company_id: companyId,
+            companyId: companyId,
             email: inviteEmail,
             role: inviteRole
           })

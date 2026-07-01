@@ -16,20 +16,20 @@ export default function DocumentUploadPage() {
   const [file, setFile] = useState(null);
 
   const [formData, setFormData] = useState({
-    document_type: 'certificate',
+    documentType: 'certificate',
     title: '',
     language: 'en',
-    cert_no: '',
+    certNo: '',
     standard: '',
     issuer: '',
-    issue_date: '',
-    expiry_date: '',
+    issueDate: '',
+    expiryDate: '',
   });
 
   const [confirmations, setConfirmations] = useState({
-    confirmed_authentic: false,
-    confirmed_authorized: false,
-    accepted_disclaimer: false,
+    confirmedAuthentic: false,
+    confirmedAuthorized: false,
+    acceptedDisclaimer: false,
   });
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function DocumentUploadPage() {
       setError('请填写文档标题');
       return;
     }
-    if (!confirmations.confirmed_authentic || !confirmations.confirmed_authorized || !confirmations.accepted_disclaimer) {
+    if (!confirmations.confirmedAuthentic || !confirmations.confirmedAuthorized || !confirmations.acceptedDisclaimer) {
       setError('请确认所有声明事项后再上传');
       return;
     }
@@ -91,14 +91,14 @@ export default function DocumentUploadPage() {
     try {
       const submitData = new FormData();
       submitData.append('file', file);
-      submitData.append('product_id', productId);
+      submitData.append('productId', productId);
       Object.keys(formData).forEach(key => {
         if (formData[key]) submitData.append(key, formData[key]);
       });
       // 添加确认标记
-      submitData.append('confirmed_authentic', confirmations.confirmed_authentic ? '1' : '');
-      submitData.append('confirmed_authorized', confirmations.confirmed_authorized ? '1' : '');
-      submitData.append('accepted_disclaimer', confirmations.accepted_disclaimer ? '1' : '');
+      submitData.append('confirmedAuthentic', confirmations.confirmedAuthentic ? '1' : '');
+      submitData.append('confirmedAuthorized', confirmations.confirmedAuthorized ? '1' : '');
+      submitData.append('acceptedDisclaimer', confirmations.acceptedDisclaimer ? '1' : '');
 
       const token = localStorage.getItem('admin_token');
       const res = await fetch('/eu-doc/api/v2/documents', {
@@ -151,6 +151,7 @@ export default function DocumentUploadPage() {
             <input
               type="file"
               id="fileUpload"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"
               onChange={handleFileChange}
               className={styles.fileInput}
             />
@@ -173,7 +174,7 @@ export default function DocumentUploadPage() {
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                   <span className={styles.uploadText}>点击上传文件</span>
-                  <span className={styles.uploadHint}>支持 PDF、PNG、JPG 格式，最大10MB</span>
+                  <span className={styles.uploadHint}>支持 PDF、PNG、JPG、WebP、Word，最大10MB</span>
                 </>
               )}
             </label>
@@ -190,8 +191,8 @@ export default function DocumentUploadPage() {
                 文档类型 <span className={styles.required}>*</span>
               </label>
               <select
-                name="document_type"
-                value={formData.document_type}
+                name="documentType"
+                value={formData.documentType}
                 onChange={handleInputChange}
                 className={styles.input}
               >
@@ -233,14 +234,14 @@ export default function DocumentUploadPage() {
               </select>
             </div>
 
-            {formData.document_type === 'certificate' && (
+            {formData.documentType === 'certificate' && (
               <>
                 <div className={styles.formGroup}>
                   <label className={styles.label}>证书编号</label>
                   <input
                     type="text"
-                    name="cert_no"
-                    value={formData.cert_no}
+                    name="certNo"
+                    value={formData.certNo}
                     onChange={handleInputChange}
                     placeholder="例如：20_100_52_6160"
                     className={styles.input}
@@ -275,8 +276,8 @@ export default function DocumentUploadPage() {
                   <label className={styles.label}>签发日期</label>
                   <input
                     type="date"
-                    name="issue_date"
-                    value={formData.issue_date}
+                    name="issueDate"
+                    value={formData.issueDate}
                     onChange={handleInputChange}
                     className={styles.input}
                   />
@@ -286,8 +287,8 @@ export default function DocumentUploadPage() {
                   <label className={styles.label}>有效期至</label>
                   <input
                     type="date"
-                    name="expiry_date"
-                    value={formData.expiry_date}
+                    name="expiryDate"
+                    value={formData.expiryDate}
                     onChange={handleInputChange}
                     className={styles.input}
                   />
@@ -304,8 +305,8 @@ export default function DocumentUploadPage() {
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={confirmations.confirmed_authentic}
-                onChange={(e) => setConfirmations(prev => ({ ...prev, confirmed_authentic: e.target.checked }))}
+                checked={confirmations.confirmedAuthentic}
+                onChange={(e) => setConfirmations(prev => ({ ...prev, confirmedAuthentic: e.target.checked }))}
                 style={{ marginTop: '4px' }}
               />
               <span>我确认此文档真实有效</span>
@@ -313,8 +314,8 @@ export default function DocumentUploadPage() {
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={confirmations.confirmed_authorized}
-                onChange={(e) => setConfirmations(prev => ({ ...prev, confirmed_authorized: e.target.checked }))}
+                checked={confirmations.confirmedAuthorized}
+                onChange={(e) => setConfirmations(prev => ({ ...prev, confirmedAuthorized: e.target.checked }))}
                 style={{ marginTop: '4px' }}
               />
               <span>我确认本人有权代表该企业上传此文档</span>
@@ -322,8 +323,8 @@ export default function DocumentUploadPage() {
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={confirmations.accepted_disclaimer}
-                onChange={(e) => setConfirmations(prev => ({ ...prev, accepted_disclaimer: e.target.checked }))}
+                checked={confirmations.acceptedDisclaimer}
+                onChange={(e) => setConfirmations(prev => ({ ...prev, acceptedDisclaimer: e.target.checked }))}
                 style={{ marginTop: '4px' }}
               />
               <span>

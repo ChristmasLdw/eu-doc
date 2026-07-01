@@ -49,3 +49,9 @@ coverage/
 
 # 本机数据备份包（数据库和上传文件），不提交 Git
 backups/
+
+# 本地临时数据库
+server/*.db
+server/*.db-shm
+server/*.db-wal
+server/*.db-journal

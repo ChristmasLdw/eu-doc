@@ -130,8 +130,9 @@ router.get('/:id', (req, res) => {
 // POST /api/v2/tags - 创建标签
 router.post('/', authMiddleware, requireAdmin, (req, res) => {
   const {
-    name, name_en, type = 'general', description, status = 'active'
+    name, nameEn, type = 'general', description, status = 'active'
   } = req.body;
+  const name_en = nameEn;
 
   // 必填字段校验
   if (!name) {
@@ -188,16 +189,23 @@ router.put('/:id', authMiddleware, requireAdmin, (req, res) => {
   }
 
   try {
+    const body = {
+      name: req.body.name,
+      name_en: req.body.nameEn,
+      type: req.body.type,
+      description: req.body.description,
+      status: req.body.status,
+    };
     const fields = ['name', 'name_en', 'type', 'description', 'status'];
     const setParts = [];
     const values = [];
     const changes = {};
 
     for (const field of fields) {
-      if (req.body[field] !== undefined) {
+      if (body[field] !== undefined) {
         setParts.push(`${field} = ?`);
-        values.push(req.body[field]);
-        changes[field] = { old: tag[field], new: req.body[field] };
+        values.push(body[field]);
+        changes[field] = { old: tag[field], new: body[field] };
       }
     }
 
@@ -276,9 +284,9 @@ router.delete('/:id', authMiddleware, requireAdmin, (req, res) => {
 
 // POST /api/v2/tags/:id/products - 给产品打标签
 router.post('/:id/products', authMiddleware, (req, res) => {
-  const { product_id } = req.body;
+  const { productId } = req.body;
 
-  if (!product_id) {
+  if (!productId) {
     return res.status(400).json({
       success: false,
       message: '产品ID为必填项',
@@ -295,7 +303,7 @@ router.post('/:id/products', authMiddleware, (req, res) => {
   }
 
   // 验证产品是否存在
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(product_id);
+  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(productId);
   if (!product) {
     return res.status(404).json({
       success: false,
@@ -305,7 +313,7 @@ router.post('/:id/products', authMiddleware, (req, res) => {
 
   // 检查是否已经打过标签
   const existing = db.prepare('SELECT * FROM product_tags WHERE product_id = ? AND tag_id = ?')
-    .get(product_id, tag.id);
+    .get(productId, tag.id);
 
   if (existing) {
     return res.status(409).json({
@@ -316,7 +324,7 @@ router.post('/:id/products', authMiddleware, (req, res) => {
 
   try {
     db.prepare('INSERT INTO product_tags (product_id, tag_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)')
-      .run(product_id, tag.id);
+      .run(productId, tag.id);
 
     res.json({ success: true, message: '标签添加成功' });
   } catch (error) {
@@ -345,9 +353,9 @@ router.delete('/:id/products/:productId', authMiddleware, (req, res) => {
 
 // POST /api/v2/tags/:id/documents - 给文档打标签
 router.post('/:id/documents', authMiddleware, (req, res) => {
-  const { document_id } = req.body;
+  const { documentId } = req.body;
 
-  if (!document_id) {
+  if (!documentId) {
     return res.status(400).json({
       success: false,
       message: '文档ID为必填项',
@@ -364,7 +372,7 @@ router.post('/:id/documents', authMiddleware, (req, res) => {
   }
 
   // 验证文档是否存在
-  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(document_id);
+  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(documentId);
   if (!document) {
     return res.status(404).json({
       success: false,
@@ -374,7 +382,7 @@ router.post('/:id/documents', authMiddleware, (req, res) => {
 
   // 检查是否已经打过标签
   const existing = db.prepare('SELECT * FROM document_tags WHERE document_id = ? AND tag_id = ?')
-    .get(document_id, tag.id);
+    .get(documentId, tag.id);
 
   if (existing) {
     return res.status(409).json({
@@ -385,7 +393,7 @@ router.post('/:id/documents', authMiddleware, (req, res) => {
 
   try {
     db.prepare('INSERT INTO document_tags (document_id, tag_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)')
-      .run(document_id, tag.id);
+      .run(documentId, tag.id);
 
     res.json({ success: true, message: '标签添加成功' });
   } catch (error) {

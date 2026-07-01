@@ -42,8 +42,8 @@ export default function ForgotPasswordPage() {
       if (data.success) {
         setSuccess(true);
         // 开发环境：显示 token（生产环境应发送到邮箱）
-        if (data.reset_token) {
-          setResetToken(data.reset_token);
+        if (data.resetToken) {
+          setResetToken(data.resetToken);
         }
       } else {
         setError(data.message || '发送失败');

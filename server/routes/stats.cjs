@@ -86,9 +86,10 @@ router.get('/recent', authMiddleware, (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 20, 100);
 
   const logs = db.prepare(`
-    SELECT al.*, a.username as admin_username
+    SELECT al.*, COALESCE(u.display_name, u.email, a.username) as admin_username
     FROM audit_logs al
     LEFT JOIN admins a ON al.admin_id = a.id
+    LEFT JOIN users u ON al.admin_id = u.id
     ORDER BY al.created_at DESC
     LIMIT ?
   `).all(limit);

@@ -16,7 +16,7 @@ const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 const { requireCompanyRole } = require('../middleware/companyRole.cjs');
-const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE } = require('../utils/uploadLimits.cjs');
+const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
 
 const router = Router();
 
@@ -38,15 +38,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE }, // 20MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('只支持 PDF、JPG、PNG 格式的文件'));
-    }
-  }
+  limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE },
+  fileFilter: documentFileFilter,
 });
 
 // GET /api/v2/documents - 获取文档列表
@@ -224,11 +217,15 @@ router.get('/:id', (req, res) => {
 
 // POST /api/v2/documents - 创建文档（支持文件上传）
 router.post('/', authMiddleware, upload.single('file'), (req, res) => {
-  const {
-    product_id, document_type, title, language = 'en',
-    cert_no, standard, issuer, issue_date, expiry_date,
-    confirmed_authentic, confirmed_authorized, accepted_disclaimer
-  } = req.body;
+  const product_id = req.body.productId;
+  const document_type = req.body.documentType;
+  const cert_no = req.body.certNo;
+  const issue_date = req.body.issueDate;
+  const expiry_date = req.body.expiryDate;
+  const confirmed_authentic = req.body.confirmedAuthentic;
+  const confirmed_authorized = req.body.confirmedAuthorized;
+  const accepted_disclaimer = req.body.acceptedDisclaimer;
+  const { title, language = 'en', standard, issuer } = req.body;
 
   // 上传确认校验（必须勾选所有确认项）
   if (!confirmed_authentic || !confirmed_authorized || !accepted_disclaimer) {
@@ -240,7 +237,7 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   }
 
   // 从产品获取企业ID
-  let company_id = req.body.company_id;
+  let company_id = req.body.companyId;
   if (!company_id && product_id) {
     const product = db.prepare('SELECT company_id FROM products WHERE id = ?').get(product_id);
     if (product) company_id = product.company_id;
@@ -304,7 +301,7 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   }
 
   // 确定审核状态：管理员直接通过，普通用户待审核
-  const reviewStatus = req.admin.role === 'admin' ? 'approved' : 'pending';
+  const reviewStatus = ['admin', 'platform_admin'].includes(req.admin.role) ? 'approved' : 'pending';
 
   // 处理文件路径
   let file_path = null;
@@ -404,8 +401,13 @@ router.put('/:id', authMiddleware, (req, res) => {
   }
 
   try {
+    const body = {
+      ...req.body,
+      file_path: req.body.filePath,
+      review_status: req.body.reviewStatus,
+    };
     const fields = ['title', 'language', 'file_path', 'status'];
-    if (req.admin.role === 'admin') {
+    if (['admin', 'platform_admin'].includes(req.admin.role)) {
       fields.push('review_status');
     }
 
@@ -414,10 +416,10 @@ router.put('/:id', authMiddleware, (req, res) => {
     const changes = {};
 
     for (const field of fields) {
-      if (req.body[field] !== undefined) {
+      if (body[field] !== undefined) {
         setParts.push(`${field} = ?`);
-        values.push(req.body[field]);
-        changes[field] = { old: document[field], new: req.body[field] };
+        values.push(body[field]);
+        changes[field] = { old: document[field], new: body[field] };
       }
     }
 
@@ -434,13 +436,19 @@ router.put('/:id', authMiddleware, (req, res) => {
       .run(...values, document.id);
 
     if (document.document_type === 'certificate') {
+      const certBody = {
+        ...req.body,
+        cert_no: req.body.certNo,
+        issue_date: req.body.issueDate,
+        expiry_date: req.body.expiryDate,
+      };
       const certFields = ['cert_no', 'standard', 'issuer', 'issue_date', 'expiry_date'];
       const certSetParts = [];
       const certValues = [];
       for (const field of certFields) {
-        if (req.body[field] !== undefined) {
+        if (certBody[field] !== undefined) {
           certSetParts.push(`${field} = ?`);
-          certValues.push(req.body[field]);
+          certValues.push(certBody[field]);
         }
       }
       if (certSetParts.length > 0) {
@@ -450,7 +458,7 @@ router.put('/:id', authMiddleware, (req, res) => {
             .run(...certValues, document.id);
         } else {
           db.prepare('INSERT INTO certificate_metadata (document_id, cert_no, standard, issuer, issue_date, expiry_date) VALUES (?, ?, ?, ?, ?, ?)')
-            .run(document.id, req.body.cert_no || null, req.body.standard || null, req.body.issuer || null, req.body.issue_date || null, req.body.expiry_date || null);
+            .run(document.id, certBody.cert_no || null, certBody.standard || null, certBody.issuer || null, certBody.issue_date || null, certBody.expiry_date || null);
         }
       }
     }

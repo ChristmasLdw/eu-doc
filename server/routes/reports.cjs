@@ -10,7 +10,7 @@
 
 const { Router } = require('express');
 const { db } = require('../db.cjs');
-const { requireAdmin } = require('../middleware/auth.cjs');
+const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 
 const router = Router();
 
@@ -72,7 +72,7 @@ router.post('/', (req, res) => {
  * GET /api/reports
  * 获取报告列表（管理员）
  */
-router.get('/', requireAdmin, (req, res) => {
+router.get('/', authMiddleware, requireAdmin, (req, res) => {
   try {
     const { status, certId, page = 1, pageSize = 20 } = req.query;
     const offset = (page - 1) * pageSize;
@@ -139,7 +139,7 @@ router.get('/', requireAdmin, (req, res) => {
  * GET /api/reports/:id
  * 获取单个报告详情（管理员）
  */
-router.get('/:id', requireAdmin, (req, res) => {
+router.get('/:id', authMiddleware, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
 
@@ -186,7 +186,7 @@ router.get('/:id', requireAdmin, (req, res) => {
  * PUT /api/reports/:id/status
  * 更新报告状态（管理员）
  */
-router.put('/:id/status', requireAdmin, (req, res) => {
+router.put('/:id/status', authMiddleware, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { status, adminResponse } = req.body;

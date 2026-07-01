@@ -79,7 +79,7 @@ export default function DocumentsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ review_status: status })
+        body: JSON.stringify({ reviewStatus: status })
       });
       const data = await res.json();
 

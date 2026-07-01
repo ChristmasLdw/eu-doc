@@ -17,7 +17,7 @@ const router = Router();
  * 用户注册（邮箱）
  */
 router.post('/register', (req, res) => {
-  const { email, password, display_name } = req.body;
+  const { email, password, displayName } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: '请提供邮箱和密码' });
@@ -44,7 +44,7 @@ router.post('/register', (req, res) => {
     const result = db.prepare(`
       INSERT INTO users (email, password_hash, display_name, platform_role, status, email_verified)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(email, hash, display_name || email.split('@')[0], 'user', 'active', 0);
+    `).run(email, hash, displayName || email.split('@')[0], 'user', 'active', 0);
 
     const userId = result.lastInsertRowid;
 
@@ -70,8 +70,8 @@ router.post('/register', (req, res) => {
       success: true,
       message: '注册成功，请查收验证邮件',
       token,
-      user: { id: user.id, email: user.email, display_name: user.display_name, role: user.platform_role },
-      verify_token: verifyToken, // 开发环境返回，生产环境应通过邮件发送
+      user: { id: user.id, email: user.email, displayName: user.display_name, role: user.platform_role },
+      verifyToken, // 开发环境返回，生产环境应通过邮件发送
     });
   } catch (err) {
     console.error('注册失败:', err);
@@ -132,9 +132,9 @@ router.post('/login', (req, res) => {
     user: {
       id: user.id,
       email: user.email,
-      display_name: user.display_name,
+      displayName: user.display_name,
       role: user.platform_role,
-      email_verified: user.email_verified,
+      emailVerified: user.email_verified,
       session_version: user.session_version || 0,
     },
   });
@@ -160,7 +160,7 @@ router.get('/me', authMiddleware, (req, res) => {
     WHERE cm.user_id = ? AND cm.status = 'active'
   `).all(user.id);
 
-  res.json({ success: true, user: { ...user, companies } });
+  res.json({ success: true, user: { ...user, displayName: user.display_name, platformRole: user.platform_role, emailVerified: user.email_verified, userCode: user.user_code, sessionVersion: user.session_version, createdAt: user.created_at, companies } });
 });
 
 /**
@@ -218,7 +218,7 @@ router.post('/forgot-password', (req, res) => {
   res.json({
     success: true,
     message: '如果该邮箱已注册，您将收到重置密码邮件',
-    reset_token: resetToken, // 开发环境返回，生产环境应通过邮件发送
+    resetToken, // 开发环境返回，生产环境应通过邮件发送
   });
 });
 
@@ -227,13 +227,13 @@ router.post('/forgot-password', (req, res) => {
  * 重置密码
  */
 router.post('/reset-password', (req, res) => {
-  const { token, new_password } = req.body;
+  const { token, newPassword } = req.body;
 
-  if (!token || !new_password) {
+  if (!token || !newPassword) {
     return res.status(400).json({ success: false, message: '缺少令牌或新密码' });
   }
 
-  if (new_password.length < 6) {
+  if (newPassword.length < 6) {
     return res.status(400).json({ success: false, message: '密码长度不能少于6位' });
   }
 
@@ -246,7 +246,7 @@ router.post('/reset-password', (req, res) => {
     return res.status(400).json({ success: false, message: '重置令牌无效或已过期' });
   }
 
-  const hash = bcrypt.hashSync(new_password, 10);
+  const hash = bcrypt.hashSync(newPassword, 10);
   db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
     .run(hash, verification.user_id);
   db.prepare('UPDATE email_verifications SET used = 1 WHERE id = ?').run(verification.id);
@@ -259,23 +259,23 @@ router.post('/reset-password', (req, res) => {
  * 修改密码（需登录）
  */
 router.put('/password', authMiddleware, (req, res) => {
-  const { old_password, new_password } = req.body;
+  const { oldPassword, newPassword } = req.body;
 
-  if (!old_password || !new_password) {
+  if (!oldPassword || !newPassword) {
     return res.status(400).json({ success: false, message: '请提供原密码和新密码' });
   }
 
-  if (new_password.length < 6) {
+  if (newPassword.length < 6) {
     return res.status(400).json({ success: false, message: '新密码长度不能少于6位' });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.admin.id);
 
-  if (!bcrypt.compareSync(old_password, user.password_hash)) {
+  if (!bcrypt.compareSync(oldPassword, user.password_hash)) {
     return res.status(401).json({ success: false, message: '原密码错误' });
   }
 
-  const hash = bcrypt.hashSync(new_password, 10);
+  const hash = bcrypt.hashSync(newPassword, 10);
   db.prepare('UPDATE users SET password_hash = ?, session_version = COALESCE(session_version, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
     .run(hash, user.id);
 

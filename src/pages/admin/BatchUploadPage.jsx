@@ -69,13 +69,13 @@ export default function BatchUploadPage() {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('product_id', selectedProduct);
-        formData.append('document_type', 'certificate');
+        formData.append('productId', selectedProduct);
+        formData.append('documentType', 'certificate');
         formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
         formData.append('language', 'en');
-        formData.append('confirmed_authentic', '1');
-        formData.append('confirmed_authorized', '1');
-        formData.append('accepted_disclaimer', '1');
+        formData.append('confirmedAuthentic', '1');
+        formData.append('confirmedAuthorized', '1');
+        formData.append('acceptedDisclaimer', '1');
 
         const res = await fetch('/eu-doc/api/v2/documents', {
           method: 'POST',

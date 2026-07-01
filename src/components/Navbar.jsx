@@ -40,6 +40,8 @@ export default function Navbar() {
     logout();
   };
 
+  const personalPagePath = (page) => admin ? `/${page}` : `/admin/login`;
+
   // 点击外部关闭语言菜单
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -131,7 +133,16 @@ export default function Navbar() {
             </svg>
           </Link>
           <Link
-            to="/history"
+            to={personalPagePath('favorites')}
+            className={`${styles.navButton} ${location.pathname === '/favorites' ? styles.active : ''}`}
+            title="我的收藏"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m12 17.3-5.5 3 1.1-6.2L3 9.8l6.3-.9L12 3.2l2.7 5.7 6.3.9-4.6 4.3 1.1 6.2z" />
+            </svg>
+          </Link>
+          <Link
+            to={personalPagePath('history')}
             className={`${styles.navButton} ${location.pathname === '/history' ? styles.active : ''}`}
             title={t('nav.history')}
           >
@@ -238,7 +249,7 @@ export default function Navbar() {
                     className={`${styles.adminOption} ${styles.logoutOption}`}
                     onClick={handleLogout}
                   >
-                    <span>{t('admin.logout')}</span>
+                    <span>退出</span>
                   </button>
                 </div>
               )}

@@ -62,8 +62,9 @@ export default function CompanyPage() {
         ]);
         setProducts(productResult.data || []);
         setDocuments((documentResult.data || []).filter((doc) => doc.status !== 'deleted'));
-        // 加载收藏状态
+        // 加载收藏状态和账号浏览记录。未登录时会静默跳过。
         loadFavoriteStatus(id);
+        api.recordHistory('公司', parseInt(id, 10), data.name, data.nameEn || data.name_en || '', '查看公司').catch(() => {});
       })
       .catch((err) => {
         console.error('Error loading company:', err);

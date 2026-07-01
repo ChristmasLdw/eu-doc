@@ -12,7 +12,7 @@ const { db } = require('../db.cjs');
  */
 function requireCompanyRole(allowedRoles) {
   return (req, res, next) => {
-    const companyId = req.params.companyId || req.params.id || req.body.company_id;
+    const companyId = req.params.companyId || req.params.id || req.body.companyId;
 
     if (!companyId) {
       return res.status(400).json({
@@ -56,7 +56,7 @@ function requireCompanyRole(allowedRoles) {
  * 检查用户是否属于某个企业（任意角色）
  */
 function requireCompanyMember(req, res, next) {
-  const companyId = req.params.companyId || req.params.id || req.body.company_id;
+  const companyId = req.params.companyId || req.params.id || req.body.companyId;
 
   if (!companyId) {
     return res.status(400).json({

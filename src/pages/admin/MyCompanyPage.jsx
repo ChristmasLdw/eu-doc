@@ -16,10 +16,10 @@ export default function MyCompanyPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    name_en: '',
-    contact_person: '',
-    contact_email: '',
-    contact_phone: '',
+    nameEn: '',
+    contactPerson: '',
+    contactEmail: '',
+    contactPhone: '',
     address: '',
     website: '',
   });
@@ -50,10 +50,10 @@ export default function MyCompanyPage() {
           setCompany(companyData.data);
           setFormData({
             name: companyData.data.name || '',
-            name_en: companyData.data.name_en || '',
-            contact_person: companyData.data.contact_person || '',
-            contact_email: companyData.data.contact_email || '',
-            contact_phone: companyData.data.contact_phone || '',
+            nameEn: companyData.data.name_en || '',
+            contactPerson: companyData.data.contact_person || '',
+            contactEmail: companyData.data.contact_email || '',
+            contactPhone: companyData.data.contact_phone || '',
             address: companyData.data.address || '',
             website: companyData.data.website || '',
           });
@@ -170,8 +170,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>英文名称</label>
               <input
                 type="text"
-                name="name_en"
-                value={formData.name_en}
+                name="nameEn"
+                value={formData.nameEn}
                 onChange={handleInputChange}
                 placeholder="英文名称（可选）"
                 className={styles.input}
@@ -181,8 +181,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>联系人</label>
               <input
                 type="text"
-                name="contact_person"
-                value={formData.contact_person}
+                name="contactPerson"
+                value={formData.contactPerson}
                 onChange={handleInputChange}
                 placeholder="联系人姓名"
                 className={styles.input}
@@ -192,8 +192,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>联系邮箱</label>
               <input
                 type="email"
-                name="contact_email"
-                value={formData.contact_email}
+                name="contactEmail"
+                value={formData.contactEmail}
                 onChange={handleInputChange}
                 placeholder="contact@company.com"
                 className={styles.input}
@@ -248,8 +248,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>英文名称</label>
               <input
                 type="text"
-                name="name_en"
-                value={formData.name_en}
+                name="nameEn"
+                value={formData.nameEn}
                 onChange={handleInputChange}
                 className={styles.input}
               />
@@ -258,8 +258,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>联系人</label>
               <input
                 type="text"
-                name="contact_person"
-                value={formData.contact_person}
+                name="contactPerson"
+                value={formData.contactPerson}
                 onChange={handleInputChange}
                 className={styles.input}
               />
@@ -268,8 +268,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>联系邮箱</label>
               <input
                 type="email"
-                name="contact_email"
-                value={formData.contact_email}
+                name="contactEmail"
+                value={formData.contactEmail}
                 onChange={handleInputChange}
                 className={styles.input}
               />
@@ -278,8 +278,8 @@ export default function MyCompanyPage() {
               <label className={styles.label}>联系电话</label>
               <input
                 type="text"
-                name="contact_phone"
-                value={formData.contact_phone}
+                name="contactPhone"
+                value={formData.contactPhone}
                 onChange={handleInputChange}
                 className={styles.input}
               />

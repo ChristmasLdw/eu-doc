@@ -4,7 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware } = require('../middleware/auth.cjs');
-const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE } = require('../utils/uploadLimits.cjs');
+const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
+const { suggestProductClassification } = require('../utils/classificationRules.cjs');
 
 const router = Router();
 
@@ -36,6 +37,14 @@ function ensureImportTables() {
     );
     CREATE INDEX IF NOT EXISTS idx_import_items_company ON import_items(company_id);
     CREATE INDEX IF NOT EXISTS idx_import_items_status ON import_items(status);
+    CREATE TABLE IF NOT EXISTS product_compliance_categories (
+      product_id INTEGER NOT NULL,
+      category_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (product_id, category_id),
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    );
   `);
   const columns = db.prepare('PRAGMA table_info(import_items)').all().map(col => col.name);
   if (!columns.includes('guessed_models')) db.prepare('ALTER TABLE import_items ADD COLUMN guessed_models TEXT').run();
@@ -164,7 +173,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE, files: 80 } });
+const upload = multer({ storage, limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE, files: 80 }, fileFilter: documentFileFilter });
 
 
 function buildDuplicateInfo(row) {
@@ -202,6 +211,17 @@ function buildDuplicateInfo(row) {
   return { is_duplicate: 0, duplicate_reason: null };
 }
 
+function buildClassificationSuggestion(row = {}) {
+  return suggestProductClassification({
+    fileName: row.original_name,
+    productName: row.suggested_product_name || row.suggestedProductName,
+    model: row.guessed_models || row.guessedModels || row.guessed_model || row.guessedModel,
+    documentType: row.guessed_type || row.guessedType,
+    standard: row.guessed_standard || row.guessedStandard,
+    issuer: row.guessed_issuer || row.guessedIssuer,
+  });
+}
+
 function unlinkUploadedFile(filePath) {
   if (!filePath) return;
   const normalized = filePath.replace(/^\/uploads\//, 'uploads/');
@@ -222,12 +242,12 @@ router.get('/', authMiddleware, (req, res) => {
     WHERE ii.company_id = ?
     ORDER BY CASE ii.status WHEN 'pending' THEN 0 WHEN 'organized' THEN 1 ELSE 2 END, ii.created_at DESC
   `).all(companyId);
-  res.json({ success: true, data: rows.map((row) => ({ ...row, ...buildDuplicateInfo(row) })) });
+  res.json({ success: true, data: rows.map((row) => ({ ...row, ...buildDuplicateInfo(row), suggested_classification: buildClassificationSuggestion(row) })) });
 });
 
 router.post('/upload', authMiddleware, upload.array('files', 80), (req, res) => {
   ensureImportTables();
-  const companyId = Number(req.body.company_id);
+  const companyId = Number(req.body.companyId);
   if (!companyId) return res.status(400).json({ success: false, message: '缺少公司ID' });
   if (!canManageCompany(req.admin, companyId)) return res.status(403).json({ success: false, message: '无权向该公司导入资料' });
   const files = req.files || [];
@@ -249,7 +269,8 @@ router.post('/upload', authMiddleware, upload.array('files', 80), (req, res) => 
     const guess = enhanceGuessWithText(guessFileInfo(file.originalname), text);
     const filePath = `/uploads/imports/${file.filename}`;
     const result = insert.run(companyId, file.originalname, filePath, file.size, file.mimetype, guess.guessed_type, guess.guessed_language, guess.guessed_model, guess.guessed_models, guess.suggested_product_name, guess.guessed_cert_no, guess.guessed_standard, guess.guessed_issuer, guess.guessed_valid_until, guess.extracted_text_status, req.admin.id);
-    return { id: result.lastInsertRowid, original_name: file.originalname, file_path: filePath, ...guess };
+    const row = { id: result.lastInsertRowid, original_name: file.originalname, file_path: filePath, ...guess };
+    return { ...row, suggested_classification: buildClassificationSuggestion(row) };
   });
   res.status(201).json({ success: true, data: items, message: `已导入 ${items.length} 个文件，等待整理` });
 });
@@ -292,17 +313,31 @@ router.post('/organize-group', authMiddleware, (req, res) => {
   if (!items.every((item) => item.company_id === companyId)) return res.status(400).json({ success: false, message: '不能跨公司整理文件' });
   if (!canManageCompany(req.admin, companyId)) return res.status(403).json({ success: false, message: '无权整理该公司的文件' });
 
-  const { product_id, new_product_name, new_product_model, document_type, cert_no, standard, issuer, languages_by_id, document_types_by_id } = req.body;
+  const product_id = req.body.productId;
+  const new_product_name = req.body.newProductName;
+  const new_product_model = req.body.newProductModel;
+  const document_type = req.body.documentType;
+  const cert_no = req.body.certNo;
+  const languages_by_id = req.body.languagesById;
+  const document_types_by_id = req.body.documentTypesById;
+  const { standard, issuer } = req.body;
+  const category_primary_id = req.body.categoryPrimaryId || null;
+  const compliance_category_ids = Array.isArray(req.body.complianceCategoryIds) ? req.body.complianceCategoryIds.map(Number).filter(Boolean) : [];
   let productId = product_id ? Number(product_id) : null;
 
   const tx = db.transaction(() => {
     if (!productId) {
       if (!new_product_name) throw new Error('请填写产品/系列名称');
       const productResult = db.prepare(`
-        INSERT INTO products (company_id, name, model, status, created_by, created_at)
-        VALUES (?, ?, ?, 'active', ?, CURRENT_TIMESTAMP)
-      `).run(companyId, new_product_name, new_product_model || items[0].guessed_models || items[0].guessed_model || null, req.admin.id);
+        INSERT INTO products (company_id, name, model, category_primary_id, status, created_by, created_at)
+        VALUES (?, ?, ?, ?, 'active', ?, CURRENT_TIMESTAMP)
+      `).run(companyId, new_product_name, new_product_model || items[0].guessed_models || items[0].guessed_model || null, category_primary_id, req.admin.id);
       productId = productResult.lastInsertRowid;
+    }
+
+    if (compliance_category_ids.length) {
+      const insertCompliance = db.prepare('INSERT OR IGNORE INTO product_compliance_categories (product_id, category_id) VALUES (?, ?)');
+      compliance_category_ids.forEach((categoryId) => insertCompliance.run(productId, categoryId));
     }
 
     const docType = document_type || items[0].guessed_type || 'other';
@@ -342,17 +377,29 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
   if (!item) return res.status(404).json({ success: false, message: '导入文件不存在' });
   if (!canManageCompany(req.admin, item.company_id)) return res.status(403).json({ success: false, message: '无权整理该文件' });
 
-  const { product_id, new_product_name, new_product_model, document_type, title, language, cert_no, standard, issuer } = req.body;
+  const product_id = req.body.productId;
+  const new_product_name = req.body.newProductName;
+  const new_product_model = req.body.newProductModel;
+  const document_type = req.body.documentType;
+  const cert_no = req.body.certNo;
+  const { title, language, standard, issuer } = req.body;
+  const category_primary_id = req.body.categoryPrimaryId || null;
+  const compliance_category_ids = Array.isArray(req.body.complianceCategoryIds) ? req.body.complianceCategoryIds.map(Number).filter(Boolean) : [];
   let productId = product_id ? Number(product_id) : null;
 
   const tx = db.transaction(() => {
     if (!productId) {
       if (!new_product_name) throw new Error('请选择已有产品或填写新产品名称');
       const productResult = db.prepare(`
-        INSERT INTO products (company_id, name, model, status, created_by, created_at)
-        VALUES (?, ?, ?, 'active', ?, CURRENT_TIMESTAMP)
-      `).run(item.company_id, new_product_name, new_product_model || item.guessed_models || item.guessed_model || null, req.admin.id);
+        INSERT INTO products (company_id, name, model, category_primary_id, status, created_by, created_at)
+        VALUES (?, ?, ?, ?, 'active', ?, CURRENT_TIMESTAMP)
+      `).run(item.company_id, new_product_name, new_product_model || item.guessed_models || item.guessed_model || null, category_primary_id, req.admin.id);
       productId = productResult.lastInsertRowid;
+    }
+
+    if (compliance_category_ids.length) {
+      const insertCompliance = db.prepare('INSERT OR IGNORE INTO product_compliance_categories (product_id, category_id) VALUES (?, ?)');
+      compliance_category_ids.forEach((categoryId) => insertCompliance.run(productId, categoryId));
     }
 
     const docType = document_type || item.guessed_type || 'other';

@@ -141,6 +141,7 @@ export default function ProductDetailPage() {
         }
       })
       .catch(() => {});
+    api.recordHistory('产品', parseInt(id, 10), product.name, product.company_name || product.companyName || '', '查看产品').catch(() => {});
   }, [product, id]);
 
   const groupedResources = useMemo(() => RESOURCE_TYPES.map((type) => {
@@ -163,6 +164,10 @@ export default function ProductDetailPage() {
     { label: '重量', value: product?.weight, required: true, group: 'physical' },
     { label: '材质', value: product?.material, required: true, group: 'physical' },
     { label: '适用场景', value: product?.usage_scenario || product?.usageScenario, required: true, group: 'usage' },
+    { label: '颜色/外观', value: product?.color, required: false, group: 'physical' },
+    { label: '包装内容', value: product?.package_contents || product?.packageContents, required: false, group: 'usage' },
+    { label: '保修/服务', value: product?.warranty, required: false, group: 'usage' },
+    { label: '产地/生产地', value: product?.origin_country || product?.originCountry, required: false, group: 'record' },
     { label: '资料更新', value: formatDate(latestUpdate), required: true, group: 'record' },
   ].filter((item) => item.required || item.value);
   const shouldShowModelSection = models.length > 1 && models.join(', ') !== String(product?.model || '').trim();

@@ -94,6 +94,7 @@ function createNewTables() {
       description TEXT,
       sort_order INTEGER DEFAULT 0,
       status TEXT DEFAULT 'active',
+      taxonomy_type TEXT DEFAULT 'consumer',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (parent_id) REFERENCES categories(id)
@@ -122,6 +123,14 @@ function createNewTables() {
       description_en TEXT,
       category_primary_id INTEGER,
       category_secondary_id INTEGER,
+      dimensions TEXT,
+      weight TEXT,
+      material TEXT,
+      usage_scenario TEXT,
+      color TEXT,
+      package_contents TEXT,
+      warranty TEXT,
+      origin_country TEXT,
       image_path TEXT,
       status TEXT DEFAULT 'active',
       created_by INTEGER NOT NULL,
@@ -141,6 +150,16 @@ function createNewTables() {
       PRIMARY KEY (product_id, tag_id),
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
       FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    );
+
+    -- 7b. 产品合规分类关联表
+    CREATE TABLE IF NOT EXISTS product_compliance_categories (
+      product_id INTEGER NOT NULL,
+      category_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (product_id, category_id),
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
     );
 
     -- 8. 统一文档表
@@ -492,8 +511,8 @@ function createInitialCategories() {
   ];
 
   const insertCategory = db.prepare(`
-    INSERT OR IGNORE INTO categories (id, parent_id, level, name, name_en, slug, sort_order, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+    INSERT OR IGNORE INTO categories (id, parent_id, level, name, name_en, slug, sort_order, status, taxonomy_type)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'consumer')
   `);
 
   let count = 0;
@@ -513,6 +532,24 @@ function createInitialCategories() {
       // 忽略重复插入
     }
   }
+
+  const complianceCategories = [
+    { id: 201, name: 'PPE / 个人防护法规', name_en: 'PPE / Personal Protective Equipment', slug: 'compliance-ppe' },
+    { id: 202, name: 'EMC 电磁兼容', name_en: 'EMC', slug: 'compliance-emc' },
+    { id: 203, name: 'LVD 低电压', name_en: 'LVD', slug: 'compliance-lvd' },
+    { id: 204, name: 'RED 无线设备', name_en: 'RED', slug: 'compliance-red' },
+    { id: 205, name: 'RoHS / REACH', name_en: 'RoHS / REACH', slug: 'compliance-rohs-reach' },
+    { id: 206, name: 'Toy Safety 玩具安全', name_en: 'Toy Safety', slug: 'compliance-toy-safety' },
+    { id: 207, name: 'Machinery 机械设备', name_en: 'Machinery', slug: 'compliance-machinery' },
+    { id: 208, name: 'Medical Device 医疗器械', name_en: 'Medical Device', slug: 'compliance-medical-device' },
+  ];
+  const insertComplianceCategory = db.prepare(`
+    INSERT OR IGNORE INTO categories (id, parent_id, level, name, name_en, slug, sort_order, status, taxonomy_type)
+    VALUES (?, NULL, 1, ?, ?, ?, ?, 'active', 'compliance')
+  `);
+  complianceCategories.forEach((cat) => {
+    insertComplianceCategory.run(cat.id, cat.name, cat.name_en, cat.slug, cat.id);
+  });
 
   console.log(`  ✓ 已创建 ${count} 个初始分类`);
 }

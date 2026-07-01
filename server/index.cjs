@@ -96,6 +96,7 @@ app.use('/api/v2/company-members', require('./routes/company-members.cjs'));
 app.use('/api/v2/company-verifications', require('./routes/company-verifications.cjs'));
 app.use('/api/v2/upload-confirmations', require('./routes/upload-confirmations.cjs'));
 app.use('/api/v2/imports', require('./routes/imports.cjs'));
+app.use('/api/v2/dev-tools', require('./routes/dev-tools.cjs'));
 
 /**
  * 健康检查接口
@@ -134,6 +135,20 @@ app.use((err, req, res, _next) => {
     return res.status(413).json({
       success: false,
       message: '文件大小超过限制（最大 10MB）',
+    });
+  }
+
+  if (err.code === 'LIMIT_FILE_COUNT') {
+    return res.status(413).json({
+      success: false,
+      message: '一次上传文件数量过多',
+    });
+  }
+
+  if (err.message && err.message.includes('不支持')) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
     });
   }
 

@@ -2,7 +2,7 @@
  * EU-DOC 后台管理 - 产品编辑页面
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styles from './UploadPage.module.css';
 
@@ -14,15 +14,25 @@ export default function ProductEditPage() {
   const [error, setError] = useState('');
   const [companies, setCompanies] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [complianceCategories, setComplianceCategories] = useState([]);
 
   const [formData, setFormData] = useState({
-    company_id: '',
+    companyId: '',
     name: '',
-    name_en: '',
+    nameEn: '',
     model: '',
     description: '',
-    description_en: '',
-    category_primary_id: '',
+    descriptionEn: '',
+    categoryPrimaryId: '',
+    complianceCategoryIds: [],
+    dimensions: '',
+    weight: '',
+    material: '',
+    usageScenario: '',
+    color: '',
+    packageContents: '',
+    warranty: '',
+    originCountry: '',
     status: 'active',
   });
 
@@ -50,6 +60,9 @@ export default function ProductEditPage() {
       const res = await fetch('/eu-doc/api/v2/categories');
       const data = await res.json();
       if (data.success) setCategories(data.data);
+      const complianceRes = await fetch('/eu-doc/api/v2/categories?taxonomyType=compliance');
+      const complianceData = await complianceRes.json();
+      if (complianceData.success) setComplianceCategories(complianceData.data);
     } catch (err) {
       console.error('获取分类列表失败:', err);
     }
@@ -62,13 +75,22 @@ export default function ProductEditPage() {
       if (data.success) {
         const p = data.data;
         setFormData({
-          company_id: p.company_id || '',
+          companyId: p.company_id || '',
           name: p.name || '',
-          name_en: p.name_en || '',
+          nameEn: p.name_en || '',
           model: p.model || '',
           description: p.description || '',
-          description_en: p.description_en || '',
-          category_primary_id: p.category_primary_id || '',
+          descriptionEn: p.description_en || '',
+          categoryPrimaryId: p.category_primary_id || '',
+          complianceCategoryIds: p.complianceCategoryIds || (p.compliance_categories || []).map(c => c.id),
+          dimensions: p.dimensions || '',
+          weight: p.weight || '',
+          material: p.material || '',
+          usageScenario: p.usage_scenario || '',
+          color: p.color || '',
+          packageContents: p.package_contents || '',
+          warranty: p.warranty || '',
+          originCountry: p.origin_country || '',
           status: p.status || 'active',
         });
       } else {
@@ -86,6 +108,23 @@ export default function ProductEditPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const handleComplianceChange = (e) => {
+    const selected = Array.from(e.target.selectedOptions).map((option) => Number(option.value)).filter(Boolean);
+    setFormData(prev => ({ ...prev, complianceCategoryIds: selected }));
+  };
+
+  const categoryOptions = useMemo(() => {
+    const byId = new Map(categories.map((category) => [String(category.id), category]));
+    return categories.map((category) => {
+      const parent = category.parent_id ? byId.get(String(category.parent_id)) : null;
+      const grand = parent?.parent_id ? byId.get(String(parent.parent_id)) : null;
+      return {
+        ...category,
+        path: [grand?.name, parent?.name, category.name].filter(Boolean).join(' / ') || category.name,
+      };
+    });
+  }, [categories]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -163,8 +202,8 @@ export default function ProductEditPage() {
                 所属企业 <span className={styles.required}>*</span>
               </label>
               <select
-                name="company_id"
-                value={formData.company_id}
+                name="companyId"
+                value={formData.companyId}
                 onChange={handleInputChange}
                 className={styles.input}
                 required
@@ -195,8 +234,8 @@ export default function ProductEditPage() {
               <label className={styles.label}>产品英文名称</label>
               <input
                 type="text"
-                name="name_en"
-                value={formData.name_en}
+                name="nameEn"
+                value={formData.nameEn}
                 onChange={handleInputChange}
                 placeholder="英文名称（可选）"
                 className={styles.input}
@@ -216,15 +255,30 @@ export default function ProductEditPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.label}>产品分类</label>
+              <label className={styles.label}>C端产品分类</label>
               <select
-                name="category_primary_id"
-                value={formData.category_primary_id}
+                name="categoryPrimaryId"
+                value={formData.categoryPrimaryId}
                 onChange={handleInputChange}
                 className={styles.input}
               >
-                <option value="">请选择分类（可选）</option>
-                {categories.map(c => (
+                <option value="">请选择产品用途分类（可选）</option>
+                {categoryOptions.map(c => (
+                  <option key={c.id} value={c.id}>{c.path}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>审核/合规分类</label>
+              <select
+                multiple
+                value={formData.complianceCategoryIds.map(String)}
+                onChange={handleComplianceChange}
+                className={styles.input}
+                style={{ minHeight: 120 }}
+              >
+                {complianceCategories.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
@@ -243,6 +297,46 @@ export default function ProductEditPage() {
               </select>
             </div>
 
+            <div className={styles.formGroup}>
+              <label className={styles.label}>产品尺寸</label>
+              <input type="text" name="dimensions" value={formData.dimensions} onChange={handleInputChange} placeholder="例如：280 × 220 × 180 mm" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>重量</label>
+              <input type="text" name="weight" value={formData.weight} onChange={handleInputChange} placeholder="例如：520 g" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>材质</label>
+              <input type="text" name="material" value={formData.material} onChange={handleInputChange} placeholder="例如：ABS 外壳 / EPS 内衬" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>适用场景</label>
+              <input type="text" name="usageScenario" value={formData.usageScenario} onChange={handleInputChange} placeholder="例如：马术训练、骑乘防护" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>颜色/外观</label>
+              <input type="text" name="color" value={formData.color} onChange={handleInputChange} placeholder="例如：黑色、白色、哑光" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>产地/生产地</label>
+              <input type="text" name="originCountry" value={formData.originCountry} onChange={handleInputChange} placeholder="例如：China / EU" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>保修/服务</label>
+              <input type="text" name="warranty" value={formData.warranty} onChange={handleInputChange} placeholder="例如：12个月有限保修" className={styles.input} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>包装内容</label>
+              <input type="text" name="packageContents" value={formData.packageContents} onChange={handleInputChange} placeholder="例如：头盔、说明书、收纳袋" className={styles.input} />
+            </div>
+
             <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
               <label className={styles.label}>产品描述（中文）</label>
               <textarea
@@ -258,8 +352,8 @@ export default function ProductEditPage() {
             <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
               <label className={styles.label}>产品描述（英文）</label>
               <textarea
-                name="description_en"
-                value={formData.description_en}
+                name="descriptionEn"
+                value={formData.descriptionEn}
                 onChange={handleInputChange}
                 placeholder="Product description in English (optional)"
                 className={styles.input}

@@ -20,6 +20,80 @@ const { requireCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
 
+const PRODUCT_EXTRA_FIELDS = [
+  'dimensions',
+  'weight',
+  'material',
+  'usage_scenario',
+  'color',
+  'package_contents',
+  'warranty',
+  'origin_country',
+];
+
+function tableExists(tableName) {
+  return Boolean(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(tableName));
+}
+
+function columnExists(tableName, columnName) {
+  if (!tableExists(tableName)) return false;
+  return db.prepare(`PRAGMA table_info(${tableName})`).all().some((col) => col.name === columnName);
+}
+
+function ensureProductExtraColumns() {
+  if (!tableExists('products')) return;
+  PRODUCT_EXTRA_FIELDS.forEach((field) => {
+    if (!columnExists('products', field)) {
+      db.prepare(`ALTER TABLE products ADD COLUMN ${field} TEXT`).run();
+    }
+  });
+}
+
+function ensureProductComplianceTable() {
+  ensureProductExtraColumns();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS product_compliance_categories (
+      product_id INTEGER NOT NULL,
+      category_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (product_id, category_id),
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    )
+  `);
+}
+
+function normalizeIdList(value) {
+  if (!value) return [];
+  const list = Array.isArray(value) ? value : String(value).split(',');
+  return [...new Set(list.map((item) => Number(item)).filter(Boolean))];
+}
+
+function replaceProductComplianceCategories(productId, categoryIds) {
+  ensureProductComplianceTable();
+  const ids = normalizeIdList(categoryIds);
+  db.prepare('DELETE FROM product_compliance_categories WHERE product_id = ?').run(productId);
+  if (ids.length === 0) return;
+
+  const insert = db.prepare('INSERT OR IGNORE INTO product_compliance_categories (product_id, category_id) VALUES (?, ?)');
+  const tx = db.transaction((items) => {
+    items.forEach((categoryId) => insert.run(productId, categoryId));
+  });
+  tx(ids);
+}
+
+function getProductComplianceCategories(productId) {
+  ensureProductComplianceTable();
+  if (!tableExists('categories')) return [];
+  return db.prepare(`
+    SELECT c.id, c.name, c.name_en, c.slug
+    FROM product_compliance_categories pcc
+    INNER JOIN categories c ON c.id = pcc.category_id
+    WHERE pcc.product_id = ? AND COALESCE(c.status, 'active') = 'active'
+    ORDER BY c.sort_order ASC, c.id ASC
+  `).all(productId);
+}
+
 const imageStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     const uploadDir = path.join(__dirname, '../uploads/products');
@@ -40,6 +114,8 @@ const imageUpload = multer({
     else cb(new Error('只支持 JPG、PNG、WebP 产品图'));
   },
 });
+
+ensureProductExtraColumns();
 
 // GET /api/v2/products - 获取产品列表
 router.get('/', (req, res) => {
@@ -111,17 +187,31 @@ router.get('/', (req, res) => {
         p.*,
         c.name as company_name,
         cat.name as category_name,
+        cat.parent_id as category_parent_id,
+        parent_cat.parent_id as category_grand_id,
+        parent_cat.name as category_parent_name,
+        grand_cat.name as category_grand_name,
+        CASE
+          WHEN grand_cat.name IS NOT NULL THEN grand_cat.name || ' / ' || parent_cat.name || ' / ' || cat.name
+          WHEN parent_cat.name IS NOT NULL THEN parent_cat.name || ' / ' || cat.name
+          ELSE cat.name
+        END as category_path,
         (SELECT COUNT(*) FROM documents WHERE product_id = p.id) as document_count,
         (SELECT COUNT(*) FROM documents WHERE product_id = p.id AND document_type = 'certificate') as certificate_count
       FROM products p
       LEFT JOIN companies c ON p.company_id = c.id
       LEFT JOIN categories cat ON p.category_primary_id = cat.id
+      LEFT JOIN categories parent_cat ON cat.parent_id = parent_cat.id
+      LEFT JOIN categories grand_cat ON parent_cat.parent_id = grand_cat.id
       ${whereClause}
       ORDER BY p.${safeSortBy} ${safeSortOrder}
       LIMIT ? OFFSET ?
     `;
 
     const products = db.prepare(dataSql).all(...params, Number(pageSize), offset);
+    products.forEach((product) => {
+      product.compliance_categories = getProductComplianceCategories(product.id);
+    });
 
     res.json({
       success: true,
@@ -158,9 +248,20 @@ router.get('/:id/related', (req, res) => {
         p.model,
         p.image_path,
         cat.name as category_name,
+        cat.parent_id as category_parent_id,
+        parent_cat.parent_id as category_grand_id,
+        parent_cat.name as category_parent_name,
+        grand_cat.name as category_grand_name,
+        CASE
+          WHEN grand_cat.name IS NOT NULL THEN grand_cat.name || ' / ' || parent_cat.name || ' / ' || cat.name
+          WHEN parent_cat.name IS NOT NULL THEN parent_cat.name || ' / ' || cat.name
+          ELSE cat.name
+        END as category_path,
         (SELECT COUNT(*) FROM documents d WHERE d.product_id = p.id AND COALESCE(d.status, 'active') != 'deleted') as document_count
       FROM products p
       LEFT JOIN categories cat ON p.category_primary_id = cat.id
+      LEFT JOIN categories parent_cat ON cat.parent_id = parent_cat.id
+      LEFT JOIN categories grand_cat ON parent_cat.parent_id = grand_cat.id
       WHERE p.company_id = ?
         AND p.id != ?
         AND COALESCE(p.status, 'active') != 'deleted'
@@ -190,10 +291,21 @@ router.get('/:id', (req, res) => {
         c.name as company_name,
         c.name_en as company_name_en,
         cat.name as category_name,
+        cat.parent_id as category_parent_id,
+        parent_cat.parent_id as category_grand_id,
+        parent_cat.name as category_parent_name,
+        grand_cat.name as category_grand_name,
+        CASE
+          WHEN grand_cat.name IS NOT NULL THEN grand_cat.name || ' / ' || parent_cat.name || ' / ' || cat.name
+          WHEN parent_cat.name IS NOT NULL THEN parent_cat.name || ' / ' || cat.name
+          ELSE cat.name
+        END as category_path,
         u.display_name as created_by_name
       FROM products p
       LEFT JOIN companies c ON p.company_id = c.id
       LEFT JOIN categories cat ON p.category_primary_id = cat.id
+      LEFT JOIN categories parent_cat ON cat.parent_id = parent_cat.id
+      LEFT JOIN categories grand_cat ON parent_cat.parent_id = grand_cat.id
       LEFT JOIN users u ON p.created_by = u.id
       WHERE p.id = ?
     `).get(req.params.id);
@@ -213,6 +325,8 @@ router.get('/:id', (req, res) => {
     `).all(product.id);
 
     product.tags = tags;
+    product.compliance_categories = getProductComplianceCategories(product.id);
+    product.complianceCategoryIds = product.compliance_categories.map((cat) => cat.id);
 
     res.json({ success: true, data: product });
   } catch (error) {
@@ -256,13 +370,21 @@ router.get('/:id/documents', (req, res) => {
 
 // POST /api/v2/products - 创建产品
 router.post('/', authMiddleware, (req, res) => {
+  const companyId = req.body.companyId;
+  const nameEn = req.body.nameEn;
+  const descriptionEn = req.body.descriptionEn;
+  const categoryPrimaryId = req.body.categoryPrimaryId;
+  const complianceCategoryIds = req.body.complianceCategoryIds || req.body.compliance_category_ids;
+  const usageScenario = req.body.usageScenario;
+  const packageContents = req.body.packageContents;
+  const originCountry = req.body.originCountry;
   const {
-    company_id, name, name_en, model, description, description_en,
-    category_primary_id, status = 'active'
+    name, model, description, status = 'active',
+    dimensions, weight, material, color, warranty
   } = req.body;
 
   // 必填字段校验
-  if (!company_id || !name) {
+  if (!companyId || !name) {
     return res.status(400).json({
       success: false,
       message: '企业ID和产品名称为必填项',
@@ -273,7 +395,7 @@ router.post('/', authMiddleware, (req, res) => {
   if (req.admin.role !== 'platform_admin' && req.admin.role !== 'admin') {
     const membership = db.prepare(`
       SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = 'active'
-    `).get(req.admin.id, company_id);
+    `).get(req.admin.id, companyId);
 
     if (!membership) {
       return res.status(403).json({
@@ -294,26 +416,37 @@ router.post('/', authMiddleware, (req, res) => {
     const result = db.prepare(`
       INSERT INTO products (
         company_id, name, name_en, model, description, description_en,
-        category_primary_id, status, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        category_primary_id, dimensions, weight, material, usage_scenario,
+        color, package_contents, warranty, origin_country,
+        status, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
-      company_id,
+      companyId,
       name,
-      name_en || null,
+      nameEn || null,
       model || null,
       description || null,
-      description_en || null,
-      category_primary_id || null,
+      descriptionEn || null,
+      categoryPrimaryId || null,
+      dimensions || null,
+      weight || null,
+      material || null,
+      usageScenario || null,
+      color || null,
+      packageContents || null,
+      warranty || null,
+      originCountry || null,
       status,
       req.admin.id
     );
+    replaceProductComplianceCategories(result.lastInsertRowid, complianceCategoryIds);
 
     // 记录审计日志
     db.prepare(
       'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(
       req.admin.id, 'create', 'product', result.lastInsertRowid,
-      JSON.stringify({ name, model }), req.ip
+      JSON.stringify({ name, model, complianceCategoryIds: normalizeIdList(complianceCategoryIds) }), req.ip
     );
 
     res.status(201).json({
@@ -356,30 +489,52 @@ router.put('/:id', authMiddleware, (req, res) => {
   }
 
   try {
-    const fields = ['name', 'name_en', 'model', 'description', 'description_en', 'category_primary_id', 'status'];
+    const complianceProvided = req.body.complianceCategoryIds !== undefined || req.body.compliance_category_ids !== undefined;
+    const oldComplianceIds = complianceProvided ? getProductComplianceCategories(product.id).map((cat) => cat.id) : [];
+    const body = {
+      ...req.body,
+      name_en: req.body.nameEn,
+      description_en: req.body.descriptionEn,
+      category_primary_id: req.body.categoryPrimaryId,
+      usage_scenario: req.body.usageScenario,
+      package_contents: req.body.packageContents,
+      origin_country: req.body.originCountry,
+    };
+    const fields = [
+      'name', 'name_en', 'model', 'description', 'description_en',
+      'category_primary_id', 'dimensions', 'weight', 'material',
+      'usage_scenario', 'color', 'package_contents', 'warranty',
+      'origin_country', 'status',
+    ];
     const setParts = [];
     const values = [];
     const changes = {};
 
     for (const field of fields) {
-      if (req.body[field] !== undefined) {
+      if (body[field] !== undefined) {
         setParts.push(`${field} = ?`);
-        values.push(req.body[field]);
-        changes[field] = { old: product[field], new: req.body[field] };
+        values.push(body[field]);
+        changes[field] = { old: product[field], new: body[field] };
       }
     }
 
-    if (setParts.length === 0) {
+    if (setParts.length === 0 && !complianceProvided) {
       return res.status(400).json({
         success: false,
         message: '没有提供需要更新的字段',
       });
     }
 
-    setParts.push('updated_at = CURRENT_TIMESTAMP');
+    if (setParts.length > 0) {
+      setParts.push('updated_at = CURRENT_TIMESTAMP');
+      db.prepare(`UPDATE products SET ${setParts.join(', ')} WHERE id = ?`)
+        .run(...values, product.id);
+    }
 
-    db.prepare(`UPDATE products SET ${setParts.join(', ')} WHERE id = ?`)
-      .run(...values, product.id);
+    if (complianceProvided) {
+      replaceProductComplianceCategories(product.id, req.body.complianceCategoryIds || req.body.compliance_category_ids);
+      changes.complianceCategoryIds = { old: oldComplianceIds, new: normalizeIdList(req.body.complianceCategoryIds || req.body.compliance_category_ids) };
+    }
 
     // 记录审计日志
     db.prepare(
@@ -426,13 +581,13 @@ router.delete('/:id', authMiddleware, (req, res) => {
     });
   }
 
-  // 权限校验：非管理员只能删除自己企业的产品
-  if (req.admin.role !== 'admin') {
-    // 获取用户所属企业
-    const userCompany = db.prepare('SELECT company_name FROM admins WHERE id = ?').get(req.admin.id);
-    const productCompany = db.prepare('SELECT name FROM companies WHERE id = ?').get(product.company_id);
+  // 权限校验：平台管理员可删除；企业成员只能删除自己可管理企业的产品。
+  if (!['admin', 'platform_admin'].includes(req.admin.role)) {
+    const membership = db.prepare(`
+      SELECT role FROM company_members WHERE user_id = ? AND company_id = ? AND status = 'active'
+    `).get(req.admin.id, product.company_id);
 
-    if (!userCompany || !productCompany || userCompany.company_name !== productCompany.name) {
+    if (!membership || !['owner', 'admin', 'applicant'].includes(membership.role)) {
       return res.status(403).json({
         success: false,
         message: '无权删除该产品',

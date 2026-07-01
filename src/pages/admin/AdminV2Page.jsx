@@ -10,8 +10,6 @@ const fallbackCompanies = [];
 const personalMenus = [
   { id: 'profile', labelKey: 'admin.menu.profile' },
   { id: 'security', labelKey: 'admin.menu.security' },
-  { id: 'favorites', labelKey: 'admin.menu.favorites' },
-  { id: 'history', labelKey: 'admin.menu.history' },
   { id: 'notifications', labelKey: 'admin.menu.notifications' },
 ];
 
@@ -32,6 +30,142 @@ const platformMenus = [
   { id: 'reports', labelKey: 'admin.menu.reports' },
   { id: 'system', labelKey: 'admin.menu.system' },
 ];
+
+
+const PRODUCT_CLASSIFICATION_RULES = [
+  {
+    consumer: ['运动户外', '马术用品', '马术头盔'],
+    compliance: ['PPE / 个人防护法规'],
+    standards: [/\bEN\s*1384\b/i, /\bVG1\b/i],
+    keywords: [/equestrian/i, /riding helmet/i, /horse riding/i, /马术|骑马/],
+    reason: '识别到马术头盔关键词或 EN 1384 / VG1 标准',
+  },
+  {
+    consumer: ['运动户外', '自行车用品', '自行车头盔'],
+    compliance: ['PPE / 个人防护法规'],
+    standards: [/\bEN\s*1078\b/i],
+    keywords: [/bicycle helmet/i, /bike helmet/i, /cycling helmet/i, /skate helmet/i, /自行车头盔|骑行头盔/],
+    reason: '识别到骑行头盔关键词或 EN 1078 标准',
+  },
+  {
+    consumer: ['母婴儿童与玩具', '儿童玩具'],
+    compliance: ['Toy Safety 玩具安全'],
+    standards: [/\bEN\s*71\b/i],
+    keywords: [/toy/i, /children.*toy/i, /玩具/],
+    reason: '识别到玩具关键词或 EN 71 标准',
+  },
+  {
+    consumer: ['电子电器', '电源与充电', '充电器'],
+    compliance: ['LVD 低电压', 'EMC 电磁兼容', 'RoHS / REACH'],
+    standards: [/\bEN\s*60335\b/i, /\bEN\s*62368\b/i, /\bEN\s*55032\b/i, /\bEN\s*55035\b/i, /\bEN\s*61000\b/i],
+    keywords: [/charger/i, /adapter/i, /power supply/i, /充电器|适配器|电源/],
+    reason: '识别到电源/充电器关键词或电子电器常见标准',
+  },
+  {
+    consumer: ['电子电器', '音视频设备'],
+    compliance: ['EMC 电磁兼容', 'LVD 低电压'],
+    standards: [/\bEN\s*62368\b/i, /\bEN\s*55032\b/i, /\bEN\s*55035\b/i],
+    keywords: [/audio/i, /speaker/i, /video/i, /音响|音频|视频/],
+    reason: '识别到音视频设备关键词或 EN 62368 / EMC 标准',
+  },
+  {
+    consumer: ['个人防护与安全', '眼面防护'],
+    compliance: ['PPE / 个人防护法规'],
+    standards: [/\bEN\s*166\b/i],
+    keywords: [/goggle/i, /safety glasses/i, /face shield/i, /护目镜|面罩/],
+    reason: '识别到眼面防护关键词或 EN 166 标准',
+  },
+  {
+    consumer: ['个人防护与安全', '手部/足部防护'],
+    compliance: ['PPE / 个人防护法规'],
+    standards: [/\bEN\s*388\b/i, /\bEN\s*ISO\s*20345\b/i],
+    keywords: [/glove/i, /safety shoe/i, /protective footwear/i, /手套|安全鞋|防护鞋/],
+    reason: '识别到手足防护关键词或 EN 388 / EN ISO 20345 标准',
+  },
+  {
+    consumer: ['医疗健康', '护理用品'],
+    compliance: ['Medical Device 医疗器械'],
+    standards: [/\bEN\s*14683\b/i, /\bEN\s*149\b/i],
+    keywords: [/mask/i, /respirator/i, /medical/i, /口罩|医用|防护口罩/],
+    reason: '识别到口罩/医疗关键词或 EN 14683 / EN 149 标准',
+  },
+  {
+    consumer: ['工业工具与机械', '机械设备'],
+    compliance: ['Machinery 机械设备'],
+    standards: [/\bEN\s*ISO\s*12100\b/i, /\bEN\s*60204\b/i],
+    keywords: [/machinery/i, /machine/i, /机械|设备/],
+    reason: '识别到机械设备关键词或机械安全标准',
+  },
+  {
+    consumer: ['厨房与食品接触'],
+    compliance: ['RoHS / REACH'],
+    standards: [/food contact/i, /LFGB/i],
+    keywords: [/food contact/i, /kitchen/i, /tableware/i, /cookware/i, /食品接触|厨具|餐具/],
+    reason: '识别到食品接触或厨房用品关键词',
+  },
+];
+
+function findCategoryByNamePath(categories, pathNames) {
+  let parentId = '';
+  let matched = null;
+  for (const name of pathNames || []) {
+    matched = categories.find((category) => category.name === name && String(category.parentId || '') === String(parentId || ''));
+    if (!matched) return null;
+    parentId = matched.id;
+  }
+  return matched;
+}
+
+function scoreClassificationRule(rule, text) {
+  let score = 0;
+  const signals = [];
+  (rule.standards || []).forEach((pattern) => {
+    if (pattern.test(text)) {
+      score += 6;
+      signals.push(pattern.source.replaceAll('\\b', '').replaceAll('\\s*', ' ').replaceAll('\\', ''));
+    }
+  });
+  (rule.keywords || []).forEach((pattern) => {
+    if (pattern.test(text)) {
+      score += 3;
+      signals.push(pattern.source.replaceAll('\\', ''));
+    }
+  });
+  return { score, signals };
+}
+
+function suggestProductClassificationLocal({ product, documents, consumerCategories, complianceCategories }) {
+  const text = [
+    product.name,
+    product.nameEn,
+    (product.models || []).join(' '),
+    product.description,
+    product.descriptionEn,
+    product.material,
+    product.usageScenario,
+    ...(documents || []).flatMap((doc) => [doc.name, doc.type, doc.documentType, doc.standard, doc.issuer, doc.certNo]),
+  ].filter(Boolean).join(' ').replace(/[_-]+/g, ' ');
+  if (!text.trim()) return null;
+
+  const ranked = PRODUCT_CLASSIFICATION_RULES
+    .map((rule) => ({ rule, ...scoreClassificationRule(rule, text) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+  const best = ranked[0];
+  if (!best) return null;
+
+  const consumerCategory = findCategoryByNamePath(consumerCategories, best.rule.consumer);
+  const compliance = (best.rule.compliance || []).map((name) => complianceCategories.find((category) => category.name === name)).filter(Boolean);
+  return {
+    consumerCategoryId: consumerCategory?.id || '',
+    consumerCategoryPath: best.rule.consumer.join(' / '),
+    complianceCategoryIds: compliance.map((category) => Number(category.id)),
+    complianceCategoryPaths: compliance.map((category) => category.name),
+    confidence: best.score >= 6 ? '高可信' : '中可信',
+    reason: best.rule.reason,
+    matchedSignals: best.signals.slice(0, 5),
+  };
+}
 
 const products = [
   { name: 'Equestrian Helmet F20', model: 'F20-201AL', category: '个人防护用品 / 马术头盔', files: 3, status: '公开' },
@@ -88,6 +222,32 @@ function buildImportGroups(items) {
   }));
 }
 
+
+
+function getImportSuggestedClassification(group = {}) {
+  const suggestions = (group.items || []).map((item) => item.suggestedClassification).filter(Boolean);
+  if (!suggestions.length) return null;
+  const score = { high: 3, medium: 2, low: 1 };
+  const best = [...suggestions].sort((a, b) => (score[b.confidence] || 0) - (score[a.confidence] || 0))[0];
+  return {
+    ...best,
+    complianceCategoryIds: [...new Set(suggestions.flatMap((item) => item.complianceCategoryIds || []).map(String))],
+    complianceCategoryPaths: [...new Set(suggestions.flatMap((item) => item.complianceCategoryPaths || []))],
+    matchedSignals: [...new Set(suggestions.flatMap((item) => item.matchedSignals || []))].slice(0, 6),
+  };
+}
+
+function buildCategoryChain(categoryId, byId) {
+  const chain = [];
+  let current = categoryId ? byId.get(String(categoryId)) : null;
+  let guard = 0;
+  while (current && guard < 5) {
+    chain.unshift(current);
+    current = current.parentId ? byId.get(String(current.parentId)) : null;
+    guard += 1;
+  }
+  return chain;
+}
 
 function getImportConfidence(group) {
   const hasModel = Boolean(group.model);
@@ -338,7 +498,7 @@ export default function AdminV2Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { admin, logout } = useAdmin();
+  const { admin, logout, isAdmin } = useAdmin();
   const [activeGroup, setActiveGroup] = useState('personal');
   const [companies, setCompanies] = useState(fallbackCompanies);
   const [activeCompany, setActiveCompany] = useState(null);
@@ -347,13 +507,21 @@ export default function AdminV2Page() {
   const [sidebarScrolling, setSidebarScrolling] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [favoriteFilter, setFavoriteFilter] = useState('全部收藏');
+  const [favoriteSearch, setFavoriteSearch] = useState('');
+  const [favoriteFileType, setFavoriteFileType] = useState('all');
+  const [favoriteStatusFilter, setFavoriteStatusFilter] = useState('all');
+  const [favoriteGroup, setFavoriteGroup] = useState('全部收藏');
+  const [favoriteEditModal, setFavoriteEditModal] = useState({ open: false, item: null, group: '', newGroup: '', note: '' });
   const [historyEnabled, setHistoryEnabled] = useState(true);
   const [historyRows, setHistoryRows] = useState([
-    ['刚刚', '产品', 'Equestrian Helmet F20', 'Guangzhou Safety Equipment Co., Ltd.', '继续查看'],
-    ['今天 20:15', '文件', 'Declaration of Conformity', 'Guangzhou Safety Equipment Co., Ltd.', '打开文件'],
-    ['昨天 18:02', '公司', 'EU Riding Gear GmbH', '-', '查看公司'],
-    ['3 天前', '文件', 'CE Certificate - F20', 'Guangzhou Safety Equipment Co., Ltd.', '重新打开'],
+    ['刚刚', '产品', 'Equestrian Helmet F20', 'Guangzhou Safety Equipment Co., Ltd.', '继续查看', null, null],
+    ['今天 20:15', '文件', 'Declaration of Conformity', 'Guangzhou Safety Equipment Co., Ltd.', '打开文件', null, null],
+    ['昨天 18:02', '公司', 'EU Riding Gear GmbH', '-', '查看公司', null, null],
+    ['3 天前', '文件', 'CE Certificate - F20', 'Guangzhou Safety Equipment Co., Ltd.', '重新打开', null, null],
   ]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
+  const [historyRange, setHistoryRange] = useState('90d');
   const [favoriteItems, setFavoriteItems] = useState([
     ['产品', 'Equestrian Helmet F20', 'Guangzhou Safety Equipment Co., Ltd.', '资质证书、DoC、说明书已收录', '客户 A 需要核对证书', '正常'],
     ['公司', 'Guangzhou Safety Equipment Co., Ltd.', '公司主页', '常用供应商资料', '后续关注产品更新', '正常'],
@@ -384,13 +552,39 @@ export default function AdminV2Page() {
   const [companyLogoUrl, setCompanyLogoUrl] = useState('');
   const [companyProducts, setCompanyProducts] = useState(products);
   const [companyDocuments, setCompanyDocuments] = useState(documents);
+  const [consumerCategories, setConsumerCategories] = useState([]);
+  const [complianceCategories, setComplianceCategories] = useState([]);
+  const [categoryMode, setCategoryMode] = useState('consumer');
   const [fileFilters, setFileFilters] = useState({ query: '', type: 'all', product: 'all', language: 'all', status: 'all' });
   const [workspaceViewMode, setWorkspaceViewMode] = useState('standard');
   const [workspaceExpandedProduct, setWorkspaceExpandedProduct] = useState(null);
   const [workspaceExpandedPile, setWorkspaceExpandedPile] = useState('全部文件');
+  const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState('all');
-  const [productCategoryFilter, setProductCategoryFilter] = useState('all');
-  const emptyProductModal = { open: false, product: null, name: '', nameEn: '', models: [''], categoryPrimaryId: '', status: 'active', description: '', descriptionEn: '' };
+  const [productCategoryTopFilter, setProductCategoryTopFilter] = useState('');
+  const [productCategorySecondFilter, setProductCategorySecondFilter] = useState('');
+  const [productCategoryThirdFilter, setProductCategoryThirdFilter] = useState('');
+  const emptyProductModal = {
+    open: false,
+    product: null,
+    name: '',
+    nameEn: '',
+    models: [''],
+    categoryPrimaryId: '',
+    complianceCategoryIds: [],
+    status: 'active',
+    dimensions: '',
+    weight: '',
+    material: '',
+    usageScenario: '',
+    color: '',
+    packageContents: '',
+    warranty: '',
+    originCountry: '',
+    imageUrl: '',
+    description: '',
+    descriptionEn: '',
+  };
   const [productModal, setProductModal] = useState(emptyProductModal);
   const [documentModal, setDocumentModal] = useState(() => emptyDocumentModalState());
   const [documentPreview, setDocumentPreview] = useState({ open: false, url: '', title: '', objectUrl: '' });
@@ -411,6 +605,31 @@ export default function AdminV2Page() {
   const userCode = savedUserCode || admin?.user_code || `U-${String(admin?.id || 1).padStart(6, '0')}`;
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const panel = params.get('panel');
+    if (panel === 'notifications' || panel === 'profile' || panel === 'security') {
+      setActiveGroup('personal');
+      setActivePage(panel);
+      setActiveCompany(null);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      api.getCategories('consumer'),
+      api.getCategories('compliance'),
+    ])
+      .then(([consumerResponse, complianceResponse]) => {
+        if (cancelled) return;
+        setConsumerCategories(consumerResponse.data || []);
+        setComplianceCategories(complianceResponse.data || []);
+      })
+      .catch((error) => showAction(error.message || '分类数据读取失败'));
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     api.getPersonalOverview()
       .then((data) => {
@@ -426,27 +645,8 @@ export default function AdminV2Page() {
         setAvatarUrl(user.avatarPath ? `/eu-doc${user.avatarPath}` : '');
         setSavedUserCode(user.userCode || '');
         setHistoryEnabled(Boolean(data.settings?.historyEnabled ?? true));
-        setFavoriteItems((data.favorites || []).map((item) => [
-          item.itemType,
-          item.title,
-          item.meta || '',
-          item.description || '',
-          item.note || '',
-          item.status || '正常',
-          item.id,
-          item.itemId,
-        ]));
-        setRecentlyDeletedItems((data.recentlyDeleted || []).map((item) => [
-          item.itemType,
-          item.title,
-          item.meta || '',
-          item.description || '',
-          item.note || '',
-          item.status || '正常',
-          item.id,
-          item.itemId,
-          item.deletedAt,
-        ]));
+        setFavoriteItems((data.favorites || []).map(mapFavoriteRow));
+        setRecentlyDeletedItems((data.recentlyDeleted || []).map((item) => mapFavoriteRow(item, true)));
         setHistoryRows((data.history || []).map((item) => [
           item.viewedAt || item.createdAt || '刚刚',
           item.itemType,
@@ -454,6 +654,7 @@ export default function AdminV2Page() {
           item.company || '-',
           item.actionLabel || '查看',
           item.id,
+          item.itemId,
         ]));
         setNotificationItems((data.notifications || []).map((item) => ({
           id: item.id,
@@ -473,6 +674,554 @@ export default function AdminV2Page() {
     () => companies.find((company) => String(company.id) === String(activeCompany)) || companies[0],
     [activeCompany, companies]
   );
+
+  const getPublicEntityPath = (type, itemId) => {
+    if (!itemId) return '';
+    if (type === '产品') return `/products/${itemId}`;
+    if (type === '公司') return `/companies/${itemId}`;
+    if (type === '文件') return `/documents/${itemId}`;
+    return '';
+  };
+
+  const consumerCategoryById = useMemo(
+    () => new Map(consumerCategories.map((category) => [String(category.id), category])),
+    [consumerCategories]
+  );
+
+  const getConsumerChildren = (parentId) => consumerCategories.filter((category) => String(category.parentId || '') === String(parentId || ''));
+
+  const selectedConsumerChain = useMemo(() => {
+    const chain = [];
+    let current = productModal.categoryPrimaryId ? consumerCategoryById.get(String(productModal.categoryPrimaryId)) : null;
+    while (current) {
+      chain.unshift(current);
+      current = current.parentId ? consumerCategoryById.get(String(current.parentId)) : null;
+    }
+    return chain;
+  }, [consumerCategoryById, productModal.categoryPrimaryId]);
+
+  const selectedConsumerTopId = selectedConsumerChain[0]?.id || '';
+  const selectedConsumerSecondId = selectedConsumerChain[1]?.id || '';
+  const selectedConsumerThirdId = selectedConsumerChain[2]?.id || '';
+  const topConsumerCategories = consumerCategories.filter((category) => !category.parentId);
+  const secondConsumerCategories = selectedConsumerTopId ? getConsumerChildren(selectedConsumerTopId) : [];
+  const thirdConsumerCategories = selectedConsumerSecondId ? getConsumerChildren(selectedConsumerSecondId) : [];
+  const importConsumerCategoryId = productModal.categoryPrimaryId;
+  const importConsumerChain = useMemo(() => buildCategoryChain(importConsumerCategoryId, consumerCategoryById), [consumerCategoryById, importConsumerCategoryId]);
+  const importConsumerTopId = importConsumerChain[0]?.id || '';
+  const importConsumerSecondId = importConsumerChain[1]?.id || '';
+  const importConsumerThirdId = importConsumerChain[2]?.id || '';
+  const importSecondConsumerCategories = importConsumerTopId ? getConsumerChildren(importConsumerTopId) : [];
+  const importThirdConsumerCategories = importConsumerSecondId ? getConsumerChildren(importConsumerSecondId) : [];
+  const productFilterSecondCategories = productCategoryTopFilter && productCategoryTopFilter !== 'uncategorized'
+    ? getConsumerChildren(productCategoryTopFilter)
+    : [];
+  const productFilterThirdCategories = productCategorySecondFilter ? getConsumerChildren(productCategorySecondFilter) : [];
+  const activeProductCategoryFilterId = productCategoryThirdFilter || productCategorySecondFilter || (productCategoryTopFilter === 'uncategorized' ? '' : productCategoryTopFilter);
+
+  const changeConsumerTopCategory = (categoryId) => {
+    setProductModal((form) => ({ ...form, categoryPrimaryId: categoryId ? String(categoryId) : '' }));
+  };
+
+  const changeConsumerSecondCategory = (categoryId) => {
+    setProductModal((form) => ({ ...form, categoryPrimaryId: categoryId ? String(categoryId) : String(selectedConsumerTopId || '') }));
+  };
+
+  const changeConsumerThirdCategory = (categoryId) => {
+    setProductModal((form) => ({ ...form, categoryPrimaryId: categoryId ? String(categoryId) : String(selectedConsumerSecondId || selectedConsumerTopId || '') }));
+  };
+
+
+  const complianceCategoryById = useMemo(
+    () => new Map(complianceCategories.map((category) => [String(category.id), category])),
+    [complianceCategories]
+  );
+
+  const getComplianceChildren = (parentId) => complianceCategories.filter((category) => String(category.parentId || '') === String(parentId || ''));
+
+  const selectedComplianceChain = useMemo(() => {
+    const selectedId = (productModal.complianceCategoryIds || [])[0];
+    const chain = [];
+    let current = selectedId ? complianceCategoryById.get(String(selectedId)) : null;
+    while (current) {
+      chain.unshift(current);
+      current = current.parentId ? complianceCategoryById.get(String(current.parentId)) : null;
+    }
+    return chain;
+  }, [complianceCategoryById, productModal.complianceCategoryIds]);
+
+  const selectedComplianceTopId = selectedComplianceChain[0]?.id || '';
+  const selectedComplianceSecondId = selectedComplianceChain[1]?.id || '';
+  const topComplianceCategories = complianceCategories.filter((category) => !category.parentId);
+  const secondComplianceCategories = selectedComplianceTopId ? getComplianceChildren(selectedComplianceTopId) : [];
+
+  const changeComplianceTopCategory = (categoryId) => {
+    setProductModal((form) => ({ ...form, complianceCategoryIds: categoryId ? [Number(categoryId)] : [] }));
+  };
+
+  const changeComplianceSecondCategory = (categoryId) => {
+    setProductModal((form) => ({ ...form, complianceCategoryIds: categoryId ? [Number(categoryId)] : (selectedComplianceTopId ? [Number(selectedComplianceTopId)] : []) }));
+  };
+
+  const productClassificationSuggestion = useMemo(() => {
+    if (!productModal.open) return null;
+    return suggestProductClassificationLocal({
+      product: productModal,
+      documents: productModal.product ? getProductDocuments(productModal.product, companyDocuments) : [],
+      consumerCategories,
+      complianceCategories,
+    });
+  }, [productModal, companyDocuments, consumerCategories, complianceCategories]);
+
+  const applyProductClassificationSuggestion = () => {
+    if (!productClassificationSuggestion) return;
+    setProductModal((form) => ({
+      ...form,
+      categoryPrimaryId: productClassificationSuggestion.consumerCategoryId ? String(productClassificationSuggestion.consumerCategoryId) : form.categoryPrimaryId,
+      complianceCategoryIds: productClassificationSuggestion.complianceCategoryIds?.length ? productClassificationSuggestion.complianceCategoryIds : form.complianceCategoryIds,
+    }));
+  };
+
+  const parseHistoryTimestamp = (time) => {
+    if (!time) return Date.now();
+    if (time === '刚刚') return Date.now();
+    const normalized = String(time).replace(' ', 'T');
+    const timestamp = new Date(normalized).getTime();
+    return Number.isNaN(timestamp) ? Date.now() : timestamp;
+  };
+
+  const historyTypeOptions = [
+    { value: 'all', label: '全部', short: '全部' },
+    { value: '公司', label: '公司主页', short: '公司' },
+    { value: '产品', label: '产品详情', short: '产品' },
+    { value: '文件', label: '文件资料', short: '文件' },
+  ];
+
+  const historyRangeOptions = [
+    { value: 'all', label: '全部时间' },
+    { value: 'today', label: '今天' },
+    { value: 'yesterday', label: '昨天' },
+    { value: '7d', label: '近 7 天' },
+    { value: '30d', label: '近 30 天' },
+    { value: '90d', label: '近 90 天' },
+  ];
+
+  const normalizedHistoryRows = useMemo(() => historyRows.map(([time, type, name, company, action, historyId, itemId]) => {
+    const timestamp = parseHistoryTimestamp(time);
+    return { time, type, name, company, action, historyId, itemId, timestamp, targetPath: getPublicEntityPath(type, itemId) };
+  }), [historyRows]);
+
+  const historyStats = useMemo(() => ({
+    all: normalizedHistoryRows.length,
+    company: normalizedHistoryRows.filter((item) => item.type === '公司').length,
+    product: normalizedHistoryRows.filter((item) => item.type === '产品').length,
+    file: normalizedHistoryRows.filter((item) => item.type === '文件').length,
+  }), [normalizedHistoryRows]);
+
+  const filteredHistoryRows = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
+    const dayLimit = Number(String(historyRange).replace('d', ''));
+    const since = Number.isFinite(dayLimit) ? Date.now() - dayLimit * 24 * 60 * 60 * 1000 : 0;
+
+    return normalizedHistoryRows.filter((item) => {
+      if (historyTypeFilter !== 'all' && item.type !== historyTypeFilter) return false;
+      if (query && ![item.name, item.company, item.type, item.action].some((value) => String(value || '').toLowerCase().includes(query))) return false;
+      if (historyRange === 'today' && item.timestamp < startOfToday) return false;
+      if (historyRange === 'yesterday' && (item.timestamp < startOfYesterday || item.timestamp >= startOfToday)) return false;
+      if (historyRange.endsWith('d') && item.timestamp < since) return false;
+      return true;
+    }).sort((a, b) => b.timestamp - a.timestamp);
+  }, [normalizedHistoryRows, historySearch, historyTypeFilter, historyRange]);
+
+  const groupedHistoryRows = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
+    const groups = [];
+    filteredHistoryRows.forEach((item) => {
+      let label = '更早';
+      if (item.timestamp >= startOfToday) label = '今天';
+      else if (item.timestamp >= startOfYesterday) label = '昨天';
+      const current = groups.find((group) => group.label === label);
+      if (current) current.items.push(item);
+      else groups.push({ label, items: [item] });
+    });
+    return groups;
+  }, [filteredHistoryRows]);
+
+
+  const favoriteTypeOptions = ['全部收藏', '公司', '产品', '资质证书', 'DoC 声明', '说明书', '检测报告', '有提醒', '最近取消'];
+  const favoriteFileTypeOptions = [
+    { value: 'all', label: '全部文件' },
+    { value: 'certificate', label: '资质证书' },
+    { value: 'doc', label: 'DoC 声明' },
+    { value: 'manual', label: '说明书' },
+    { value: 'report', label: '检测报告' },
+  ];
+  const favoriteStatusOptions = [
+    { value: 'all', label: '全部状态' },
+    { value: 'normal', label: '正常' },
+    { value: 'warning', label: '有提醒' },
+    { value: 'deleted', label: '最近取消' },
+  ];
+
+  const mapFavoriteRow = (item, deleted = false) => ({
+    type: item.itemType,
+    title: item.title,
+    meta: item.meta || '',
+    desc: item.description || '',
+    note: item.note || '',
+    status: item.status || '正常',
+    id: item.id,
+    itemId: item.itemId,
+    statusReason: item.statusReason || '',
+    deletedAt: item.deletedAt,
+    deleted,
+    companyId: item.companyId,
+    companyName: item.companyName || '',
+    productId: item.productId,
+    productName: item.productName || '',
+    documentType: item.documentType || '',
+  });
+
+  const normalizeFavorite = (item, deleted = false) => {
+    const base = Array.isArray(item)
+      ? { type: item[0], title: item[1], meta: item[2] || '', desc: item[3] || '', note: item[4] || '', status: item[5] || '正常', id: item[6], itemId: item[7], statusReason: item[8] || '', deletedAt: item[9], deleted }
+      : { ...item, deleted: deleted || item.deleted };
+    const text = `${base.title || ''} ${base.meta || ''} ${base.desc || ''} ${base.note || ''} ${base.companyName || ''} ${base.productName || ''}`.toLowerCase();
+    let fileType = base.documentType || '';
+    if (base.type === '文件') {
+      const normalizedFileType = String(fileType || '').toLowerCase();
+      // 优先根据 documentType 字段判断，这是数据库中的准确类型
+      if (['declaration_of_conformity', 'doc', 'declaration', 'declaration-of-conformity'].includes(normalizedFileType)) fileType = 'doc';
+      else if (['manual', 'user_manual', 'instruction_manual', 'instructions'].includes(normalizedFileType)) fileType = 'manual';
+      else if (['report', 'test_report', 'test-report'].includes(normalizedFileType)) fileType = 'report';
+      else if (['certificate', 'certification', 'cert'].includes(normalizedFileType)) fileType = 'certificate';
+      // 只有在 documentType 为空或无法识别时，才使用文本模糊匹配作为后备
+      else if (!normalizedFileType) {
+        // 注意：这里的正则顺序很重要，"使用说明书"中包含"说明"，所以要先匹配"说明书"，避免被"声明"误匹配
+        if (/说明书|使用说明|manual|instruction/i.test(text)) fileType = 'manual';
+        else if (/doc(?![一-龥])|声明(?!书)|conformity/i.test(text)) fileType = 'doc';
+        else if (/报告|report|test/i.test(text)) fileType = 'report';
+        else if (/证书|certificate|cert/i.test(text)) fileType = 'certificate';
+        else fileType = 'certificate'; // 默认值
+      } else {
+        fileType = normalizedFileType || 'certificate';
+      }
+    }
+    return { ...base, fileType, text };
+  };
+
+  const favoriteStats = useMemo(() => {
+    const normal = favoriteItems.map((item) => normalizeFavorite(item));
+    const files = normal.filter((item) => item.type === '文件');
+    console.log('=== 统计数据调试 ===');
+    console.log('所有收藏:', normal.length);
+    console.log('文件收藏:', files);
+    files.forEach(f => console.log(`  ${f.title}: fileType=${f.fileType}, documentType=${f.documentType}`));
+    return {
+      all: normal.length,
+      company: normal.filter((item) => item.type === '公司').length,
+      product: normal.filter((item) => item.type === '产品').length,
+      file: files.length,
+      certificate: files.filter((item) => item.fileType === 'certificate').length,
+      doc: files.filter((item) => item.fileType === 'doc').length,
+      manual: files.filter((item) => item.fileType === 'manual').length,
+      report: files.filter((item) => item.fileType === 'report').length,
+      warning: normal.filter((item) => item.status !== '正常').length,
+      deleted: recentlyDeletedItems.length,
+    };
+  }, [favoriteItems, recentlyDeletedItems]);
+
+  const favoriteGroupOptions = useMemo(() => {
+    const counts = new Map([['全部收藏', favoriteStats.all], ['未分组', 0]]);
+    favoriteItems.map((item) => normalizeFavorite(item)).forEach((item) => {
+      const group = parseFavoriteNote(item.note).group || '未分组';
+      counts.set(group, (counts.get(group) || 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
+  }, [favoriteItems, favoriteStats.all]);
+
+  const filteredFavorites = useMemo(() => {
+    const source = favoriteFilter === '最近取消'
+      ? recentlyDeletedItems.map((item) => normalizeFavorite(item, true))
+      : favoriteItems.map((item) => normalizeFavorite(item));
+    const query = favoriteSearch.trim().toLowerCase();
+
+    console.log('=== 筛选调试 ===');
+    console.log('当前筛选:', favoriteFilter);
+    console.log('源数据:', source.length, '条');
+
+    const result = source.filter((item) => {
+      if (favoriteFilter !== '最近取消' && item.deleted) return false;
+      if (favoriteFilter === '公司' && item.type !== '公司') return false;
+      if (favoriteFilter === '产品' && item.type !== '产品') return false;
+      // 新的文件类型筛选逻辑
+      if (favoriteFilter === '资质证书' && (item.type !== '文件' || item.fileType !== 'certificate')) {
+        console.log(`  过滤: ${item.title}, type=${item.type}, fileType=${item.fileType}`);
+        return false;
+      }
+      if (favoriteFilter === 'DoC 声明' && (item.type !== '文件' || item.fileType !== 'doc')) {
+        console.log(`  过滤: ${item.title}, type=${item.type}, fileType=${item.fileType}`);
+        return false;
+      }
+      if (favoriteFilter === '说明书' && (item.type !== '文件' || item.fileType !== 'manual')) {
+        console.log(`  过滤: ${item.title}, type=${item.type}, fileType=${item.fileType}`);
+        return false;
+      }
+      if (favoriteFilter === '检测报告' && (item.type !== '文件' || item.fileType !== 'report')) return false;
+      if (favoriteFilter === '有提醒' && item.status === '正常') return false;
+      // 只对文件类型进行文件类型筛选
+      if (favoriteFileType !== 'all' && item.type === '文件' && item.fileType !== favoriteFileType) return false;
+      if (favoriteStatusFilter === 'normal' && item.status !== '正常') return false;
+      if (favoriteStatusFilter === 'warning' && item.status === '正常') return false;
+      if (favoriteStatusFilter === 'deleted' && !item.deleted) return false;
+      if (favoriteFilter !== '最近取消' && favoriteGroup !== '全部收藏') {
+        const group = parseFavoriteNote(item.note).group || '未分组';
+        if (group !== favoriteGroup) return false;
+      }
+      if (query && !item.text.includes(query)) return false;
+      return true;
+    });
+
+    console.log('筛选结果:', result.length, '条');
+    result.forEach(r => console.log(`  ✓ ${r.title} (${r.type}${r.fileType ? ` - ${r.fileType}` : ''})`));
+
+    return result;
+  }, [favoriteItems, recentlyDeletedItems, favoriteFilter, favoriteGroup, favoriteSearch, favoriteFileType, favoriteStatusFilter]);
+
+  const displayFavorites = useMemo(() => {
+    return filteredFavorites;
+  }, [filteredFavorites]);
+
+  const openFavoriteTarget = (type, itemId) => {
+    const targetPath = getPublicEntityPath(type, itemId);
+    if (!targetPath) {
+      showAction('这条收藏缺少跳转目标');
+      return;
+    }
+    navigate(targetPath);
+  };
+
+  const getFavoriteToneClass = (type) => {
+    if (type === '公司') return styles.favoriteToneCompany;
+    if (type === '产品') return styles.favoriteToneProduct;
+    if (type === '文件') return styles.favoriteToneFile;
+    return '';
+  };
+
+
+  const hierarchyFavorites = useMemo(() => {
+    if (favoriteFilter === '全部收藏' && favoriteGroup === '全部收藏' && favoriteSearch.trim() === '' && favoriteFileType === 'all' && favoriteStatusFilter === 'all') {
+      return favoriteItems.map((item) => normalizeFavorite(item)).filter((item) => !item.deleted);
+    }
+    return filteredFavorites;
+  }, [favoriteItems, filteredFavorites, favoriteFilter, favoriteGroup, favoriteSearch, favoriteFileType, favoriteStatusFilter]);
+
+  const favoriteHierarchy = useMemo(() => {
+    const companyMap = new Map();
+    const getCompanyKey = (item) => item.companyId ? `company-${item.companyId}` : `company-name-${item.companyName || (item.type === '公司' ? item.title : '未归属公司')}`;
+    const ensureCompany = (item) => {
+      const key = getCompanyKey(item);
+      if (!companyMap.has(key)) {
+        companyMap.set(key, {
+          key,
+          companyId: item.companyId || (item.type === '公司' ? item.itemId : null),
+          name: item.companyName || (item.type === '公司' ? item.title : '未归属公司'),
+          favorite: null,
+          products: new Map(),
+          files: [],
+        });
+      }
+      return companyMap.get(key);
+    };
+    const ensureProduct = (company, item) => {
+      const key = item.productId ? `product-${item.productId}` : `product-name-${item.productName || (item.type === '产品' ? item.title : '未绑定产品')}`;
+      if (!company.products.has(key)) {
+        company.products.set(key, {
+          key,
+          productId: item.productId || (item.type === '产品' ? item.itemId : null),
+          name: item.productName || (item.type === '产品' ? item.title : '未绑定产品'),
+          favorite: null,
+          files: [],
+        });
+      }
+      return company.products.get(key);
+    };
+
+    hierarchyFavorites.forEach((item) => {
+      const company = ensureCompany(item);
+      if (item.type === '公司') {
+        company.favorite = item;
+        return;
+      }
+      if (item.type === '产品') {
+        ensureProduct(company, item).favorite = item;
+        return;
+      }
+      if (item.type === '文件') {
+        if (item.productId || item.productName) ensureProduct(company, item).files.push(item);
+        else company.files.push(item);
+      }
+    });
+
+    return Array.from(companyMap.values()).map((company) => ({
+      ...company,
+      products: Array.from(company.products.values()),
+    }));
+  }, [hierarchyFavorites]);
+
+  const useFavoriteHierarchy = favoriteFilter === '全部收藏' && favoriteStatusFilter === 'all' && favoriteFileType === 'all';
+  const favoriteHierarchyStats = useMemo(() => {
+    const productGroupCount = favoriteHierarchy.reduce((sum, company) => sum + company.products.length, 0);
+    return {
+      itemCount: hierarchyFavorites.length,
+      companyGroupCount: favoriteHierarchy.length,
+      productGroupCount,
+    };
+  }, [favoriteHierarchy, hierarchyFavorites.length]);
+
+  const getProductFavoriteTotal = (product) => (product.favorite ? 1 : 0) + product.files.length;
+  const getCompanyFavoriteTotal = (company) => company.products.reduce((sum, product) => sum + getProductFavoriteTotal(product), company.favorite ? 1 : 0) + company.files.length;
+  const activeFavoriteFilterLabels = [
+    favoriteGroup !== '全部收藏' ? `分组：${favoriteGroup}` : '',
+    favoriteFileType !== 'all' ? favoriteFileTypeOptions.find((item) => item.value === favoriteFileType)?.label : '',
+    favoriteStatusFilter !== 'all' && favoriteStatusFilter !== (favoriteFilter === '最近取消' ? 'deleted' : 'all') ? favoriteStatusOptions.find((item) => item.value === favoriteStatusFilter)?.label : '',
+  ].filter(Boolean);
+  const visibleFavoriteCount = useFavoriteHierarchy ? hierarchyFavorites.length : displayFavorites.length;
+  const favoriteResultText = useFavoriteHierarchy && favoriteHierarchyStats.itemCount > 0
+    ? `${favoriteFilter} · ${favoriteHierarchyStats.itemCount} 条收藏 · 按 ${favoriteHierarchyStats.companyGroupCount} 个公司 / ${favoriteHierarchyStats.productGroupCount} 个产品归类`
+    : `${favoriteFilter} · ${displayFavorites.length} 条收藏`;
+
+  function parseFavoriteNote(note = '') {
+    const text = String(note || '').trim();
+    const match = text.match(/^分组[:：]\s*(.+?)(?:\n|$)/);
+    const group = match ? match[1].trim() : '';
+    const cleanNote = match ? text.replace(/^分组[:：].*?(?:\n|$)/, '').trim() : text;
+    return { group, note: cleanNote };
+  }
+
+  const formatFavoriteNote = (group, note) => [group ? `分组：${group}` : '', note || ''].filter(Boolean).join('\n');
+
+  const refreshPersonalOverview = async () => {
+    const data = await api.getPersonalOverview();
+    setFavoriteItems((data.favorites || []).map(mapFavoriteRow));
+    setRecentlyDeletedItems((data.recentlyDeleted || []).map((row) => mapFavoriteRow(row, true)));
+    return data;
+  };
+
+  const restoreFavorite = async (item) => {
+    try {
+      await api.restoreFavorite(item.id);
+      setRecentlyDeletedItems((items) => items.filter((row) => String(row.id) !== String(item.id)));
+      await refreshPersonalOverview();
+      showAction('已重新添加到收藏');
+    } catch (error) {
+      showAction(error.message || '恢复收藏失败');
+    }
+  };
+
+  const permanentlyDeleteFavorite = async (item) => {
+    if (!confirm('确定永久删除？此操作不可恢复。')) return;
+    try {
+      await api.permanentDeleteFavorite(item.id);
+      setRecentlyDeletedItems((items) => items.filter((row) => String(row.id) !== String(item.id)));
+      setFavoriteItems((items) => items.filter((row) => String(row.id) !== String(item.id)));
+      await refreshPersonalOverview();
+      showAction('已永久删除');
+    } catch (error) {
+      showAction(error.message || '删除失败');
+    }
+  };
+
+  const updateFavoriteItemNote = (item) => {
+    const parsed = parseFavoriteNote(item.note);
+    setFavoriteEditModal({ open: true, item, group: parsed.group || '未分组', newGroup: '', note: parsed.note });
+  };
+
+  const closeFavoriteEditModal = () => {
+    setFavoriteEditModal({ open: false, item: null, group: '', newGroup: '', note: '' });
+  };
+
+  const saveFavoriteEdit = async () => {
+    const item = favoriteEditModal.item;
+    if (!item) return;
+    const selectedGroup = favoriteEditModal.group === '__new__' ? favoriteEditModal.newGroup.trim() : favoriteEditModal.group.trim();
+    const mergedNote = formatFavoriteNote(selectedGroup === '未分组' ? '' : selectedGroup, favoriteEditModal.note.trim());
+    try {
+      await api.updateFavoriteNote(item.id, mergedNote);
+      setFavoriteItems((items) => items.map((row) => String(row.id) === String(item.id) ? { ...row, note: mergedNote } : row));
+      await refreshPersonalOverview();
+      closeFavoriteEditModal();
+      showAction('分组和备注已保存');
+    } catch (error) {
+      showAction(error.message || '保存失败');
+    }
+  };
+
+  const cancelFavoriteItem = async (item) => {
+    try {
+      await api.deleteFavorite(item.id);
+      const deletedItem = favoriteItems.find((row) => String(row.id) === String(item.id));
+      if (deletedItem) setRecentlyDeletedItems((items) => [{ ...deletedItem, deleted: true, deletedAt: new Date().toISOString() }, ...items]);
+      setFavoriteItems((items) => items.filter((row) => String(row.id) !== String(item.id)));
+      await refreshPersonalOverview();
+      showAction('收藏已取消，可在“最近取消”中恢复');
+    } catch (error) {
+      showAction(error.message || '取消收藏失败');
+    }
+  };
+
+  const renderFavoriteCard = (item, compact = false) => {
+    const parsedNote = parseFavoriteNote(item.note);
+    const sourceText = item.type === '文件'
+      ? [item.productName, item.companyName].filter(Boolean).join(' · ') || item.meta || '暂无归属信息'
+      : item.meta || item.companyName || item.productName || '暂无来源信息';
+    const descText = String(item.desc || '').trim();
+    const shouldShowDesc = item.type !== '文件' && descText && descText !== sourceText && !sourceText.includes(descText) && !descText.includes(sourceText);
+    const fileTypeLabel = favoriteFileTypeOptions.find((option) => option.value === item.fileType)?.label || '文件';
+
+    const entityStatusText = item.status || '正常';
+    const entityStatusClass = entityStatusText === '正常' ? styles.statusOk : styles.statusPending;
+    return (
+    <article key={item.id || `${item.type}-${item.title}`} className={`${styles.favoriteListCard} ${getFavoriteToneClass(item.type)} ${compact ? styles.favoriteCompactCard : ''} ${item.deleted ? styles.favoriteDeletedCard : ''}`}>
+      <div className={styles.favoriteTypeBadge}>{item.type}</div>
+      <div className={styles.favoriteContent}>
+        <div className={styles.favoriteTitleLine}>
+          <button type="button" className={styles.favoriteTitleButton} onClick={() => openFavoriteTarget(item.type, item.itemId)}>{item.title}</button>
+          {item.deleted && <em className={styles.favoriteRelationBadge}>收藏已取消</em>}
+          <em className={entityStatusClass}>{entityStatusText}</em>
+        </div>
+        <p>{sourceText}</p>
+        <div className={styles.favoriteMetaLine}>
+          {item.type === '文件' && <span>{fileTypeLabel}</span>}
+          {shouldShowDesc && <span>{descText}</span>}
+          {parsedNote.group && <span className={styles.favoriteGroupChip}>{parsedNote.group}</span>}
+        </div>
+        {parsedNote.note && <div className={styles.favoriteNote}>备注：{parsedNote.note}</div>}
+        {item.statusReason && <div className={styles.favoriteNote}>状态原因：{item.statusReason}</div>}
+        {item.deletedAt && <div className={styles.favoriteNote}>取消时间：{new Date(item.deletedAt).toLocaleString('zh-CN')}</div>}
+      </div>
+      <div className={styles.favoriteActions}>
+        {item.deleted ? (
+          <>
+            <button className={styles.primaryBtn} onClick={() => restoreFavorite(item)}>恢复</button>
+            <button className={styles.textDangerBtn} onClick={() => permanentlyDeleteFavorite(item)}>永久删除</button>
+          </>
+        ) : (
+          <>
+            <button className={styles.secondaryBtn} onClick={() => openFavoriteTarget(item.type, item.itemId)}>查看</button>
+            <button className={styles.secondaryBtn} onClick={() => updateFavoriteItemNote(item)}>整理</button>
+            <button className={styles.textDangerBtn} onClick={() => cancelFavoriteItem(item)}>取消</button>
+          </>
+        )}
+      </div>
+    </article>
+    );
+  };
 
   useEffect(() => {
     api.getMyCompanies()
@@ -567,8 +1316,14 @@ export default function AdminV2Page() {
           id: item.id,
           name: item.name,
           model: item.model || '-',
-          category: item.categoryName || '其他 / 待分类',
+          category: item.categoryPath || item.categoryName || '其他 / 待分类',
           categoryPrimaryId: item.categoryPrimaryId || '',
+          categoryParentId: item.categoryParentId || '',
+          categoryGrandId: item.categoryGrandId || '',
+          categoryParentName: item.categoryParentName || '',
+          categoryGrandName: item.categoryGrandName || '',
+          complianceCategoryIds: item.complianceCategoryIds || (item.complianceCategories || []).map((cat) => cat.id),
+          complianceCategories: item.complianceCategories || [],
           files: item.documentCount || 0,
           status: item.status === 'active' ? '公开' : item.status || '草稿',
           rawStatus: item.status || 'active',
@@ -576,6 +1331,14 @@ export default function AdminV2Page() {
           description: item.description || '',
           nameEn: item.nameEn || '',
           descriptionEn: item.descriptionEn || '',
+          dimensions: item.dimensions || '',
+          weight: item.weight || '',
+          material: item.material || '',
+          usageScenario: item.usageScenario || '',
+          color: item.color || '',
+          packageContents: item.packageContents || '',
+          warranty: item.warranty || '',
+          originCountry: item.originCountry || '',
           imageUrl: item.imagePath ? `/eu-doc${item.imagePath}` : '',
         })));
       })
@@ -759,17 +1522,20 @@ export default function AdminV2Page() {
 
   const organizeImportItem = async (item) => {
     const form = importSelection[item.id] || {};
+    const suggestedClassification = item.suggestedClassification || {};
     try {
       await api.organizeImportItem(item.id, {
-        product_id: form.productId || '',
-        new_product_name: form.newProductName || item.suggestedProductName || '',
-        new_product_model: form.newProductModel || item.guessedModels || item.guessedModel || '',
-        document_type: form.documentType || item.guessedType || 'other',
+        productId: form.productId || '',
+        newProductName: form.newProductName || item.suggestedProductName || '',
+        newProductModel: form.newProductModel || item.guessedModels || item.guessedModel || '',
+        documentType: form.documentType || item.guessedType || 'other',
         title: form.title || item.originalName,
         language: form.language || item.guessedLanguage || 'en',
-        cert_no: form.certNo || item.guessedCertNo || '',
+        certNo: form.certNo || item.guessedCertNo || '',
         standard: form.standard || '',
         issuer: form.issuer || '',
+        categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
+        complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
       });
       showAction('文件已整理到产品资料');
       await Promise.all([refreshImportItems(), refreshCompanyAssets()]);
@@ -800,15 +1566,18 @@ export default function AdminV2Page() {
     const itemsToOrganize = group.items.some((item) => item.isDuplicate) ? group.items.filter((item) => !item.isDuplicate) : group.items;
     if (!itemsToOrganize.length) { showAction('这组只有重复文件，请先删除重复或拆分处理'); return; }
     const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : findMatchingProductId(group, companyProducts);
+    const suggestedClassification = getImportSuggestedClassification(group) || {};
     try {
       await api.organizeImportGroup({
         ids: itemsToOrganize.map((item) => item.id),
-        product_id: matchedProductId || '',
-        new_product_name: form.newProductName || group.suggestedName || '',
-        new_product_model: [...splitImportModels(group.model).map((model, index) => form[`model_${index}`] || model), ...(form.extraModels || [])].map((model) => String(model || '').trim()).filter(Boolean).join(', ') || form.newProductModel || group.model || '',
-        document_type: form.documentType || inferImportType(group.items[0], group.type),
-        languages_by_id: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`language_${item.id}`] || item.guessedLanguage || 'en'])),
-        document_types_by_id: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)])),
+        productId: matchedProductId || '',
+        newProductName: form.newProductName || group.suggestedName || '',
+        newProductModel: [...splitImportModels(group.model).map((model, index) => form[`model_${index}`] || model), ...(form.extraModels || [])].map((model) => String(model || '').trim()).filter(Boolean).join(', ') || form.newProductModel || group.model || '',
+        documentType: form.documentType || inferImportType(group.items[0], group.type),
+        languagesById: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`language_${item.id}`] || item.guessedLanguage || 'en'])),
+        documentTypesById: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)])),
+        categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
+        complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
       });
       showAction('已按同一产品整理这些文件');
       setActiveImportGroupKey(null);
@@ -822,6 +1591,15 @@ export default function AdminV2Page() {
     setActiveGroup(group);
     setActivePage(pageId);
     if (companyId !== undefined && companyId !== null) setActiveCompany(Number(companyId));
+    else if (group !== 'company') setActiveCompany(null);
+    if (group === 'personal') navigate(`/admin?panel=${pageId}`, { replace: true });
+    else if (location.search) navigate('/admin', { replace: true });
+  };
+
+  const manageProductFiles = (product) => {
+    if (!product?.id) return;
+    setFileFilters((form) => ({ ...form, product: String(product.id), type: 'all', query: '', language: 'all', status: 'all' }));
+    openPage('company', 'files', activeCompany);
   };
 
   const handleLogout = () => {
@@ -907,15 +1685,15 @@ export default function AdminV2Page() {
     try {
       await api.updateCompany(activeCompany, {
         name: companyForm.name,
-        name_en: companyForm.nameEn,
+        nameEn: companyForm.nameEn,
         slug: companyForm.slug,
-        contact_email: companyForm.contactEmail,
-        contact_phone: companyForm.contactPhone,
+        contactEmail: companyForm.contactEmail,
+        contactPhone: companyForm.contactPhone,
         website: companyForm.website,
-        main_category: companyForm.mainCategory,
+        mainCategory: companyForm.mainCategory,
         address: companyForm.address,
         description: companyForm.description,
-        public_visible: currentCompany.status === '已认证' && companyForm.publicVisible ? 1 : 0,
+        publicVisible: currentCompany.status === '已认证' && companyForm.publicVisible ? 1 : 0,
       });
       setCompanies((items) => items.map((item) => item.id === activeCompany ? { ...item, name: companyForm.name || item.name } : item));
       showAction('公司资料已保存');
@@ -947,8 +1725,8 @@ export default function AdminV2Page() {
     try {
       const result = await api.createCompany({
         name: companyModal.name,
-        name_en: companyModal.nameEn,
-        contact_email: companyModal.contactEmail,
+        nameEn: companyModal.nameEn,
+        contactEmail: companyModal.contactEmail,
       });
       const newCompanyId = result.id || result.data?.id;
       const newCompany = {
@@ -994,8 +1772,14 @@ export default function AdminV2Page() {
       id: item.id,
       name: item.name,
       model: item.model || '-',
-      category: item.categoryName || '其他 / 待分类',
+      category: item.categoryPath || item.categoryName || '其他 / 待分类',
       categoryPrimaryId: item.categoryPrimaryId || '',
+      categoryParentId: item.categoryParentId || '',
+      categoryGrandId: item.categoryGrandId || '',
+      categoryParentName: item.categoryParentName || '',
+      categoryGrandName: item.categoryGrandName || '',
+      complianceCategoryIds: item.complianceCategoryIds || (item.complianceCategories || []).map((cat) => cat.id),
+      complianceCategories: item.complianceCategories || [],
       files: item.documentCount || 0,
       status: item.status === 'active' ? '公开' : item.status || '草稿',
       rawStatus: item.status || 'active',
@@ -1003,6 +1787,14 @@ export default function AdminV2Page() {
       description: item.description || '',
       nameEn: item.nameEn || '',
       descriptionEn: item.descriptionEn || '',
+      dimensions: item.dimensions || '',
+      weight: item.weight || '',
+      material: item.material || '',
+      usageScenario: item.usageScenario || '',
+      color: item.color || '',
+      packageContents: item.packageContents || '',
+      warranty: item.warranty || '',
+      originCountry: item.originCountry || '',
       imageUrl: item.imagePath ? `/eu-doc${item.imagePath}` : '',
     })));
     setCompanyDocuments((documentResponse.data || []).map((item) => ({
@@ -1046,11 +1838,20 @@ export default function AdminV2Page() {
     const modelText = productModal.models.map((model) => model.trim()).filter(Boolean).join(', ');
     const payload = {
       name: productModal.name.trim(),
-      name_en: productModal.nameEn.trim() || null,
+      nameEn: productModal.nameEn.trim() || null,
       model: modelText,
       description: productModal.description.trim() || null,
-      description_en: productModal.descriptionEn.trim() || null,
-      category_primary_id: productModal.categoryPrimaryId || null,
+      descriptionEn: productModal.descriptionEn.trim() || null,
+      categoryPrimaryId: productModal.categoryPrimaryId || null,
+      complianceCategoryIds: productModal.complianceCategoryIds || [],
+      dimensions: productModal.dimensions.trim() || null,
+      weight: productModal.weight.trim() || null,
+      material: productModal.material.trim() || null,
+      usageScenario: productModal.usageScenario.trim() || null,
+      color: productModal.color.trim() || null,
+      packageContents: productModal.packageContents.trim() || null,
+      warranty: productModal.warranty.trim() || null,
+      originCountry: productModal.originCountry.trim() || null,
       status: productModal.status || 'active',
     };
     if (!payload.name) {
@@ -1062,7 +1863,7 @@ export default function AdminV2Page() {
         await api.updateProduct(productModal.product.id, payload);
         showAction('产品已更新');
       } else {
-        await api.createProduct({ company_id: activeCompany, ...payload });
+        await api.createProduct({ companyId: activeCompany, ...payload });
         showAction('产品已新增');
       }
       closeProductModal();
@@ -1081,12 +1882,47 @@ export default function AdminV2Page() {
       nameEn: product?.nameEn || '',
       models: splitImportModels(product?.model).length ? splitImportModels(product?.model) : [''],
       categoryPrimaryId: product?.categoryPrimaryId || '',
+      complianceCategoryIds: product?.complianceCategoryIds || (product?.complianceCategories || []).map((cat) => cat.id),
       status: product?.rawStatus || (product?.status === '草稿' ? 'draft' : 'active'),
+      dimensions: product?.dimensions || '',
+      weight: product?.weight || '',
+      material: product?.material || '',
+      usageScenario: product?.usageScenario || '',
+      color: product?.color || '',
+      packageContents: product?.packageContents || '',
+      warranty: product?.warranty || '',
+      originCountry: product?.originCountry || '',
+      imageUrl: product?.imageUrl || '',
       description: product?.description || '',
       descriptionEn: product?.descriptionEn || '',
     });
   };
 
+
+  const deleteProductFromModal = async () => {
+    const product = productModal.product;
+    if (!product?.id) return;
+    const relatedDocs = getProductDocuments(product, companyDocuments);
+    if (relatedDocs.length) {
+      showAction(`该产品下还有 ${relatedDocs.length} 个文件，请先在文件管理中删除或转移文件`);
+      return;
+    }
+    const firstConfirm = window.confirm(`确认删除产品「${product.name}」吗？删除后前台将不再展示这个产品。`);
+    if (!firstConfirm) return;
+    const typed = window.prompt('为避免误删，请输入 DELETE 确认删除');
+    if (typed !== 'DELETE') {
+      showAction('已取消删除');
+      return;
+    }
+    try {
+      await api.deleteProduct(product.id);
+      showAction('产品已删除');
+      closeProductModal();
+      await refreshCompanyAssets();
+    } catch (error) {
+      showAction(error.message || '删除产品失败');
+    }
+  };
 
   const uploadProductImageFile = async (product) => {
     const input = document.createElement('input');
@@ -1097,6 +1933,7 @@ export default function AdminV2Page() {
       if (!file) return;
       try {
         await api.uploadProductImage(product.id, file);
+        setProductModal((form) => ({ ...form, imageUrl: URL.createObjectURL(file) }));
         showAction('产品图已上传');
         await refreshCompanyAssets();
       } catch (error) {
@@ -1228,16 +2065,16 @@ export default function AdminV2Page() {
           return;
         }
         const result = await api.createDocument({
-          company_id: activeCompany,
-          product_id: documentModal.productId,
-          document_type: documentModal.documentType,
+          companyId: activeCompany,
+          productId: documentModal.productId,
+          documentType: documentModal.documentType,
           title: documentModal.title,
           language: documentModal.language,
           file: documentModal.file,
-          confirmed_authentic: '1',
-          confirmed_authorized: '1',
-          accepted_disclaimer: '1',
-          cert_no: documentModal.certNo,
+          confirmedAuthentic: '1',
+          confirmedAuthorized: '1',
+          acceptedDisclaimer: '1',
+          certNo: documentModal.certNo,
           standard: documentModal.standard,
           issuer: documentModal.issuer,
         });
@@ -1247,7 +2084,7 @@ export default function AdminV2Page() {
         await api.updateDocument(documentModal.doc.id, {
           title: documentModal.title,
           language: documentModal.language,
-          cert_no: documentModal.certNo,
+          certNo: documentModal.certNo,
           standard: documentModal.standard,
           issuer: documentModal.issuer,
         });
@@ -1304,7 +2141,7 @@ export default function AdminV2Page() {
               {companies.map((company) => <option key={company.id} value={company.id}>{company.name} · {company.code}</option>)}
             </select>
           </label>
-          <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
+          <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
           <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择文件批量上传</button>
           <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
           <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新</button>
@@ -1467,148 +2304,204 @@ export default function AdminV2Page() {
             <div className={styles.favoriteTopBar}>
               <div>
                 <h3>收藏夹</h3>
-                <p>在产品、公司或文件详情页点击"收藏"按钮（星星图标）即可添加收藏。</p>
+                <p>收藏会按公司、产品、文件自动归类，也可以通过搜索和筛选快速回到目标资料。</p>
+              </div>
+              <div className={styles.favoriteStatsPills}>
+                <span>全部 {favoriteStats.all}</span>
+                <span>文件 {favoriteStats.file}</span>
+                <span>提醒 {favoriteStats.warning}</span>
               </div>
             </div>
 
-            <div className={styles.toolbar}>
-              {['全部收藏', '公司', '产品', '文件', '已过期/下架提醒', '最近取消'].map((item) => (
-                <button key={item} className={favoriteFilter === item ? styles.primaryBtn : styles.secondaryBtn} onClick={() => setFavoriteFilter(item)}>{item}</button>
-              ))}
-            </div>
+            <div className={styles.favoriteWorkspace}>
+              <aside className={styles.favoriteSidebar}>
+                <div className={styles.favoriteSidebarBlock}>
+                  <strong>系统分组</strong>
+                  {favoriteTypeOptions.map((item) => {
+                    const countMap = {
+                      全部收藏: favoriteStats.all,
+                      公司: favoriteStats.company,
+                      产品: favoriteStats.product,
+                      资质证书: favoriteStats.certificate,
+                      'DoC 声明': favoriteStats.doc,
+                      说明书: favoriteStats.manual,
+                      检测报告: favoriteStats.report,
+                      有提醒: favoriteStats.warning,
+                      最近取消: favoriteStats.deleted
+                    };
+                    return (
+                      <button key={item} className={favoriteFilter === item ? styles.favoriteNavActive : ''} onClick={() => { setFavoriteFilter(item); setFavoriteGroup('全部收藏'); setFavoriteFileType('all'); setFavoriteStatusFilter(item === '最近取消' ? 'deleted' : 'all'); }}>
+                        <span>{item}</span><em>{countMap[item]}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={styles.favoriteSidebarBlock}>
+                  <strong>我的分组</strong>
+                  {favoriteGroupOptions.map((group) => (
+                    <button key={group.name} className={favoriteGroup === group.name ? styles.favoriteNavActive : ''} onClick={() => setFavoriteGroup(group.name)}>
+                      <span>{group.name}</span><em>{group.count}</em>
+                    </button>
+                  ))}
+                  <button className={styles.favoriteAddGroup} onClick={() => { setFavoriteFilter('全部收藏'); setFavoriteGroup('未分组'); }}>查看未分组</button>
+                </div>
+              </aside>
 
-            <div className={styles.favoriteGroupRow}>
-              {['默认收藏', '常用供应商', '待采购', '重点产品'].map((group, index) => (
-                <button key={group} className={index === 0 ? styles.groupActive : ''}>{group}</button>
-              ))}
-            </div>
+              <div className={styles.favoriteMain}>
+                <div className={styles.favoriteFilterPanel}>
+                  <input value={favoriteSearch} onChange={(event) => setFavoriteSearch(event.target.value)} placeholder="搜索标题、公司、产品、证书编号或备注" />
+                  <select value={favoriteFileType} onChange={(event) => setFavoriteFileType(event.target.value)}>
+                    {favoriteFileTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  <select value={favoriteStatusFilter} onChange={(event) => setFavoriteStatusFilter(event.target.value)}>
+                    {favoriteStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  <button className={styles.secondaryBtn} onClick={() => { setFavoriteSearch(''); setFavoriteGroup('全部收藏'); setFavoriteFileType('all'); setFavoriteStatusFilter(favoriteFilter === '最近取消' ? 'deleted' : 'all'); }}>重置</button>
+                </div>
 
-            <div className={styles.collectionGrid}>
-              {favoriteFilter === '最近取消' ? (
-                // 显示最近取消的收藏
-                recentlyDeletedItems.length > 0 ? recentlyDeletedItems.map(([type, title, meta, desc, note, status, id, itemId, deletedAt]) => (
-                  <article key={id} className={styles.collectionCard} style={{opacity: 0.7}}>
-                    <div className={styles.cardTopLine}>
-                      <span>{type}</span>
-                      <em className={styles.statusPending}>已取消</em>
+                <div className={styles.favoriteResultBar}>
+                  <span>{favoriteResultText}{activeFavoriteFilterLabels.length ? ` · ${activeFavoriteFilterLabels.join(' / ')}` : ''}</span>
+                  <em>{favoriteFileType !== 'all' ? favoriteFileTypeOptions.find((item) => item.value === favoriteFileType)?.label : '全部资料类型'}</em>
+                </div>
+
+                <div className={styles.favoriteList}>
+                  {visibleFavoriteCount > 0 ? (
+                    useFavoriteHierarchy ? favoriteHierarchy.map((company) => (
+                      <section key={company.key} className={styles.favoriteTreeGroup}>
+                        <div className={`${styles.favoriteTreeHeader} ${styles.favoriteToneCompany}`}>
+                          <div>
+                            <span>公司</span>
+                            <button type="button" className={styles.favoriteTreeTitleButton} onClick={() => company.companyId && openFavoriteTarget('公司', company.companyId)}>{company.name}</button>
+                          </div>
+                          <div className={styles.favoriteTreeHeaderActions}>
+                            <em>{getCompanyFavoriteTotal(company)} 条收藏</em>
+                            {company.favorite ? <>
+                              <button className={styles.secondaryBtn} onClick={() => openFavoriteTarget('公司', company.favorite.itemId)}>查看</button>
+                              <button className={styles.secondaryBtn} onClick={() => updateFavoriteItemNote(company.favorite)}>整理</button>
+                              <button className={styles.textDangerBtn} onClick={() => cancelFavoriteItem(company.favorite)}>取消收藏</button>
+                            </> : company.companyId && <button className={styles.secondaryBtn} onClick={() => openFavoriteTarget('公司', company.companyId)}>查看</button>}
+                          </div>
+                        </div>
+                        <div className={styles.favoriteTreeChildren}>
+                          {company.products.map((product) => (
+                            <div key={product.key} className={styles.favoriteProductGroup}>
+                              <div className={`${styles.favoriteProductHeader} ${styles.favoriteToneProduct}`}>
+                                <div>
+                                  <span>产品</span>
+                                  <button type="button" className={styles.favoriteProductTitleButton} onClick={() => product.productId && openFavoriteTarget('产品', product.productId)}>{product.name}</button>
+                                </div>
+                                <div className={styles.favoriteTreeHeaderActions}>
+                                  <em>{getProductFavoriteTotal(product)} 条收藏</em>
+                                  {product.favorite ? <>
+                                    <button className={styles.secondaryBtn} onClick={() => openFavoriteTarget('产品', product.favorite.itemId)}>查看</button>
+                                    <button className={styles.secondaryBtn} onClick={() => updateFavoriteItemNote(product.favorite)}>整理</button>
+                                    <button className={styles.textDangerBtn} onClick={() => cancelFavoriteItem(product.favorite)}>取消收藏</button>
+                                  </> : product.productId && <button className={styles.secondaryBtn} onClick={() => openFavoriteTarget('产品', product.productId)}>查看</button>}
+                                </div>
+                              </div>
+                              {product.files.length > 0 ? product.files.map((file) => renderFavoriteCard(file, true)) : product.favorite && <div className={styles.favoriteTreeHint}>已收藏该产品，暂无下级文件收藏。</div>}
+                            </div>
+                          ))}
+                          {company.files.map((file) => renderFavoriteCard(file, true))}
+                        </div>
+                      </section>
+                    )) : displayFavorites.map((item) => renderFavoriteCard(item))
+                  ) : (
+                    <div className={styles.favoriteEmptyState}>
+                      <strong>没有找到匹配的收藏</strong>
+                      <p>可以换一个关键词，或重置文件类型、状态筛选。</p>
                     </div>
-                    <h3>{title}</h3>
-                    <p>{meta}</p>
-                    <em>{desc}</em>
-                    {note && <div className={styles.favoriteNote}>备注：{note}</div>}
-                    <div className={styles.favoriteNote} style={{color: '#999'}}>取消时间：{new Date(deletedAt).toLocaleString('zh-CN')}</div>
-                    <div>
-                      <button className={styles.primaryBtn} onClick={async () => {
-                        try {
-                          await api.addFavorite(type, itemId, title, meta, desc);
-                          setRecentlyDeletedItems((items) => items.filter((item) => item[6] !== id));
-                          showAction('已重新添加到收藏');
-                          // 重新加载收藏列表
-                          const data = await api.getPersonalOverview();
-                          setFavoriteItems((data.favorites || []).map((item) => [
-                            item.itemType, item.title, item.meta || '', item.description || '', item.note || '', item.status || '正常', item.id, item.itemId
-                          ]));
-                        } catch (error) {
-                          showAction(error.message || '恢复收藏失败');
-                        }
-                      }}>恢复收藏</button>
-                      <button className={styles.textDangerBtn} onClick={async () => {
-                        if (!confirm('确定永久删除？此操作不可恢复。')) return;
-                        try {
-                          await api.permanentDeleteFavorite(id);
-                          setRecentlyDeletedItems((items) => items.filter((item) => item[6] !== id));
-                          showAction('已永久删除');
-                        } catch (error) {
-                          showAction(error.message || '删除失败');
-                        }
-                      }}>永久删除</button>
-                    </div>
-                  </article>
-                )) : (
-                  <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
-                    <p>暂无最近取消的收藏</p>
-                  </div>
-                )
-              ) : (
-                // 显示正常收藏
-                favoriteItems
-                  .filter(([type, , , , , status]) => favoriteFilter === '全部收藏' || favoriteFilter === type || (favoriteFilter === '已过期/下架提醒' && status !== '正常'))
-                  .map(([type, title, meta, desc, note, status, id, itemId]) => (
-                  <article key={id || title} className={styles.collectionCard}>
-                    <div className={styles.cardTopLine}>
-                      <span>{type}</span>
-                      <em className={status === '正常' ? styles.statusOk : styles.statusPending}>{status}</em>
-                    </div>
-                    <h3>{title}</h3>
-                    <p>{meta}</p>
-                    <em>{desc}</em>
-                    {note && <div className={styles.favoriteNote}>备注：{note}</div>}
-                    <div>
-                      <button className={styles.secondaryBtn} onClick={() => {
-                        if (type === '产品') {
-                          navigate(`/eu-doc/products/${itemId}`);
-                        } else if (type === '公司') {
-                          navigate(`/eu-doc/companies/${itemId}`);
-                        } else if (type === '文件') {
-                          navigate(`/eu-doc/documents/${itemId}`);
-                        }
-                      }}>查看</button>
-                      <button className={styles.secondaryBtn} onClick={async () => { const nextNote = window.prompt('请输入备注', note); if (nextNote === null) return; try { await api.updateFavoriteNote(id, nextNote); setFavoriteItems((items) => items.map((item) => item[6] === id ? [item[0], item[1], item[2], item[3], nextNote, item[5], item[6], item[7]] : item)); showAction('备注已保存'); } catch (error) { showAction(error.message || '备注保存失败'); } }}>编辑备注</button>
-                      <button className={styles.textDangerBtn} onClick={async () => { try { await api.deleteFavorite(id); const deletedItem = favoriteItems.find((item) => item[6] === id); if (deletedItem) { setRecentlyDeletedItems((items) => [[...deletedItem, new Date().toISOString()], ...items]); } setFavoriteItems((items) => items.filter((item) => item[6] !== id)); showAction('收藏已取消，可在"最近取消"中恢复'); } catch (error) { showAction(error.message || '取消收藏失败'); } }}>取消收藏</button>
-                    </div>
-                  </article>
-                ))
-              )}
+                  )}
+                </div>
+              </div>
             </div>
           </Section>
         );
       }
 
       if (activePage === 'history') {
+        const activeTypeLabel = historyTypeOptions.find((item) => item.value === historyTypeFilter)?.label || '全部';
+        const activeRangeLabel = historyRangeOptions.find((item) => item.value === historyRange)?.label || '全部时间';
         return (
           <Section title={t('admin.history.title')} desc={t('admin.history.desc')}>
-            <div className={styles.historyHeaderPanel}>
+            <div className={styles.historyHeroPanel}>
               <div>
-                <h3>最近浏览</h3>
-                <p>历史记录可帮助你快速找回最近查看的资料。</p>
+                <span className={styles.historyEyebrow}>浏览历史</span>
+                <h3>继续上次查看的资料</h3>
+                <p>按 B 站历史记录的逻辑整理：最近看过的公司、产品和文件会按时间线归档，方便快速回到现场。</p>
+              </div>
+              <div className={styles.historyHeroStats}>
+                <span><strong>{historyStats.all}</strong>全部</span>
+                <span><strong>{historyStats.file}</strong>文件</span>
+                <span><strong>{historyStats.product}</strong>产品</span>
+              </div>
+            </div>
+
+            <div className={styles.historyControlPanel}>
+              <div className={styles.historySearchBox}>
+                <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="搜索浏览历史：文件名、产品、公司" />
+              </div>
+              <div className={styles.historyQuickFilters}>
+                {historyTypeOptions.map((item) => (
+                  <button key={item.value} className={historyTypeFilter === item.value ? styles.historyFilterActive : ''} onClick={() => setHistoryTypeFilter(item.value)}>
+                    {item.short}
+                  </button>
+                ))}
+              </div>
+              <select value={historyRange} onChange={(event) => setHistoryRange(event.target.value)}>
+                {historyRangeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+              <button className={styles.secondaryBtn} onClick={() => { setHistorySearch(''); setHistoryTypeFilter('all'); setHistoryRange('all'); }}>重置</button>
+            </div>
+
+            <div className={styles.historyActionRow}>
+              <div>
+                <strong>{activeTypeLabel} · {filteredHistoryRows.length} 条</strong>
+                <span>{activeRangeLabel}{historySearch ? ` · 搜索“${historySearch}”` : ''}</span>
               </div>
               <div className={styles.historySwitchBox}>
-                <span>记录浏览历史</span>
-                <button className={historyEnabled ? styles.switchOn : styles.switchOff} onClick={async () => { const next = !historyEnabled; try { await api.updateHistorySetting(next); setHistoryEnabled(next); showAction(next ? '浏览历史已开启' : '浏览历史已关闭'); } catch (error) { showAction(error.message || '设置保存失败'); } }}>{historyEnabled ? '已开启' : '已关闭'}</button>
+                <span>{historyEnabled ? '正在记录浏览历史' : '已暂停记录历史'}</span>
+                <button className={historyEnabled ? styles.switchOn : styles.switchOff} onClick={async () => { const next = !historyEnabled; try { await api.updateHistorySetting(next); setHistoryEnabled(next); showAction(next ? '浏览历史已开启' : '浏览历史已关闭'); } catch (error) { showAction(error.message || '设置保存失败'); } }}>{historyEnabled ? '暂停记录' : '恢复记录'}</button>
+                <button className={styles.textDangerBtn} onClick={async () => { if (!confirm('确定清空全部浏览历史吗？')) return; try { await api.clearHistory(); setHistoryRows([]); showAction('浏览历史已清空'); } catch (error) { showAction(error.message || '清空历史失败'); } }}>清空</button>
               </div>
             </div>
 
-            <div className={styles.historyToolbar}>
-              <input placeholder="搜索浏览历史" />
-              <select defaultValue="all">
-                <option value="all">全部类型</option>
-                <option value="company">公司</option>
-                <option value="product">产品</option>
-                <option value="file">文件</option>
-              </select>
-              <select defaultValue="90d">
-                <option value="7d">最近 7 天</option>
-                <option value="30d">最近 30 天</option>
-                <option value="90d">最近 90 天</option>
-              </select>
-              <button className={styles.textDangerBtn} onClick={async () => { try { await api.clearHistory(); setHistoryRows([]); showAction('浏览历史已清空'); } catch (error) { showAction(error.message || '清空历史失败'); } }}>清空历史</button>
-            </div>
-
-            <div className={styles.historyList}>
-              {historyRows.map(([time, type, name, company, action]) => (
-                <article key={`${time}-${name}`} className={styles.historyItem}>
-                  <div className={styles.historyType}>{type}</div>
-                  <div>
-                    <h3>{name}</h3>
-                    <p>{company}</p>
+            <div className={styles.historyTimeline}>
+              {groupedHistoryRows.length > 0 ? groupedHistoryRows.map((group) => (
+                <section key={group.label} className={styles.historyDayGroup}>
+                  <div className={styles.historyDayLabel}>{group.label}<em>{group.items.length} 条</em></div>
+                  <div className={styles.historyList}>
+                    {group.items.map((item) => {
+                      const timeLabel = new Date(item.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <article key={item.historyId || `${item.time}-${item.name}`} className={styles.historyItem}>
+                          <div className={`${styles.historyType} ${item.type === '公司' ? styles.historyTypeCompany : item.type === '产品' ? styles.historyTypeProduct : styles.historyTypeFile}`}>{item.type}</div>
+                          <div className={styles.historyMainText}>
+                            <button type="button" onClick={() => item.targetPath ? navigate(item.targetPath) : showAction('这条历史记录缺少跳转目标')}>{item.name}</button>
+                            <p>{item.company || '暂无来源信息'}</p>
+                          </div>
+                          <div className={styles.historyTimeBlock}>
+                            <strong>{timeLabel}</strong>
+                            <span>{item.action || '查看'}</span>
+                          </div>
+                          <div className={styles.historyActions}>
+                            <button className={styles.secondaryBtn} disabled={!item.targetPath} onClick={() => item.targetPath ? navigate(item.targetPath) : showAction('这条历史记录缺少跳转目标')}>继续查看</button>
+                            {item.historyId && <button className={styles.textDangerBtn} onClick={async () => { try { await api.deleteHistoryItem(item.historyId); setHistoryRows((rows) => rows.filter((row) => row[5] !== item.historyId)); showAction('浏览记录已删除'); } catch (error) { showAction(error.message || '删除失败'); } }}>删除</button>}
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
-                  <span>{time}</span>
-                  <button className={styles.secondaryBtn} onClick={() => showAction('真实跳转详情页待接入')}>{action} <span className={styles.todoBadge}>待完善</span></button>
-                </article>
-              ))}
+                </section>
+              )) : (
+                <div className={styles.historyEmptyState}>
+                  <strong>暂无匹配的浏览记录</strong>
+                  <p>可以切换类型、时间范围，或清空搜索关键词后再试。</p>
+                </div>
+              )}
             </div>
 
-            <div className={styles.profileNote}>历史记录默认保留 90 天；后续可在账号隐私设置中关闭记录。</div>
+            <div className={styles.profileNote}>历史记录最多保留最近 200 条；关闭记录后，继续查看资料不会写入新的历史。</div>
           </Section>
         );
       }
@@ -1743,6 +2636,15 @@ export default function AdminV2Page() {
                   const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : recommendedProductId;
                   const hasSelectedProduct = Boolean(matchedProductId);
                   const confidence = getImportConfidence(group);
+                  const suggestedClassification = getImportSuggestedClassification(group) || {};
+                  const selectedImportCategoryId = form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '';
+                  const selectedImportChain = buildCategoryChain(selectedImportCategoryId, consumerCategoryById);
+                  const importTopCategoryId = selectedImportChain[0]?.id || '';
+                  const importSecondCategoryId = selectedImportChain[1]?.id || '';
+                  const importThirdCategoryId = selectedImportChain[2]?.id || '';
+                  const importSecondOptions = importTopCategoryId ? getConsumerChildren(importTopCategoryId) : [];
+                  const importThirdOptions = importSecondCategoryId ? getConsumerChildren(importSecondCategoryId) : [];
+                  const selectedComplianceIds = (form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || []).map(String);
                   return (
                     <div className={styles.importModalBackdrop} onClick={() => setActiveImportGroupKey(null)}>
                       <div className={styles.importModal} onClick={(event) => event.stopPropagation()}>
@@ -1823,6 +2725,60 @@ export default function AdminV2Page() {
                                   <button className={styles.addModelMiniBtn} onClick={() => addImportModel(formKey, group)}>+ 型号</button>
                                 </div>
                               </div>}
+                              {!hasSelectedProduct ? (
+                                <div className={styles.importCategoryReview}>
+                                  <div className={styles.suggestionBanner}>
+                                    <strong>系统建议分类</strong>
+                                    <span>{suggestedClassification.consumerCategoryPath || '暂未识别到明确分类'}{suggestedClassification.complianceCategoryPaths?.length ? ` · ${suggestedClassification.complianceCategoryPaths.join(' / ')}` : ''}</span>
+                                    {suggestedClassification.reason && <em>{suggestedClassification.reason}</em>}
+                                  </div>
+                                  <div className={styles.categoryGroupStack}>
+                                    <div className={styles.categoryGroupBox}>
+                                      <div className={styles.categoryGroupTitle}>C端分类</div>
+                                      <div className={styles.modalFormGrid}>
+                                        <label>
+                                          <span>一级分类</span>
+                                          <select value={importTopCategoryId} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, categoryPrimaryId: event.target.value || '' } }))}>
+                                            <option value="">其他 / 待分类</option>
+                                            {topConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                                          </select>
+                                        </label>
+                                        <label>
+                                          <span>二级分类</span>
+                                          <select value={importSecondCategoryId} disabled={!importTopCategoryId || !importSecondOptions.length} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, categoryPrimaryId: event.target.value || String(importTopCategoryId || '') } }))}>
+                                            <option value="">{importTopCategoryId ? '不选择二级分类' : '请先选择一级分类'}</option>
+                                            {importSecondOptions.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                                          </select>
+                                        </label>
+                                        {importThirdOptions.length > 0 && <label>
+                                          <span>三级分类（可选）</span>
+                                          <select value={importThirdCategoryId} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, categoryPrimaryId: event.target.value || String(importSecondCategoryId || importTopCategoryId || '') } }))}>
+                                            <option value="">不选择三级分类</option>
+                                            {importThirdOptions.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                                          </select>
+                                        </label>}
+                                      </div>
+                                    </div>
+                                    <div className={styles.categoryGroupBox}>
+                                      <div className={styles.categoryGroupTitle}>审核分类</div>
+                                      <div className={styles.categoryCheckGrid}>
+                                        {topComplianceCategories.map((category) => {
+                                          const checked = selectedComplianceIds.includes(String(category.id));
+                                          return <label key={category.id} className={checked ? styles.categoryCheckActive : ''}>
+                                            <input type="checkbox" checked={checked} onChange={(event) => {
+                                              const next = event.target.checked
+                                                ? [...selectedComplianceIds, String(category.id)]
+                                                : selectedComplianceIds.filter((id) => id !== String(category.id));
+                                              setImportSelection((state) => ({ ...state, [formKey]: { ...form, complianceCategoryIds: [...new Set(next)].map(Number) } }));
+                                            }} />
+                                            <span>{category.name}</span>
+                                          </label>;
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : <p className={styles.matchHint}>已选择已有产品，将沿用该产品当前分类；如需调整分类，请到产品编辑里修改。</p>}
                               <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{(form.confirmedStep || 0) >= 2 ? '已确认产品信息' : '确认产品信息'}</button>
                             </div>
                           </section>
@@ -1994,55 +2950,99 @@ export default function AdminV2Page() {
       if (activePage === 'products') {
         return (
           <Section>
-            <div className={styles.stackFormalHero}>
-              <div>
-                <h1>产品资料桌面</h1>
-                <p>用“产品卡 + 文件行 + 缺失提示”替代复杂表格，快速检查资料是否完整。</p>
-              </div>
-              <div className={styles.headerActionsInline}>
-                <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量上传</button>
-                <button className={styles.primaryBtn} onClick={() => openProductModal()}>新增产品</button>
-              </div>
-            </div>
-
             <div className={styles.workspaceProductsPanel}>
-
-              <div className={styles.productTools}>
-                <input placeholder="搜索产品名称、型号、文件名" />
-              </div>
-
-              <div className={styles.productFilterButtons}>
-                <div>
-                  {[
-                    ['all', '全部'],
-                    ['complete', '资料完整'],
-                    ['missing', '缺资料'],
-                  ].map(([value, label]) => <button key={value} className={productStatusFilter === value ? styles.stackFilterActive : ''} onClick={() => setProductStatusFilter(value)}>{label}</button>)}
+              <div className={styles.productWorkspaceTop}>
+                <div className={styles.productTools}>
+                  <input
+                    value={productSearchQuery}
+                    onChange={(event) => setProductSearchQuery(event.target.value)}
+                    placeholder="搜索产品名称、型号、文件名"
+                  />
                 </div>
-                <div>
-                  {[
-                    ['all', '全部分类'],
-                    ['helmet', '头盔'],
-                    ['other', '其他 / 待分类'],
-                  ].map(([value, label]) => <button key={value} className={productCategoryFilter === value ? styles.stackFilterActive : ''} onClick={() => setProductCategoryFilter(value)}>{label}</button>)}
+                <div className={styles.headerActionsInline}>
+                  <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量上传</button>
+                  <button className={styles.primaryBtn} onClick={() => openProductModal()}>新增产品</button>
                 </div>
               </div>
 
-              <div className={styles.workspaceViewTools}>
-                <div className={styles.stackViewSwitch}>
-                  {['overview', 'standard', 'detail'].map((mode) => (
-                    <button key={mode} className={workspaceViewMode === mode ? styles.stackFilterActive : ''} onClick={() => setWorkspaceViewMode(mode)}>{mode === 'overview' ? '概览' : mode === 'standard' ? '标准' : '详细'}</button>
-                  ))}
+              <div className={styles.productControlBar}>
+                <div className={styles.productFilterButtons}>
+                  <div className={styles.productStatusButtons}>
+                    {[
+                      ['all', '全部'],
+                      ['complete', '资料完整'],
+                      ['missing', '缺资料'],
+                    ].map(([value, label]) => <button key={value} className={productStatusFilter === value ? styles.stackFilterActive : ''} onClick={() => setProductStatusFilter(value)}>{label}</button>)}
+                  </div>
+                  <div className={styles.productCategorySelectGroup}>
+                    <strong>C端分类</strong>
+                    <select
+                      value={productCategoryTopFilter}
+                      onChange={(event) => {
+                        setProductCategoryTopFilter(event.target.value);
+                        setProductCategorySecondFilter('');
+                        setProductCategoryThirdFilter('');
+                      }}
+                    >
+                      <option value="">全部分类</option>
+                      {topConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                      <option value="uncategorized">其他 / 待分类</option>
+                    </select>
+                    {productFilterSecondCategories.length > 0 && (
+                      <select
+                        value={productCategorySecondFilter}
+                        onChange={(event) => {
+                          setProductCategorySecondFilter(event.target.value);
+                          setProductCategoryThirdFilter('');
+                        }}
+                      >
+                        <option value="">全部二级</option>
+                        {productFilterSecondCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                      </select>
+                    )}
+                    {productFilterThirdCategories.length > 0 && (
+                      <select
+                        value={productCategoryThirdFilter}
+                        onChange={(event) => setProductCategoryThirdFilter(event.target.value)}
+                      >
+                        <option value="">全部三级</option>
+                        {productFilterThirdCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                      </select>
+                    )}
+                  </div>
                 </div>
-                <span>{workspaceViewMode === 'overview' ? '快速巡检资料缺失。' : workspaceViewMode === 'standard' ? '日常整理和归档。' : '核对型号、文件名、语言和状态。'}</span>
+
+                <div className={styles.workspaceViewTools}>
+                  <div className={styles.stackViewSwitch}>
+                    {['overview', 'standard', 'detail'].map((mode) => (
+                      <button key={mode} className={workspaceViewMode === mode ? styles.stackFilterActive : ''} onClick={() => setWorkspaceViewMode(mode)}>{mode === 'overview' ? '概览' : mode === 'standard' ? '标准' : '详细'}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className={`${styles.workspaceProductGrid} ${styles[`stackView_${workspaceViewMode}`]}`}>
                 {companyProducts.filter((product) => {
                   const productStatus = getProductFileStatus(product, companyDocuments);
                   const statusMatch = productStatusFilter === 'all' || (productStatusFilter === 'complete' ? !productStatus.missing.length : productStatus.missing.length);
-                  const categoryMatch = productCategoryFilter === 'all' || (productCategoryFilter === 'helmet' ? String(product.category || '').includes('头盔') : String(product.category || '').includes('其他'));
-                  return statusMatch && categoryMatch;
+                  const categoryMatch = productCategoryTopFilter === 'uncategorized'
+                    ? !product.categoryPrimaryId
+                    : !activeProductCategoryFilterId
+                      || [product.categoryPrimaryId, product.categoryParentId, product.categoryGrandId].map(String).includes(String(activeProductCategoryFilterId));
+                  const query = productSearchQuery.trim().toLowerCase();
+                  const productDocs = productStatus.productDocs || [];
+                  const searchText = [
+                    product.name,
+                    product.nameEn,
+                    product.model,
+                    product.category,
+                    product.description,
+                    product.dimensions,
+                    product.material,
+                    ...productDocs.flatMap((doc) => [doc.name, doc.type, doc.lang, doc.certNo, doc.standard, doc.issuer]),
+                  ].filter(Boolean).join(' ').toLowerCase();
+                  const searchMatch = !query || searchText.includes(query);
+                  return statusMatch && categoryMatch && searchMatch;
                 }).map((product) => {
                   const status = getProductFileStatus(product, companyDocuments);
                   const models = splitImportModels(product.model);
@@ -2103,7 +3103,7 @@ export default function AdminV2Page() {
                         </>
                       )}
                       {workspaceViewMode !== 'overview' && <div className={styles.stackCardActions}>
-                        <button onClick={(event) => { event.stopPropagation(); setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile('全部文件'); }}>展开详情</button>
+                        <button onClick={(event) => { event.stopPropagation(); manageProductFiles(product); }}>管理文件</button>
                         <button onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>编辑产品</button>
                         <button onClick={(event) => { event.stopPropagation(); navigate(`/products/${product.id}`); }}>预览</button>
                       </div>}
@@ -2527,6 +3527,26 @@ export default function AdminV2Page() {
       return <Placeholder title={pageTitle} desc={`这里后续处理 ${currentCompany.name} 的 ${pageTitle}。`} />;
     }
 
+    const hasPlatformPermission = isAdmin || admin?.platformRole === 'platform_admin' || admin?.platform_role === 'platform_admin' || admin?.role === 'admin' || admin?.role === 'platform_admin';
+    if (activeGroup === 'platform' && !hasPlatformPermission) {
+      return (
+        <Section title={pageTitle} desc="平台管理功能仅限平台管理员使用。">
+          <div className={styles.importBlockedState}>
+            <div className={styles.importBlurPreview}>
+              <div />
+              <div />
+              <div />
+            </div>
+            <div className={styles.importBlockedCard}>
+              <h3>没有权限</h3>
+              <p>当前账号不是平台管理员，无法查看企业审核、用户查询、内容举报和平台设置等平台管理功能。</p>
+              <button className={styles.secondaryBtn} onClick={() => openPage('personal', 'profile')}>返回个人资料</button>
+            </div>
+          </div>
+        </Section>
+      );
+    }
+
     if (activePage === 'company-review') {
       const counts = verificationItems.reduce((acc, item) => {
         const status = item.verificationStatus || 'pending';
@@ -2788,8 +3808,8 @@ export default function AdminV2Page() {
               <h3>只读：文件与存储规则</h3>
               <div className={styles.settingRows}>
                 {[
-                  ['单文件大小限制', '由系统配置决定'],
-                  ['允许文件类型', 'PDF / JPG / PNG 等'],
+                  ['单文件大小限制', '未认证企业 10MB / 个'],
+                  ['允许文件类型', 'PDF / JPG / PNG / WebP / Word'],
                   ['文件备份策略', '服务器 / 对象存储 / 定时备份'],
                   ['文件安全扫描', '后续接入'],
                 ].map(([name, value]) => (
@@ -2829,59 +3849,61 @@ export default function AdminV2Page() {
     }
 
     if (activePage === 'categories') {
+      const currentCategories = categoryMode === 'consumer' ? consumerCategories : complianceCategories;
+      const categoryCopy = categoryMode === 'consumer'
+        ? {
+          title: 'C端产品分类',
+          desc: '用于普通用户按产品用途查找产品与资料，例如运动户外、马术头盔、智能家居。',
+          hint: '产品一般选择一个主分类，保证前台导航清晰。',
+        }
+        : {
+          title: '审核/合规分类',
+          desc: '用于审核机构按法规、认证路径、标准号快速定位 DoC、证书、测试报告。',
+          hint: '一个产品可关联多个合规分类，文件类型仍由 documentType 单独管理。',
+        };
+      const topCategories = currentCategories.filter((item) => !item.parentId);
       return (
-        <Section title="分类管理" desc="维护产品分类体系，分类应存在数据库中，后续可随业务增长扩展。">
+        <Section title="分类管理" desc="分类现在拆为 C端产品分类和审核/合规分类；文件类型不混入分类树。">
           <div className={styles.categoryHeaderPanel}>
             <div>
-              <h3>分类体系</h3>
-              <p>建议采用“少量一级分类 + 可扩展二级分类”，避免早期分类过细。</p>
+              <h3>{categoryCopy.title}</h3>
+              <p>{categoryCopy.desc}</p>
             </div>
             <button className={styles.primaryBtn}>新增分类</button>
           </div>
 
           <div className={styles.categoryTools}>
+            <button className={categoryMode === 'consumer' ? styles.primaryBtn : styles.secondaryBtn} onClick={() => setCategoryMode('consumer')}>C端产品分类</button>
+            <button className={categoryMode === 'compliance' ? styles.primaryBtn : styles.secondaryBtn} onClick={() => setCategoryMode('compliance')}>审核/合规分类</button>
             <input placeholder="搜索分类名称" />
-            <select defaultValue="all">
-              <option value="all">全部状态</option>
-              <option value="active">启用</option>
-              <option value="disabled">停用</option>
-            </select>
-            <button className={styles.secondaryBtn}>调整排序</button>
           </div>
 
+          <div className={styles.profileNote}>{categoryCopy.hint}</div>
+
           <div className={styles.categoryTreeList}>
-            {[
-              ['个人防护用品', '启用', '47', ['马术头盔', '自行车头盔', '安全帽', '护具', '防护眼镜', '防护手套', '防护服']],
-              ['电子电器', '启用', '0', ['小家电', '电池', '充电器', '电源适配器', '照明设备', '音视频设备', '信息技术设备']],
-              ['玩具儿童用品', '启用', '0', ['儿童玩具', '婴幼儿用品', '儿童家具', '儿童推车', '儿童安全座椅']],
-              ['机械设备', '启用', '0', ['工业设备', '工具设备', '升降设备', '压力设备', '农业机械', '自动化设备']],
-              ['医疗健康', '启用', '0', ['医疗器械', '健康护理用品', '个人健康监测', '康复辅助设备']],
-              ['建筑材料', '启用', '0', ['建筑五金', '装饰材料', '保温材料', '门窗产品', '消防材料']],
-              ['交通工具及配件', '启用', '0', ['自行车', '电动车', '汽车配件', '摩托车配件', '铁路相关产品']],
-              ['纺织服装', '启用', '0', ['服装', '鞋类', '箱包', '纺织面料', '儿童服饰']],
-              ['食品接触材料', '启用', '0', ['餐具', '厨具', '食品包装', '饮水容器']],
-              ['化学品及材料', '启用', '0', ['塑料材料', '橡胶材料', '涂料', '胶粘剂', '清洁用品']],
-              ['认证标准标签', '预留', '0', ['CE', 'UKCA', 'RoHS', 'REACH', 'EN 1384', 'EN 1078', 'EN 71', 'EN IEC 62368']],
-              ['其他 / 待分类', '启用', '0', ['待分类']],
-            ].map(([parent, status, count, children]) => (
-              <article key={parent} className={styles.categoryTreeCard}>
+            {topCategories.map((parent) => {
+              const children = currentCategories.filter((item) => String(item.parentId || '') === String(parent.id));
+              return (
+              <article key={parent.id} className={styles.categoryTreeCard}>
                 <div className={styles.categoryParentRow}>
                   <div>
-                    <h3>{parent}</h3>
-                    <p>{count} 个产品 · {status}</p>
+                    <h3>{parent.name}</h3>
+                    <p>{parent.productCount || 0} 个产品 · {parent.status === 'active' ? '启用' : parent.status}</p>
                   </div>
                   <div className={styles.categoryActions}>
-                    <button className={styles.secondaryBtn}>新增二级</button>
+                    <button className={styles.secondaryBtn}>新增子类</button>
                     <button className={styles.secondaryBtn}>编辑</button>
                   </div>
                 </div>
                 <div className={styles.categoryChildren}>
-                  {children.map((child) => (
-                    <span key={child}>{child}</span>
-                  ))}
+                  {children.length ? children.map((child) => (
+                    <span key={child.id}>{child.name}</span>
+                  )) : (
+                    <span>暂无子分类</span>
+                  )}
                 </div>
               </article>
-            ))}
+            );})}
           </div>
         </Section>
       );
@@ -2966,6 +3988,67 @@ export default function AdminV2Page() {
 
 
 
+          {favoriteEditModal.open && (
+            <div className={styles.modalBackdrop} onClick={closeFavoriteEditModal}>
+              <div className={`${styles.adminModal} ${styles.favoriteEditModal}`} onClick={(event) => event.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                  <div>
+                    <h3>整理收藏</h3>
+                    <p>分组用于整理收藏，备注用于记录为什么收藏；两者会一起保存在这条收藏里。</p>
+                  </div>
+                  <button className={styles.iconCloseBtn} onClick={closeFavoriteEditModal}>×</button>
+                </div>
+                <div className={styles.favoriteEditTarget}>
+                  <span className={`${styles.favoriteTypeBadge} ${getFavoriteToneClass(favoriteEditModal.item?.type)}`}>{favoriteEditModal.item?.type || '收藏'}</span>
+                  <div>
+                    <strong>{favoriteEditModal.item?.title || '未命名收藏'}</strong>
+                    <p>{favoriteEditModal.item?.companyName || favoriteEditModal.item?.productName || favoriteEditModal.item?.meta || '暂无来源信息'}</p>
+                  </div>
+                </div>
+                <div className={styles.modalFormGrid}>
+                  <div className={styles.fullField}>
+                    <span>选择收藏夹</span>
+                    <div className={styles.favoriteFolderGrid}>
+                      {favoriteGroupOptions.filter((group) => group.name !== '全部收藏').map((group) => (
+                        <button
+                          key={group.name}
+                          type="button"
+                          className={favoriteEditModal.group === group.name ? styles.favoriteFolderActive : ''}
+                          onClick={() => setFavoriteEditModal((form) => ({ ...form, group: group.name, newGroup: '' }))}
+                        >
+                          <strong>{group.name}</strong>
+                          <em>{group.count} 条</em>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className={favoriteEditModal.group === '__new__' ? styles.favoriteFolderActive : ''}
+                        onClick={() => setFavoriteEditModal((form) => ({ ...form, group: '__new__' }))}
+                      >
+                        <strong>+ 新建分组</strong>
+                        <em>类似新建收藏夹</em>
+                      </button>
+                    </div>
+                  </div>
+                  {favoriteEditModal.group === '__new__' && (
+                    <label className={styles.fullField}>
+                      <span>新分组名称</span>
+                      <input value={favoriteEditModal.newGroup} onChange={(event) => setFavoriteEditModal((form) => ({ ...form, newGroup: event.target.value }))} placeholder="例如：客户A项目 / 投标资料 / 待采购" />
+                    </label>
+                  )}
+                  <label className={styles.fullField}>
+                    <span>备注</span>
+                    <textarea rows="4" value={favoriteEditModal.note} onChange={(event) => setFavoriteEditModal((form) => ({ ...form, note: event.target.value }))} placeholder="例如：客户下周要核对；投标文件可能会用到。" />
+                  </label>
+                </div>
+                <div className={styles.modalActions}>
+                  <button className={styles.secondaryBtn} onClick={closeFavoriteEditModal}>取消</button>
+                  <button className={styles.primaryBtn} onClick={saveFavoriteEdit}>保存整理</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {companyModal.open && (
             <div className={styles.modalBackdrop} onClick={() => setCompanyModal({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>
               <div className={styles.adminModal} onClick={(event) => event.stopPropagation()}>
@@ -3036,13 +4119,105 @@ export default function AdminV2Page() {
                 </div>
 
                 <div className={styles.productEditLayout}>
+                  <section className={`${styles.productEditBlock} ${styles.productEditHeroBlock}`}>
+                    <div className={styles.productEditHeroInfo}>
+                      <div className={styles.productEditBlockTitle}>基础信息</div>
+                      <div className={styles.modalFormGrid}>
+                        <label><span>产品/系列名称</span><input value={productModal.name} onChange={(event) => setProductModal((form) => ({ ...form, name: event.target.value }))} placeholder="例如 Equestrian Helmet F20" /></label>
+                        <label><span>英文名称（可选）</span><input value={productModal.nameEn} onChange={(event) => setProductModal((form) => ({ ...form, nameEn: event.target.value }))} placeholder="用于多语言页面" /></label>
+                        <label><span>展示状态</span><select value={productModal.status} onChange={(event) => setProductModal((form) => ({ ...form, status: event.target.value }))}><option value="active">公开展示</option><option value="draft">草稿 / 待完善</option><option value="inactive">暂不公开</option></select></label>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.productImageUploadBox}
+                      onClick={() => productModal.product ? uploadProductImageFile(productModal.product) : showAction('请先保存产品，再上传产品图')}
+                    >
+                      {productModal.imageUrl ? (
+                        <img src={productModal.imageUrl} alt={productModal.name || '产品图'} />
+                      ) : (
+                        <span>
+                          <strong>产品图片</strong>
+                          <em>{productModal.product ? '点击上传 / 替换' : '保存后可上传'}</em>
+                        </span>
+                      )}
+                    </button>
+                  </section>
+
                   <section className={styles.productEditBlock}>
-                    <div className={styles.productEditBlockTitle}>基础信息</div>
-                    <div className={styles.modalFormGrid}>
-                      <label><span>产品/系列名称</span><input value={productModal.name} onChange={(event) => setProductModal((form) => ({ ...form, name: event.target.value }))} placeholder="例如 Equestrian Helmet F20" /></label>
-                      <label><span>英文名称（可选）</span><input value={productModal.nameEn} onChange={(event) => setProductModal((form) => ({ ...form, nameEn: event.target.value }))} placeholder="用于多语言页面" /></label>
-                      <label><span>产品分类</span><select value={productModal.categoryPrimaryId} onChange={(event) => setProductModal((form) => ({ ...form, categoryPrimaryId: event.target.value }))}><option value="">其他 / 待分类</option><option value="1">个人防护用品</option><option value="2">电子电器</option><option value="3">玩具儿童用品</option><option value="4">机械设备</option><option value="5">医疗健康</option><option value="6">建筑材料</option><option value="7">交通工具</option></select></label>
-                      <label><span>展示状态</span><select value={productModal.status} onChange={(event) => setProductModal((form) => ({ ...form, status: event.target.value }))}><option value="active">公开展示</option><option value="draft">草稿 / 待完善</option><option value="inactive">暂不公开</option></select></label>
+                    <div className={styles.productEditBlockTitle}>
+                      分类信息
+                      <span className={styles.infoTip} tabIndex="0" aria-label="分类说明">
+                        i
+                        <span className={styles.infoTipBubble}>C端产品分类用于普通用户按用途查找；审核/合规分类用于机构按法规、标准查找。</span>
+                      </span>
+                    </div>
+                    {productClassificationSuggestion ? (
+                      <div className={styles.productCategorySuggestion}>
+                        <div>
+                          <strong>系统推荐分类</strong>
+                          <span>{productClassificationSuggestion.consumerCategoryPath || '其他 / 待分类'}{productClassificationSuggestion.complianceCategoryPaths?.length ? ` · ${productClassificationSuggestion.complianceCategoryPaths.join(' / ')}` : ''}</span>
+                          <em>{productClassificationSuggestion.confidence} · {productClassificationSuggestion.reason}</em>
+                        </div>
+                        <button type="button" className={styles.secondaryBtn} onClick={applyProductClassificationSuggestion}>套用推荐</button>
+                      </div>
+                    ) : (
+                      <div className={styles.productCategorySuggestion}>
+                        <div>
+                          <strong>暂无明确推荐</strong>
+                          <span>可补充产品名称、型号、说明，或上传带标准号的证书后再识别。</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className={styles.categoryGroupStack}>
+                      <div className={styles.categoryGroupBox}>
+                        <div className={styles.categoryGroupTitle}>C端分类</div>
+                        <div className={styles.modalFormGrid}>
+                          <label>
+                            <span>一级分类</span>
+                            <select value={selectedConsumerTopId} onChange={(event) => changeConsumerTopCategory(event.target.value)}>
+                              <option value="">其他 / 待分类</option>
+                              {topConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                            </select>
+                          </label>
+                          <label>
+                            <span>二级分类</span>
+                            <select value={selectedConsumerSecondId} onChange={(event) => changeConsumerSecondCategory(event.target.value)} disabled={!selectedConsumerTopId || !secondConsumerCategories.length}>
+                              <option value="">{selectedConsumerTopId ? '不选择二级分类' : '请先选择一级分类'}</option>
+                              {secondConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                            </select>
+                          </label>
+                          {thirdConsumerCategories.length > 0 && (
+                            <label>
+                              <span>三级分类（可选）</span>
+                              <select value={selectedConsumerThirdId} onChange={(event) => changeConsumerThirdCategory(event.target.value)}>
+                                <option value="">不选择三级分类</option>
+                                {thirdConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                              </select>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={styles.categoryGroupBox}>
+                        <div className={styles.categoryGroupTitle}>审核分类</div>
+                        <div className={styles.modalFormGrid}>
+                          <label>
+                            <span>一级分类</span>
+                            <select value={selectedComplianceTopId} onChange={(event) => changeComplianceTopCategory(event.target.value)}>
+                              <option value="">暂不选择</option>
+                              {topComplianceCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                            </select>
+                          </label>
+                          <label>
+                            <span>二级分类</span>
+                            <select value={selectedComplianceSecondId} onChange={(event) => changeComplianceSecondCategory(event.target.value)} disabled={!selectedComplianceTopId || !secondComplianceCategories.length}>
+                              <option value="">{selectedComplianceTopId ? '不选择二级分类' : '请先选择一级分类'}</option>
+                              {secondComplianceCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -3057,6 +4232,20 @@ export default function AdminV2Page() {
                         </div>
                       ))}
                       <button type="button" className={styles.addModelMiniBtn} onClick={addProductModel}>+ 型号</button>
+                    </div>
+                  </section>
+
+                  <section className={styles.productEditBlock}>
+                    <div className={styles.productEditBlockTitle}>前台展示参数</div>
+                    <div className={styles.modalFormGrid}>
+                      <label><span>产品尺寸</span><input value={productModal.dimensions} onChange={(event) => setProductModal((form) => ({ ...form, dimensions: event.target.value }))} placeholder="例如 280 × 220 × 180 mm" /></label>
+                      <label><span>重量</span><input value={productModal.weight} onChange={(event) => setProductModal((form) => ({ ...form, weight: event.target.value }))} placeholder="例如 520 g" /></label>
+                      <label><span>材质</span><input value={productModal.material} onChange={(event) => setProductModal((form) => ({ ...form, material: event.target.value }))} placeholder="例如 ABS 外壳 / EPS 内衬" /></label>
+                      <label><span>适用场景</span><input value={productModal.usageScenario} onChange={(event) => setProductModal((form) => ({ ...form, usageScenario: event.target.value }))} placeholder="例如 马术训练、骑乘防护" /></label>
+                      <label><span>颜色/外观</span><input value={productModal.color} onChange={(event) => setProductModal((form) => ({ ...form, color: event.target.value }))} placeholder="例如 黑色、白色、哑光" /></label>
+                      <label><span>产地/生产地</span><input value={productModal.originCountry} onChange={(event) => setProductModal((form) => ({ ...form, originCountry: event.target.value }))} placeholder="例如 China / EU" /></label>
+                      <label><span>保修/服务</span><input value={productModal.warranty} onChange={(event) => setProductModal((form) => ({ ...form, warranty: event.target.value }))} placeholder="例如 12个月有限保修" /></label>
+                      <label><span>包装内容</span><input value={productModal.packageContents} onChange={(event) => setProductModal((form) => ({ ...form, packageContents: event.target.value }))} placeholder="例如 头盔、说明书、收纳袋" /></label>
                     </div>
                   </section>
 
@@ -3077,7 +4266,6 @@ export default function AdminV2Page() {
                         )) : <p>这个产品还没有绑定文件，可通过“添加文件”或“批量导入”补充。</p>}
                       </div>
                       <div className={styles.productEditInlineActions}>
-                        <button className={styles.secondaryBtn} onClick={() => uploadProductImageFile(productModal.product)}>上传/替换产品图</button>
                         <button className={styles.secondaryBtn} onClick={uploadDocumentFile}>添加文件</button>
                         <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量导入</button>
                       </div>
@@ -3085,9 +4273,14 @@ export default function AdminV2Page() {
                   )}
                 </div>
 
-                <div className={styles.modalActions}>
-                  <button className={styles.secondaryBtn} onClick={closeProductModal}>取消</button>
-                  <button className={styles.primaryBtn} onClick={createOrEditProduct}>保存产品</button>
+                <div className={`${styles.modalActions} ${styles.productEditModalActions}`}>
+                  <div>
+                    {productModal.product?.id && <button className={styles.dangerSoftBtn} onClick={deleteProductFromModal}>删除产品</button>}
+                  </div>
+                  <div>
+                    <button className={styles.secondaryBtn} onClick={closeProductModal}>取消</button>
+                    <button className={styles.primaryBtn} onClick={createOrEditProduct}>保存产品</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3123,7 +4316,7 @@ export default function AdminV2Page() {
                                 <span className={styles.documentUploadPrompt}>
                                   <b>+</b>
                                   <strong>点击上传文件</strong>
-                                  <em>支持 PDF、PNG、JPG，单个文件不超过 20MB</em>
+                                  <em>支持 PDF、PNG、JPG、WebP、Word，单个文件不超过 10MB</em>
                                 </span>
                               )}
                             </button>
@@ -3138,7 +4331,7 @@ export default function AdminV2Page() {
                         );
                       })()}
                     </div>
-                    <input ref={documentFileInputRef} className={styles.documentHiddenFile} type="file" accept="application/pdf,image/png,image/jpeg" onChange={(event) => {
+                    <input ref={documentFileInputRef} className={styles.documentHiddenFile} type="file" accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx" onChange={(event) => {
                       const file = event.target.files?.[0] || null;
                       setDocumentModalFile(file);
                       event.target.value = '';
@@ -3449,7 +4642,7 @@ function StacklandsProductsTestPage({ onBack }) {
                   )}
 
                   {viewMode !== 'overview' && <div className={styles.stackCardActions}>
-                    <button onClick={(event) => { event.stopPropagation(); setSelectedProductId(product.id); setSelectedPile('全部文件'); }}>展开详情</button>
+                    <button onClick={(event) => { event.stopPropagation(); setSelectedProductId(product.id); setSelectedPile('资质证书'); }}>管理文件</button>
                     <button onClick={(event) => event.stopPropagation()}>编辑产品</button>
                     <button onClick={(event) => event.stopPropagation()}>预览</button>
                   </div>}

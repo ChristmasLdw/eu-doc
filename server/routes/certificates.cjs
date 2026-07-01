@@ -198,9 +198,14 @@ router.get('/:id', (req, res) => {
 // POST /api/certificates - 创建新证书（需认证）
 router.post('/', authMiddleware, (req, res) => {
   const {
-    cert_no, company_id, product_name, model, standard,
-    issuer, issue_date, expiry_date, status, remark,
+    certNo, companyId, productName, model, standard,
+    issuer, issueDate, expiryDate, status, remark,
   } = req.body;
+  const cert_no = certNo;
+  const company_id = companyId;
+  const product_name = productName;
+  const issue_date = issueDate;
+  const expiry_date = expiryDate;
 
   // 必填字段校验
   if (!cert_no || !product_name) {
@@ -354,15 +359,23 @@ router.put('/:id', authMiddleware, (req, res) => {
       const changes = {};
 
       // 更新 certificate_metadata 表字段
+      const metaBody = {
+        cert_no: req.body.certNo,
+        standard: req.body.standard,
+        issuer: req.body.issuer,
+        issue_date: req.body.issueDate,
+        expiry_date: req.body.expiryDate,
+        remark: req.body.remark,
+      };
       const metaFields = ['cert_no', 'standard', 'issuer', 'issue_date', 'expiry_date', 'remark'];
       const metaSetParts = [];
       const metaValues = [];
 
       for (const field of metaFields) {
-        if (req.body[field] !== undefined) {
+        if (metaBody[field] !== undefined) {
           metaSetParts.push(`${field} = ?`);
-          metaValues.push(req.body[field]);
-          changes[field] = { old: cert[field], new: req.body[field] };
+          metaValues.push(metaBody[field]);
+          changes[field] = { old: cert[field], new: metaBody[field] };
         }
       }
 
@@ -372,10 +385,10 @@ router.put('/:id', authMiddleware, (req, res) => {
       }
 
       // 更新 documents 表
-      if (req.admin.role === 'admin' && req.body.review_status !== undefined) {
+      if (req.admin.role === 'admin' && req.body.reviewStatus !== undefined) {
         db.prepare('UPDATE documents SET review_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-          .run(req.body.review_status, cert.id);
-        changes.review_status = { old: cert.review_status, new: req.body.review_status };
+          .run(req.body.reviewStatus, cert.id);
+        changes.review_status = { old: cert.review_status, new: req.body.reviewStatus };
       }
 
       // 记录审计日志

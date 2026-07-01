@@ -396,14 +396,18 @@ function initDatabase() {
       }
     }
 
-    // 确保 admins 视图存在
-    db.exec(`
-      CREATE VIEW IF NOT EXISTS admins AS
-        SELECT id, email as username, password_hash, 
-          CASE WHEN platform_role = 'platform_admin' THEN 'admin' ELSE 'user' END as role,
-          display_name as company_name, created_at
-        FROM users
-    `);
+    // 确保 admins 兼容视图始终使用 v2.0 用户表字段；如果旧库里 admins 是真实表则保留。
+    const adminsObject = db.prepare("SELECT type FROM sqlite_master WHERE name = 'admins'").get();
+    if (!adminsObject || adminsObject.type === 'view') {
+      db.exec(`
+        DROP VIEW IF EXISTS admins;
+        CREATE VIEW admins AS
+          SELECT id, email as username, password_hash,
+            CASE WHEN platform_role = 'platform_admin' THEN 'admin' ELSE 'user' END as role,
+            display_name as company_name, created_at
+          FROM users
+      `);
+    }
 
     console.log('  [数据库] v2.0 升级完成\n');
     return;

@@ -34,7 +34,7 @@ import AdminRoute from './components/AdminRoute';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import CompanyPage from './pages/CompanyPage';
-import HistoryPage from './pages/HistoryPage';
+import PersonalLibraryPage from './pages/PersonalLibraryPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
@@ -82,8 +82,9 @@ function App() {
         {/* 搜索结果页 */}
         <Route path="/search" element={<SearchPage />} />
 
-        {/* 浏览历史页 */}
-        <Route path="/history" element={<HistoryPage />} />
+        {/* 个人资料库：收藏与浏览历史 */}
+        <Route path="/favorites" element={<PersonalLibraryPage mode="favorites" />} />
+        <Route path="/history" element={<PersonalLibraryPage mode="history" />} />
 
         {/* 产品管理页面 - v2.0 新增 */}
         <Route path="/products" element={<ProductsPage />} />

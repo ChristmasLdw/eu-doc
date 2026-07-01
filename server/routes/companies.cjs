@@ -248,7 +248,11 @@ function sendCompanyDetail(res, company) {
  * 创建企业（需认证）
  */
 router.post('/', authMiddleware, (req, res) => {
-  const { name, name_en, contact_person, contact_email, contact_phone, address } = req.body;
+  const name_en = req.body.nameEn;
+  const contact_person = req.body.contactPerson;
+  const contact_email = req.body.contactEmail;
+  const contact_phone = req.body.contactPhone;
+  const { name, address } = req.body;
 
   if (!name) {
     return res.status(400).json({
@@ -317,16 +321,25 @@ router.put('/:id', authMiddleware, (req, res) => {
     });
   }
 
+  const body = {
+    ...req.body,
+    name_en: req.body.nameEn,
+    contact_person: req.body.contactPerson,
+    contact_email: req.body.contactEmail,
+    contact_phone: req.body.contactPhone,
+    main_category: req.body.mainCategory,
+    public_visible: req.body.publicVisible,
+  };
   const fields = ['name', 'name_en', 'contact_person', 'contact_email', 'contact_phone', 'address', 'slug', 'website', 'description', 'main_category', 'public_visible'];
   const setParts = [];
   const values = [];
   const changes = {};
 
   for (const field of fields) {
-    if (req.body[field] !== undefined) {
+    if (body[field] !== undefined) {
       setParts.push(`${field} = ?`);
-      values.push(req.body[field]);
-      changes[field] = { old: company[field], new: req.body[field] };
+      values.push(body[field]);
+      changes[field] = { old: company[field], new: body[field] };
     }
   }
 
@@ -476,8 +489,8 @@ router.post('/:id/logo', authMiddleware, logoUpload.single('logo'), (req, res) =
  * 提交企业认证申请（需认证）
  */
 router.post('/:id/verification', authMiddleware, logoUpload.fields([
-  { name: 'business_license', maxCount: 1 },
-  { name: 'authorization_letter', maxCount: 1 }
+  { name: 'businessLicense', maxCount: 1 },
+  { name: 'authorizationLetter', maxCount: 1 }
 ]), (req, res) => {
   const companyId = req.params.id;
 
@@ -504,7 +517,9 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
   }
 
   try {
-    const { business_license_no, contact_person, contact_email } = req.body || {};
+    const business_license_no = req.body.businessLicenseNo;
+    const contact_person = req.body.contactPerson;
+    const contact_email = req.body.contactEmail;
     if (business_license_no || contact_person || contact_email) {
       db.prepare(`
         UPDATE companies
@@ -517,8 +532,8 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
     }
 
     // 当前阶段允许先提交审核申请，文件后续可补；如果上传了文件，则一并保存。
-    if (req.files && req.files.business_license) {
-      const businessLicenseFile = req.files.business_license[0];
+    if (req.files && req.files.businessLicense) {
+      const businessLicenseFile = req.files.businessLicense[0];
       const businessLicensePath = `/logos/${businessLicenseFile.filename}`;
       db.prepare(`
         INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by, review_status)
@@ -527,8 +542,8 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
     }
 
     // 如果有授权书
-    if (req.files && req.files.authorization_letter) {
-      const authLetterFile = req.files.authorization_letter[0];
+    if (req.files && req.files.authorizationLetter) {
+      const authLetterFile = req.files.authorizationLetter[0];
       const authLetterPath = `/logos/${authLetterFile.filename}`;
       db.prepare(`
         INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by, review_status)

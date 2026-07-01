@@ -45,7 +45,7 @@ export default function CompanyMembersPage() {
   const fetchMembers = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`/eu-doc/api/v2/company-members?company_id=${selectedCompany}`, {
+      const res = await fetch(`/eu-doc/api/v2/company-members?companyId=${selectedCompany}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -71,7 +71,7 @@ export default function CompanyMembersPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          company_id: selectedCompany,
+          companyId: selectedCompany,
           email: inviteEmail,
           role: inviteRole
         })
