@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -2629,7 +2630,7 @@ export default function AdminV2Page() {
                   })}
                 </div>
 
-                {activeImportGroup && (() => {
+                {activeImportGroup && createPortal((() => {
                   const group = activeImportGroup;
                   const formKey = `group:${group.key}`;
                   const form = importSelection[formKey] || {};
@@ -2819,7 +2820,7 @@ export default function AdminV2Page() {
                       </div>
                     </div>
                   );
-                })()}
+                })(), document.body)}
 
                 {organizedItems.length > 0 && <div className={styles.importCompletedTitle}>已完成归档</div>}
                 <div className={styles.importCardGrid}>

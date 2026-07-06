@@ -10813,3 +10813,86 @@ button.documentPreviewCard:hover {
 [data-theme="dark"] .planCarouselShell.carouselHasRight::after {
   background: linear-gradient(270deg, var(--bg-card) 0%, rgba(15, 23, 42, 0.72) 42%, rgba(15, 23, 42, 0) 100%) !important;
 }
+
+/* 批量导入确认：审核分类虽然是多选，但视觉尺寸需要和 C 端分类下拉框统一。 */
+.importCategoryReview .categoryCheckGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.importCategoryReview .categoryCheckGrid label {
+  width: 100% !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 14px !important;
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+}
+
+.importCategoryReview .categoryCheckGrid label:hover {
+  border-color: rgba(37, 99, 235, 0.24) !important;
+  background: var(--bg-card) !important;
+}
+
+.importCategoryReview .categoryCheckGrid input {
+  flex: 0 0 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+}
+
+.importCategoryReview .categoryCheckGrid span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.importCategoryReview .categoryCheckActive {
+  border-color: rgba(37, 99, 235, 0.42) !important;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(148, 163, 184, 0.04)), var(--bg-card) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08) !important;
+}
+
+@media (max-width: 760px) {
+  .importCategoryReview .categoryCheckGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 批量导入确认弹窗挂到浏览器窗口层后，按当前视窗居中并限制在可见区域内。 */
+.importModalBackdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: clamp(14px, 2.4vh, 28px) clamp(16px, 3vw, 36px) !important;
+  overflow: hidden !important;
+}
+
+.importModal {
+  width: min(980px, calc(100vw - clamp(32px, 6vw, 72px))) !important;
+  max-height: calc(100dvh - clamp(28px, 4.8vh, 56px)) !important;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 901px) {
+  .importModalBackdrop {
+    padding-left: max(272px, clamp(16px, 3vw, 36px)) !important;
+  }
+
+  .importModal {
+    width: min(980px, calc(100vw - 320px)) !important;
+  }
+}
