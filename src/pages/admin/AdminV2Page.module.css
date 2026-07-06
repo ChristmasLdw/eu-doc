@@ -2794,6 +2794,80 @@ tbody tr:last-child td {
   color: #facc15;
 }
 
+/* 会员套餐：外部成本旗帜，和套餐卡并排同尺寸 */
+.planCostFlag {
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(255, 255, 255, 0.98)),
+    var(--bg-card) !important;
+}
+
+.planCostFlag::before {
+  background: linear-gradient(90deg, #94a3b8, #cbd5e1) !important;
+}
+
+.planCostFlag .planRibbon {
+  background: rgba(148, 163, 184, 0.16) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+}
+
+.planCostFlag > strong {
+  font-size: 25px !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.04em;
+  color: #64748b !important;
+}
+
+.planCostList {
+  gap: 9px !important;
+}
+
+.planCostList li {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 8px !important;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 13px !important;
+}
+
+.planCostList li > span:first-child {
+  width: 18px !important;
+  color: #cbd5e1 !important;
+  font-weight: 900;
+}
+
+.planCostList li em {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+  text-align: right;
+}
+
+.planCostFlag .planFoot {
+  color: #94a3b8;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+[data-theme="dark"] .planCostFlag {
+  background:
+    linear-gradient(180deg, rgba(30, 41, 59, 0.82), rgba(15, 23, 42, 0.94)),
+    var(--bg-card) !important;
+}
+
+@media (max-width: 760px) {
+  .planCostList li {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .planCostList li em {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
 .logSummaryGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -8226,7 +8300,6 @@ tbody tr:last-child td {
 
 .workspaceUploadStage,
 .workspaceProductStage {
-  scroll-snap-align: start;
 }
 
 .workspacePendingBridge {
@@ -10542,4 +10615,201 @@ button.documentPreviewCard:hover {
   .historyActions {
     justify-content: flex-start;
   }
+}
+
+/* 成本旗帜：人工成本子项缩进，避免重复显示小时数。 */
+.planCostList li.subCostLine {
+  padding-left: 26px;
+  opacity: 0.78;
+}
+
+.planCostList li.subCostLine > span:first-child {
+  color: transparent !important;
+  position: relative;
+}
+
+.planCostList li.subCostLine > span:first-child::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-left: 2px solid #cbd5e1;
+  border-bottom: 2px solid #cbd5e1;
+  transform: translateY(-65%);
+}
+
+/* 成本旗帜：人工成本父项需要和子项形成一组，而不是挂在后续维护下。 */
+.planCostList li.subCostLine {
+  margin-left: 22px;
+  padding-left: 0;
+}
+
+.planCostList li.subCostLine + li.subCostLine {
+  margin-top: -3px;
+}
+
+/* 套餐旗帜：左侧成本固定，右侧套餐横向滚动，方便后续继续增加套餐。 */
+.planBannerCompareGrid {
+  display: grid !important;
+  grid-template-columns: minmax(250px, 270px) minmax(0, 1fr) !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+
+.planBannerCompareGrid > .planCostFlag {
+  width: 100%;
+  min-width: 0;
+}
+
+.planCarouselShell {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 22px 22px var(--radius-md) var(--radius-md);
+}
+
+.planCarouselShell::before,
+.planCarouselShell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 32px;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.planCarouselShell::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg-card), rgba(255, 255, 255, 0));
+  opacity: 0.38;
+}
+
+.planCarouselShell::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--bg-card), rgba(255, 255, 255, 0));
+}
+
+.planCarouselHint {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 3;
+  padding: 5px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.planCarousel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(250px, 280px);
+  gap: 14px;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 6px 8px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planCarousel .planFlagCard {
+  min-width: 0;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.planCarousel .planFlagCard:hover {
+  transform: translateY(-2px);
+}
+
+.planCarousel::-webkit-scrollbar {
+  height: 8px;
+}
+
+.planCarousel::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.planCarousel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.36);
+}
+
+[data-theme="dark"] .planCarouselShell::before {
+  background: linear-gradient(90deg, var(--bg-card), rgba(15, 23, 42, 0));
+}
+
+[data-theme="dark"] .planCarouselShell::after {
+  background: linear-gradient(270deg, var(--bg-card), rgba(15, 23, 42, 0));
+}
+
+[data-theme="dark"] .planCarouselHint {
+  background: rgba(15, 23, 42, 0.78);
+}
+
+@media (max-width: 900px) {
+  .planBannerCompareGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .planCarouselShell {
+    border-radius: var(--radius-lg);
+  }
+
+  .planCarousel {
+    grid-auto-columns: minmax(250px, 82vw);
+    padding-left: 0;
+  }
+}
+
+/* 套餐横向滚动：增强左侧渐变提示，避免滚动后左边缘太硬。 */
+.planCarouselShell::before {
+  width: 52px !important;
+  z-index: 5 !important;
+  opacity: 1 !important;
+  background: linear-gradient(90deg, var(--bg-card) 0%, rgba(255, 255, 255, 0.86) 38%, rgba(255, 255, 255, 0) 100%) !important;
+}
+
+.planCarouselShell::after {
+  z-index: 5 !important;
+}
+
+[data-theme="dark"] .planCarouselShell::before {
+  background: linear-gradient(90deg, var(--bg-card) 0%, rgba(15, 23, 42, 0.86) 38%, rgba(15, 23, 42, 0) 100%) !important;
+}
+
+/* 套餐横向滚动：渐变根据滚动位置出现，避免在尽头太重。 */
+.planCarouselShell::before,
+.planCarouselShell::after {
+  opacity: 0 !important;
+  transition: opacity 0.22s ease, width 0.22s ease !important;
+}
+
+.planCarouselShell.carouselHasLeft::before {
+  width: 46px !important;
+  opacity: 0.72 !important;
+  background: linear-gradient(90deg, var(--bg-card) 0%, rgba(255, 255, 255, 0.72) 42%, rgba(255, 255, 255, 0) 100%) !important;
+}
+
+.planCarouselShell.carouselHasRight::after {
+  width: 46px !important;
+  opacity: 0.72 !important;
+  background: linear-gradient(270deg, var(--bg-card) 0%, rgba(255, 255, 255, 0.72) 42%, rgba(255, 255, 255, 0) 100%) !important;
+}
+
+[data-theme="dark"] .planCarouselShell.carouselHasLeft::before {
+  background: linear-gradient(90deg, var(--bg-card) 0%, rgba(15, 23, 42, 0.72) 42%, rgba(15, 23, 42, 0) 100%) !important;
+}
+
+[data-theme="dark"] .planCarouselShell.carouselHasRight::after {
+  background: linear-gradient(270deg, var(--bg-card) 0%, rgba(15, 23, 42, 0.72) 42%, rgba(15, 23, 42, 0) 100%) !important;
 }

@@ -1,5 +1,5 @@
 /**
- * EU-DOC 后台管理 - 文档管理页面
+ * EU-DOC 后台管理 - 资料管理页面
  */
 
 import { useState, useEffect } from 'react';
@@ -126,7 +126,7 @@ export default function DocumentsPage() {
   return (
     <div>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>文档管理</h1>
+        <h1 className={styles.pageTitle}>资料管理</h1>
       </div>
 
       {/* 工具栏 */}

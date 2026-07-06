@@ -40,7 +40,7 @@ export function getSuggestionTypeLabel(type, t) {
     certNo: t('certificate.certNo'),
     doc: 'DoC声明',
     manual: '说明书',
-    file: '文件'
+    file: '资料'
   };
   return labels[type] || type;
 }

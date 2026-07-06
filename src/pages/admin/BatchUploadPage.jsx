@@ -157,8 +157,9 @@ export default function BatchUploadPage() {
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            <span className={styles.uploadText}>点击选择多个文件</span>
+            <span className={styles.uploadText}>点击选择多份资料</span>
             <span className={styles.uploadHint}>支持 PDF、JPG、PNG 格式，单文件最大10MB</span>
+            <span className={styles.uploadHint}>仅上传适合对外展示的产品资料，不要上传图纸、报价、供应商等商业敏感内容</span>
           </label>
         </div>
 
@@ -166,7 +167,7 @@ export default function BatchUploadPage() {
         {files.length > 0 && (
           <div style={{ marginTop: '16px' }}>
             <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-secondary)' }}>
-              已选择 {files.length} 个文件
+              已选择 {files.length} 份资料
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {files.map((file, index) => (
@@ -213,7 +214,7 @@ export default function BatchUploadPage() {
           className={styles.submitBtn}
           disabled={uploading || files.length === 0}
         >
-          {uploading ? '上传中...' : `上传 ${files.length} 个文件`}
+          {uploading ? '上传中...' : `上传 ${files.length} 份资料`}
         </button>
       </div>
 

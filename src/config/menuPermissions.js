@@ -38,12 +38,12 @@ export const MENU_PERMISSIONS = {
     description: '管理企业产品信息',
   },
 
-  // 文档管理 - 后期限制：owner/admin/uploader
+  // 资料管理 - 后期限制：owner/admin/uploader
   documents: {
-    label: '文档管理',
+    label: '资料管理',
     requiredRoles: ['all'], // 当前阶段：所有人
     // 后期启用：requiredCompanyRole: ['owner', 'admin', 'uploader']
-    description: '管理产品相关文档',
+    description: '管理产品相关资料',
   },
 
   // 我的企业 - 后期限制：owner/admin
@@ -75,7 +75,7 @@ export const MENU_PERMISSIONS = {
     label: '上传确认记录',
     requiredRoles: ['all'], // 当前阶段：所有人
     // 后期启用：requiredPlatformRole: ['admin', 'platform_admin']
-    description: '查看文档上传确认记录（仅管理员）',
+    description: '查看资料上传确认记录（仅管理员）',
   },
 
   // 个人设置 - 所有人可访问

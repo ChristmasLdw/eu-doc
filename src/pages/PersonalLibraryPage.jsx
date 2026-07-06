@@ -8,11 +8,11 @@ const typeOptions = [
   { value: 'all', label: '全部' },
   { value: '公司', label: '公司' },
   { value: '产品', label: '产品' },
-  { value: '文件', label: '文件' },
+  { value: '文件', label: '资料' },
 ];
 
 const fileTypeOptions = [
-  { value: 'all', label: '全部文件' },
+  { value: 'all', label: '全部资料' },
   { value: 'certificate', label: '资质证书' },
   { value: 'doc', label: 'DoC 声明' },
   { value: 'manual', label: '说明书' },
@@ -237,11 +237,11 @@ export default function PersonalLibraryPage({ mode }) {
         <section className={styles.hero}>
           <div>
             <h1>{isFavorites ? '我的收藏' : '浏览历史'}</h1>
-            <p>{isFavorites ? '集中保存你关注的公司、产品和文件，方便后续快速查阅与整理。' : '按时间线整理你查看过的公司、产品和文件，方便回到最近关注的资料。'}</p>
+            <p>{isFavorites ? '集中保存你关注的公司、产品和资料，方便后续快速查阅与整理。' : '按时间线整理你查看过的公司、产品和资料，方便回到最近关注的资料。'}</p>
           </div>
           <div className={styles.stats}>
             <span><strong>{stats.all}</strong>全部</span>
-            <span><strong>{stats.file}</strong>文件</span>
+            <span><strong>{stats.file}</strong>资料</span>
             <span><strong>{stats.product}</strong>产品</span>
           </div>
         </section>
@@ -252,7 +252,7 @@ export default function PersonalLibraryPage({ mode }) {
         </div>
 
         <section className={styles.toolbar}>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={isFavorites ? '搜索资料库：公司、产品、文件、备注' : '搜索资料库：公司、产品、文件'} />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={isFavorites ? '搜索资料库：公司、产品、资料、备注' : '搜索资料库：公司、产品、资料'} />
           <div className={styles.quickFilters}>
             {typeOptions.map((item) => <button key={item.value} className={typeFilter === item.value ? styles.active : ''} onClick={() => setTypeFilter(item.value)}>{item.label}</button>)}
           </div>
@@ -278,7 +278,7 @@ export default function PersonalLibraryPage({ mode }) {
         {filteredItems.length === 0 ? (
           <div className={styles.empty}>
             <strong>{loading ? '正在加载' : isFavorites ? '暂无收藏' : '暂无浏览历史'}</strong>
-            <p>{isFavorites ? '在公司、产品或文件详情页点击收藏后会出现在这里。' : '查看公司、产品或文件后会自动记录在这里。'}</p>
+            <p>{isFavorites ? '在公司、产品或资料详情页点击收藏后会出现在这里。' : '查看公司、产品或资料后会自动记录在这里。'}</p>
             <Link className={styles.primaryAction} to="/search">去搜索资料</Link>
           </div>
         ) : isFavorites ? (
@@ -287,12 +287,12 @@ export default function PersonalLibraryPage({ mode }) {
               const parsed = parseNote(item.note);
               return (
                 <article key={item.id} className={styles.card}>
-                  <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{item.type}</div>
+                  <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{item.type === '文件' ? '资料' : item.type}</div>
                   <div>
                     <button className={styles.cardTitle} onClick={() => openItem(item)}>{item.title}</button>
                     <div className={styles.meta}>
                       <span>{item.meta || '暂无来源'}</span>
-                      {item.type === '文件' && <span>{fileTypeOptions.find((option) => option.value === item.fileType)?.label || '文件'}</span>}
+                      {item.type === '文件' && <span>{fileTypeOptions.find((option) => option.value === item.fileType)?.label || '资料'}</span>}
                       {parsed.group && <span>分组：{parsed.group}</span>}
                       <span>{item.status}</span>
                     </div>
@@ -316,7 +316,7 @@ export default function PersonalLibraryPage({ mode }) {
                 <div className={styles.dayItems}>
                   {group.items.map((item) => (
                     <article key={item.id} className={`${styles.card} ${styles.historyCard}`}>
-                      <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{item.type}</div>
+                      <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{item.type === '文件' ? '资料' : item.type}</div>
                       <div>
                         <button className={styles.cardTitle} onClick={() => openItem(item)}>{item.title}</button>
                         <div className={styles.meta}><span>{item.company || '暂无来源'}</span></div>
@@ -377,7 +377,7 @@ export default function PersonalLibraryPage({ mode }) {
             )}
             <label className={styles.editField}>
               <span>备注</span>
-              <textarea rows="4" value={editModal.note} onChange={(event) => setEditModal((form) => ({ ...form, note: event.target.value }))} placeholder="例如：客户下周要核对；投标文件可能会用到。" />
+              <textarea rows="4" value={editModal.note} onChange={(event) => setEditModal((form) => ({ ...form, note: event.target.value }))} placeholder="例如：客户下周要核对；投标资料可能会用到。" />
             </label>
             <div className={styles.modalActions}>
               <button className={styles.secondaryBtn} onClick={closeEditFavorite}>取消</button>

@@ -28,7 +28,7 @@ export default function DashboardPage() {
       });
       const productsData = await productsRes.json();
 
-      // 获取文档数量
+      // 获取资料数量
       const docsRes = await fetch('/eu-doc/api/v2/documents?pageSize=1', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -75,7 +75,7 @@ export default function DashboardPage() {
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             </div>
-            <span>上传文档</span>
+            <span>上传资料</span>
           </button>
 
           <button className={styles.actionCard} onClick={() => navigate('/admin/members')}>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNumber}>{loading ? '-' : stats.documents}</div>
-            <div className={styles.statLabel}>文档数量</div>
+            <div className={styles.statLabel}>资料数量</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNumber}>{loading ? '-' : stats.members}</div>
@@ -130,7 +130,7 @@ export default function DashboardPage() {
             <span className={styles.linkArrow}>→</span>
           </Link>
           <Link to="/admin/documents" className={styles.linkCard}>
-            <span>文档管理</span>
+            <span>资料管理</span>
             <span className={styles.linkArrow}>→</span>
           </Link>
           <Link to="/admin/company" className={styles.linkCard}>

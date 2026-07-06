@@ -35,16 +35,16 @@ export default function TermsPage() {
               <section>
                 <h2>一、服务说明</h2>
                 <h3>1.1 服务定位</h3>
-                <p>EU-DOC（以下简称"本平台"）是一个<strong>证书存储和分享平台</strong>，为用户提供证书文件的在线存储、管理和分享服务。</p>
+                <p>EU-DOC（以下简称"本平台"）是一个<strong>产品公开资料管理与分享平台</strong>，为用户提供产品证书、DoC 声明、说明书、公开检测报告等资料的在线管理、展示和分享服务。</p>
                 <p className={styles.highlight}><strong>重要声明：本平台不是认证机构，不对证书的真实性、有效性进行认证或背书。</strong></p>
 
                 <h3>1.2 服务内容</h3>
                 <ul>
-                  <li>证书文件的在线存储</li>
-                  <li>证书信息的展示和查询</li>
-                  <li>证书分享链接生成</li>
+                  <li>产品公开资料的在线管理</li>
+                  <li>证书、DoC 声明、说明书等资料的展示和查询</li>
+                  <li>产品资料分享链接和二维码生成</li>
                   <li>证书到期提醒（付费功能）</li>
-                  <li>证书批量管理（付费功能）</li>
+                  <li>产品资料批量管理（付费功能）</li>
                 </ul>
               </section>
 
@@ -59,6 +59,7 @@ export default function TermsPage() {
                   <li>拥有上传和分享该证书的合法权限</li>
                   <li>证书内容不侵犯任何第三方的知识产权或其他合法权益</li>
                   <li>不上传虚假、伪造、过期或失效的证书</li>
+                  <li>不上传图纸、配方、BOM、供应商名单、报价、生产工艺、内部测试记录、客户合同、个人隐私或未公开新品资料等商业敏感内容</li>
                 </ol>
 
                 <h3>2.2 违规后果</h3>
@@ -109,16 +110,16 @@ export default function TermsPage() {
               <section>
                 <h2>1. Service Description</h2>
                 <h3>1.1 Platform Positioning</h3>
-                <p>EU-DOC (the "Platform") is a <strong>certificate storage and sharing platform</strong> that provides online storage, management, and sharing services for certificate files.</p>
+                <p>EU-DOC (the "Platform") is a <strong>public product documentation management and sharing platform</strong> that provides online management, display, and sharing services for certificates, DoC declarations, manuals, public test reports, and related product documents.</p>
                 <p className={styles.highlight}><strong>Important Notice: This platform is not a certification authority and does not authenticate or endorse the authenticity or validity of certificates.</strong></p>
 
                 <h3>1.2 Services Provided</h3>
                 <ul>
-                  <li>Online storage of certificate files</li>
-                  <li>Display and query of certificate information</li>
-                  <li>Certificate sharing link generation</li>
+                  <li>Online management of public product documents</li>
+                  <li>Display and query of certificates, DoC declarations, manuals, and related documents</li>
+                  <li>Product document sharing link and QR code generation</li>
                   <li>Certificate expiry reminders (paid feature)</li>
-                  <li>Batch certificate management (paid feature)</li>
+                  <li>Batch product document management (paid feature)</li>
                 </ul>
               </section>
 
@@ -133,6 +134,7 @@ export default function TermsPage() {
                   <li>They have legal authority to upload and share the certificates</li>
                   <li>Certificate content does not infringe on any third party's intellectual property or other legal rights</li>
                   <li>They will not upload false, forged, expired, or invalid certificates</li>
+                  <li>They will not upload drawings, formulas, BOMs, supplier lists, quotations, production processes, internal test records, customer contracts, personal privacy, unreleased product information, or other commercially sensitive content</li>
                 </ol>
 
                 <h3>2.2 Consequences of Violation</h3>

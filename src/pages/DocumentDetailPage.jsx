@@ -12,7 +12,7 @@ const DOCUMENT_TYPE_LABELS = {
   manual: '使用说明书',
   test_report: '检测报告',
   report: '检测报告',
-  other: '其他文件',
+  other: '其他资料',
 };
 
 function normalizeDocType(doc = {}) {
@@ -88,7 +88,7 @@ export default function DocumentDetailPage() {
       setError('');
       try {
         const response = await fetch(`/eu-doc/api/v2/documents/${id}`).then((res) => res.json());
-        if (!response.success) throw new Error(response.message || '文件不存在');
+        if (!response.success) throw new Error(response.message || '资料不存在');
         if (cancelled) return;
         setDocumentData(response.data);
 
@@ -100,7 +100,7 @@ export default function DocumentDetailPage() {
           setRelatedDocs([]);
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || '加载文件失败');
+        if (!cancelled) setError(err.message || '加载资料失败');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -133,7 +133,7 @@ export default function DocumentDetailPage() {
     const metaNo = doc.cert_no || doc.certNo || doc.certificate_metadata?.cert_no;
     const lang = doc.language ? String(doc.language).toUpperCase() : '';
     if (normalizeDocType(doc) === 'certificate') return metaNo || doc.title || `证书 #${doc.id}`;
-    return [lang, doc.title || `文件 #${doc.id}`].filter(Boolean).join(' · ');
+    return [lang, doc.title || `资料 #${doc.id}`].filter(Boolean).join(' · ');
   };
 
 
@@ -147,7 +147,7 @@ export default function DocumentDetailPage() {
         setFavoriteId(result?.favoriteId || null);
       })
       .catch(() => {});
-    api.recordHistory('文件', numericId, title, companyName, '查看文件').catch(() => {});
+    api.recordHistory('文件', numericId, title, companyName, '查看资料').catch(() => {});
   }, [documentData, id, title]);
 
   const handleFavorite = async () => {
@@ -178,20 +178,20 @@ export default function DocumentDetailPage() {
   };
 
   if (loading) {
-    return <div className={styles.statePage}><div className={styles.spinner} /><p>正在加载文件详情...</p></div>;
+    return <div className={styles.statePage}><div className={styles.spinner} /><p>正在加载资料详情...</p></div>;
   }
 
   if (error || !documentData) {
     return (
       <div className={styles.statePage}>
-        <p>{error || '文件不存在'}</p>
+        <p>{error || '资料不存在'}</p>
         <button onClick={() => navigate(-1)}>返回</button>
       </div>
     );
   }
 
   const facts = [
-    { label: '文件类型', value: typeLabel },
+    { label: '资料类型', value: typeLabel },
     { label: '所属产品', value: documentData.product_name || documentData.productName },
     { label: '适用型号', value: documentData.product_model || documentData.productModel },
     { label: '所属公司', value: documentData.company_name || documentData.companyName },
@@ -219,12 +219,12 @@ export default function DocumentDetailPage() {
           <div>
             <span className={styles.typeBadge}>{typeLabel}</span>
             <h1>{title}</h1>
-            <p>这是单个资料文件的直达页面，适合审核、分享、验证和下载。产品完整资料请返回产品详情页查看。</p>
+            <p>这是单份产品资料的直达页面，适合审核、分享、验证和下载。产品完整资料请返回产品详情页查看。</p>
           </div>
           <div className={styles.heroActions}>
             {fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer">打开原文件</a>}
             <button onClick={handleFavorite}>{isFavorited ? '★ 已收藏' : '☆ 收藏'}</button>
-            <button onClick={copyLink}>分享文件</button>
+            <button onClick={copyLink}>分享资料</button>
           </div>
         </section>
 
@@ -252,7 +252,7 @@ export default function DocumentDetailPage() {
             )}
 
             <div className={styles.infoCard}>
-              <h2>文件信息</h2>
+              <h2>资料信息</h2>
               <div className={styles.factList}>
                 {facts.map((item) => <div key={item.label}><span>{item.label}</span><strong>{item.value || '未记录'}</strong></div>)}
               </div>
@@ -281,9 +281,9 @@ export default function DocumentDetailPage() {
               isImage(fileUrl) ? <img src={fileUrl} alt={title} />
                 : isPdf(fileUrl) ? <iframe src={fileUrl} title={title} />
                   : thumbUrl ? <img src={thumbUrl} alt={title} />
-                    : <div className={styles.previewFallback}><strong>文件预览</strong><p>该格式暂不支持内嵌预览，可打开原文件查看。</p></div>
+                    : <div className={styles.previewFallback}><strong>资料预览</strong><p>该格式暂不支持内嵌预览，可打开原文件查看。</p></div>
             ) : (
-              <div className={styles.previewFallback}><strong>暂无文件</strong><p>该资料记录存在，但没有可访问的文件本体。</p></div>
+              <div className={styles.previewFallback}><strong>暂无资料</strong><p>该资料记录存在，但没有可访问的资料本体。</p></div>
             )}
           </div>
         </section>
@@ -292,7 +292,7 @@ export default function DocumentDetailPage() {
           onClose={() => setShareOpen(false)}
           typeLabel={`${typeLabel}分享`}
           title={title}
-          subtitle={`查看 ${documentData.product_name || documentData.productName || '对应产品'} 的公开文件详情。`}
+          subtitle={`查看 ${documentData.product_name || documentData.productName || '对应产品'} 的公开资料详情。`}
           url={`${window.location.origin}/eu-doc/documents/${id}`}
           meta={[typeLabel, documentData.language ? String(documentData.language).toUpperCase() : '', documentPublicStatus]}
         />

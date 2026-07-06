@@ -332,7 +332,7 @@ function importTypeLabel(type) {
   if (type === 'declaration_of_conformity') return 'DoC声明文件';
   if (type === 'certificate') return '资质证书';
   if (type === 'manual') return '使用说明书';
-  return '其他文件';
+  return '其他资料';
 }
 
 function importStepClass(styles, confirmedStep = 0, step) {
@@ -506,6 +506,8 @@ export default function AdminV2Page() {
   const [activePage, setActivePage] = useState('profile');
   const [sidebarScrolling, setSidebarScrolling] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const planCarouselRef = useRef(null);
+  const [planCarouselFade, setPlanCarouselFade] = useState({ left: false, right: true });
   const [favoriteFilter, setFavoriteFilter] = useState('全部收藏');
   const [favoriteSearch, setFavoriteSearch] = useState('');
   const [favoriteFileType, setFavoriteFileType] = useState('all');
@@ -515,7 +517,7 @@ export default function AdminV2Page() {
   const [historyEnabled, setHistoryEnabled] = useState(true);
   const [historyRows, setHistoryRows] = useState([
     ['刚刚', '产品', 'Equestrian Helmet F20', 'Guangzhou Safety Equipment Co., Ltd.', '继续查看', null, null],
-    ['今天 20:15', '文件', 'Declaration of Conformity', 'Guangzhou Safety Equipment Co., Ltd.', '打开文件', null, null],
+    ['今天 20:15', '文件', 'Declaration of Conformity', 'Guangzhou Safety Equipment Co., Ltd.', '打开资料', null, null],
     ['昨天 18:02', '公司', 'EU Riding Gear GmbH', '-', '查看公司', null, null],
     ['3 天前', '文件', 'CE Certificate - F20', 'Guangzhou Safety Equipment Co., Ltd.', '重新打开', null, null],
   ]);
@@ -526,12 +528,12 @@ export default function AdminV2Page() {
     ['产品', 'Equestrian Helmet F20', 'Guangzhou Safety Equipment Co., Ltd.', '资质证书、DoC、说明书已收录', '客户 A 需要核对证书', '正常'],
     ['公司', 'Guangzhou Safety Equipment Co., Ltd.', '公司主页', '常用供应商资料', '后续关注产品更新', '正常'],
     ['文件', 'CE Certificate - F20', '资质证书', '有效期至 2031-01-27', '投标资料可能会用到', '正常'],
-    ['文件', 'Old User Manual', '使用说明书', '该文件可能已被替换', '需要确认是否最新版本', '需注意'],
+    ['文件', 'Old User Manual', '使用说明书', '该资料可能已被替换', '需要确认是否最新版本', '需注意'],
   ]);
   const [recentlyDeletedItems, setRecentlyDeletedItems] = useState([]);
   const [notificationItems, setNotificationItems] = useState([
     { title: '企业邀请', desc: 'Guangzhou Safety Equipment Co., Ltd. 邀请你成为企业管理员。', status: '待处理', tone: 'blue', pinned: true },
-    { title: '文件更新', desc: '你收藏的产品 Equestrian Helmet F20 有新的 DoC 声明文件。', status: '未读', tone: 'orange', pinned: true },
+    { title: '资料更新', desc: '你收藏的产品 Equestrian Helmet F20 有新的 DoC 声明资料。', status: '未读', tone: 'orange', pinned: true },
     { title: '举报处理', desc: '你提交的“产品型号错误”举报已被平台标记处理。', status: '未读', tone: 'green', pinned: false },
     { title: '安全提醒', desc: '你的账号刚刚在当前浏览器登录。', status: '已读', tone: 'green', pinned: false },
     { title: '系统公告', desc: '后台 v2 正在完善中，部分按钮暂未接入真实功能。', status: '已读', tone: 'gray', pinned: false },
@@ -558,7 +560,7 @@ export default function AdminV2Page() {
   const [fileFilters, setFileFilters] = useState({ query: '', type: 'all', product: 'all', language: 'all', status: 'all' });
   const [workspaceViewMode, setWorkspaceViewMode] = useState('standard');
   const [workspaceExpandedProduct, setWorkspaceExpandedProduct] = useState(null);
-  const [workspaceExpandedPile, setWorkspaceExpandedPile] = useState('全部文件');
+  const [workspaceExpandedPile, setWorkspaceExpandedPile] = useState('全部资料');
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState('all');
   const [productCategoryTopFilter, setProductCategoryTopFilter] = useState('');
@@ -794,7 +796,7 @@ export default function AdminV2Page() {
     { value: 'all', label: '全部', short: '全部' },
     { value: '公司', label: '公司主页', short: '公司' },
     { value: '产品', label: '产品详情', short: '产品' },
-    { value: '文件', label: '文件资料', short: '文件' },
+    { value: '文件', label: '资料详情', short: '资料' },
   ];
 
   const historyRangeOptions = [
@@ -855,7 +857,7 @@ export default function AdminV2Page() {
 
   const favoriteTypeOptions = ['全部收藏', '公司', '产品', '资质证书', 'DoC 声明', '说明书', '检测报告', '有提醒', '最近取消'];
   const favoriteFileTypeOptions = [
-    { value: 'all', label: '全部文件' },
+    { value: 'all', label: '全部资料' },
     { value: 'certificate', label: '资质证书' },
     { value: 'doc', label: 'DoC 声明' },
     { value: 'manual', label: '说明书' },
@@ -920,7 +922,7 @@ export default function AdminV2Page() {
     const files = normal.filter((item) => item.type === '文件');
     console.log('=== 统计数据调试 ===');
     console.log('所有收藏:', normal.length);
-    console.log('文件收藏:', files);
+    console.log('资料收藏:', files);
     files.forEach(f => console.log(`  ${f.title}: fileType=${f.fileType}, documentType=${f.documentType}`));
     return {
       all: normal.length,
@@ -959,7 +961,7 @@ export default function AdminV2Page() {
       if (favoriteFilter !== '最近取消' && item.deleted) return false;
       if (favoriteFilter === '公司' && item.type !== '公司') return false;
       if (favoriteFilter === '产品' && item.type !== '产品') return false;
-      // 新的文件类型筛选逻辑
+      // 新的资料类型筛选逻辑
       if (favoriteFilter === '资质证书' && (item.type !== '文件' || item.fileType !== 'certificate')) {
         console.log(`  过滤: ${item.title}, type=${item.type}, fileType=${item.fileType}`);
         return false;
@@ -974,7 +976,7 @@ export default function AdminV2Page() {
       }
       if (favoriteFilter === '检测报告' && (item.type !== '文件' || item.fileType !== 'report')) return false;
       if (favoriteFilter === '有提醒' && item.status === '正常') return false;
-      // 只对文件类型进行文件类型筛选
+      // 只对资料类型进行资料类型筛选
       if (favoriteFileType !== 'all' && item.type === '文件' && item.fileType !== favoriteFileType) return false;
       if (favoriteStatusFilter === 'normal' && item.status !== '正常') return false;
       if (favoriteStatusFilter === 'warning' && item.status === '正常') return false;
@@ -1182,13 +1184,13 @@ export default function AdminV2Page() {
       : item.meta || item.companyName || item.productName || '暂无来源信息';
     const descText = String(item.desc || '').trim();
     const shouldShowDesc = item.type !== '文件' && descText && descText !== sourceText && !sourceText.includes(descText) && !descText.includes(sourceText);
-    const fileTypeLabel = favoriteFileTypeOptions.find((option) => option.value === item.fileType)?.label || '文件';
+    const fileTypeLabel = favoriteFileTypeOptions.find((option) => option.value === item.fileType)?.label || '资料';
 
     const entityStatusText = item.status || '正常';
     const entityStatusClass = entityStatusText === '正常' ? styles.statusOk : styles.statusPending;
     return (
     <article key={item.id || `${item.type}-${item.title}`} className={`${styles.favoriteListCard} ${getFavoriteToneClass(item.type)} ${compact ? styles.favoriteCompactCard : ''} ${item.deleted ? styles.favoriteDeletedCard : ''}`}>
-      <div className={styles.favoriteTypeBadge}>{item.type}</div>
+      <div className={styles.favoriteTypeBadge}>{item.type === '文件' ? '资料' : item.type}</div>
       <div className={styles.favoriteContent}>
         <div className={styles.favoriteTitleLine}>
           <button type="button" className={styles.favoriteTitleButton} onClick={() => openFavoriteTarget(item.type, item.itemId)}>{item.title}</button>
@@ -1350,8 +1352,8 @@ export default function AdminV2Page() {
         if (cancelled) return;
         setCompanyDocuments((response.data || []).map((item) => ({
           id: item.id,
-          name: item.title || item.fileName || '未命名文件',
-          type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' || item.documentType === 'declaration' ? 'DoC声明文件' : item.documentType === 'manual' ? '使用说明书' : '其他文件',
+          name: item.title || item.fileName || '未命名资料',
+          type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' || item.documentType === 'declaration' ? 'DoC声明文件' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
           documentType: item.documentType || 'other',
           productId: item.productId || item.product_id || '',
           product: item.productName || '-',
@@ -1449,10 +1451,10 @@ export default function AdminV2Page() {
     }
     if (!files?.length) return;
     const companyName = currentCompany?.name || '当前公司';
-    if (!window.confirm(`确认把这 ${files.length} 个文件上传到「${companyName}」吗？`)) return;
+    if (!window.confirm(`确认把这 ${files.length} 份资料上传到「${companyName}」吗？`)) return;
     try {
       const result = await api.uploadImportFiles(activeCompany, files);
-      showAction(result.message || `已上传 ${files.length} 个文件到 ${companyName}`);
+      showAction(result.message || `已上传 ${files.length} 份资料到 ${companyName}`);
       await refreshImportItems();
     } catch (error) {
       showAction(error.message || '批量导入失败');
@@ -1460,10 +1462,10 @@ export default function AdminV2Page() {
   };
 
   const deletePendingImportGroup = async (group) => {
-    if (!window.confirm(`确认删除这 ${group.items.length} 个待整理文件吗？`)) return;
+    if (!window.confirm(`确认删除这 ${group.items.length} 个待整理资料吗？`)) return;
     try {
       await Promise.all(group.items.map((item) => api.deleteImportItem(item.id)));
-      showAction('已删除待整理文件');
+      showAction('已删除待整理资料');
       await refreshImportItems();
     } catch (error) {
       showAction(error.message || '删除失败');
@@ -1473,21 +1475,21 @@ export default function AdminV2Page() {
   const deleteDuplicateImportItems = async (group) => {
     const duplicates = group.items.filter((item) => item.isDuplicate);
     if (!duplicates.length) {
-      showAction('这组没有可批量删除的重复文件');
+      showAction('这组没有可批量删除的重复资料');
       return;
     }
-    if (!window.confirm(`确认只删除这 ${duplicates.length} 个后上传的重复文件吗？较早文件会保留。`)) return;
+    if (!window.confirm(`确认只删除这 ${duplicates.length} 份后上传的重复资料吗？较早资料会保留。`)) return;
     try {
       await Promise.all(duplicates.map((item) => api.deleteImportItem(item.id)));
-      showAction('已删除重复文件，较早文件已保留');
+      showAction('已删除重复资料，较早资料已保留');
       await refreshImportItems();
     } catch (error) {
-      showAction(error.message || '删除重复文件失败');
+      showAction(error.message || '删除重复资料失败');
     }
   };
 
   const reopenImportItem = async (item) => {
-    if (!window.confirm('确认撤回到待整理池重新整理吗？对应已归档文件会被标记删除。')) return;
+    if (!window.confirm('确认撤回到待整理池重新整理吗？对应已归档资料会被标记删除。')) return;
     try {
       await api.reopenImportItem(item.id);
       showAction('已撤回到待整理池');
@@ -1498,12 +1500,12 @@ export default function AdminV2Page() {
   };
 
   const deleteLinkedDocument = async (item) => {
-    if (!item.documentId || !window.confirm('确认删除这个已归档文件吗？')) return;
+    if (!item.documentId || !window.confirm('确认删除这个已归档资料吗？')) return;
     try {
       await api.deleteDocument(item.documentId);
       await api.reopenImportItem(item.id);
       await api.deleteImportItem(item.id);
-      showAction('已删除归档文件');
+      showAction('已删除归档资料');
       await Promise.all([refreshImportItems(), refreshCompanyAssets()]);
     } catch (error) {
       showAction(error.message || '删除失败');
@@ -1537,7 +1539,7 @@ export default function AdminV2Page() {
         categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
         complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
       });
-      showAction('文件已整理到产品资料');
+      showAction('资料已整理到产品资料');
       await Promise.all([refreshImportItems(), refreshCompanyAssets()]);
     } catch (error) {
       showAction(error.message || '整理失败');
@@ -1564,7 +1566,7 @@ export default function AdminV2Page() {
     const formKey = `group:${group.key}`;
     const form = importSelection[formKey] || {};
     const itemsToOrganize = group.items.some((item) => item.isDuplicate) ? group.items.filter((item) => !item.isDuplicate) : group.items;
-    if (!itemsToOrganize.length) { showAction('这组只有重复文件，请先删除重复或拆分处理'); return; }
+    if (!itemsToOrganize.length) { showAction('这组只有重复资料，请先删除重复或拆分处理'); return; }
     const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : findMatchingProductId(group, companyProducts);
     const suggestedClassification = getImportSuggestedClassification(group) || {};
     try {
@@ -1579,7 +1581,7 @@ export default function AdminV2Page() {
         categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
         complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
       });
-      showAction('已按同一产品整理这些文件');
+      showAction('已按同一产品整理这些资料');
       setActiveImportGroupKey(null);
       await Promise.all([refreshImportItems(), refreshCompanyAssets()]);
     } catch (error) {
@@ -1799,8 +1801,8 @@ export default function AdminV2Page() {
     })));
     setCompanyDocuments((documentResponse.data || []).map((item) => ({
       id: item.id,
-      name: item.title || item.fileName || '未命名文件',
-      type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' ? 'DoC声明文件' : item.documentType === 'manual' ? '使用说明书' : '其他文件',
+      name: item.title || item.fileName || '未命名资料',
+      type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' ? 'DoC声明文件' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
       product: item.productName || '-',
       productId: item.productId,
       documentType: item.documentType,
@@ -1904,7 +1906,7 @@ export default function AdminV2Page() {
     if (!product?.id) return;
     const relatedDocs = getProductDocuments(product, companyDocuments);
     if (relatedDocs.length) {
-      showAction(`该产品下还有 ${relatedDocs.length} 个文件，请先在文件管理中删除或转移文件`);
+      showAction(`该产品下还有 ${relatedDocs.length} 份资料，请先在资料管理中删除或转移资料`);
       return;
     }
     const firstConfirm = window.confirm(`确认删除产品「${product.name}」吗？删除后前台将不再展示这个产品。`);
@@ -2024,10 +2026,10 @@ export default function AdminV2Page() {
     }
     const docUrl = getDocumentAssetUrl(documentModal.doc);
     if (docUrl) {
-      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || '文件预览', objectUrl: '' });
+      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || '资料预览', objectUrl: '' });
       return;
     }
-    showAction(hasDocumentRecord(documentModal.doc) ? '该文件暂无可预览地址，可点击替换补充文件' : '请先上传或选择文件');
+    showAction(hasDocumentRecord(documentModal.doc) ? '该资料暂无可预览地址，可点击替换补充资料' : '请先上传或选择资料');
   };
 
   const closeDocumentPreview = () => {
@@ -2061,7 +2063,7 @@ export default function AdminV2Page() {
     try {
       if (documentModal.mode === 'upload') {
         if (!documentModal.file) {
-          showAction('请选择要上传的文件');
+          showAction('请选择要上传的资料');
           return;
         }
         const result = await api.createDocument({
@@ -2078,8 +2080,8 @@ export default function AdminV2Page() {
           standard: documentModal.standard,
           issuer: documentModal.issuer,
         });
-        if (!getUploadResultFileUrl(result)) throw new Error('文件已提交但未返回文件地址，请重新上传');
-        showAction('文件已上传并保存成功');
+        if (!getUploadResultFileUrl(result)) throw new Error('资料已提交但未返回资料地址，请重新上传');
+        showAction('资料已上传并保存成功');
       } else {
         await api.updateDocument(documentModal.doc.id, {
           title: documentModal.title,
@@ -2090,16 +2092,16 @@ export default function AdminV2Page() {
         });
         if (documentModal.file) {
           const result = await api.replaceDocumentFile(documentModal.doc.id, documentModal.file);
-          if (!getUploadResultFileUrl(result)) throw new Error('文件替换失败：未返回新文件地址');
-          showAction('文件信息和文件本体已更新');
+          if (!getUploadResultFileUrl(result)) throw new Error('资料替换失败：未返回新资料地址');
+          showAction('资料信息和资料本体已更新');
         } else {
-          showAction('文件信息已更新');
+          showAction('资料信息已更新');
         }
       }
       closeDocumentModal();
       await refreshCompanyAssets();
     } catch (error) {
-      showAction(error.message || '文件保存失败');
+      showAction(error.message || '资料保存失败');
     }
   };
 
@@ -2112,10 +2114,10 @@ export default function AdminV2Page() {
       if (!file) return;
       try {
         await api.replaceDocumentFile(doc.id, file);
-        showAction('文件已替换');
+        showAction('资料已替换');
         await refreshCompanyAssets();
       } catch (error) {
-        showAction(error.message || '文件替换失败');
+        showAction(error.message || '资料替换失败');
       }
     };
     input.click();
@@ -2127,9 +2129,10 @@ export default function AdminV2Page() {
       <div className={`${styles.workspaceUploadPanel} ${compact ? styles.workspaceUploadCompact : ''}`}>
         <div>
           <h3>上传资料</h3>
-          <p>支持批量上传 PDF / 图片或整个文件夹。上传后会进入待整理文件池，再归档到产品。</p>
+          <p>支持批量上传 PDF / 图片或整个文件夹。上传后会先进入待整理资料池，不会自动公开，确认归档后再由企业控制展示状态。</p>
+          <p>请仅上传适合对外展示的产品资料，例如证书、DoC 声明、说明书和公开检测报告；不要上传图纸、配方、BOM、报价、供应商或内部工艺等商业敏感资料。</p>
           <div className={styles.importStats}>
-            <span><strong>{importItems.length}</strong>全部文件</span>
+            <span><strong>{importItems.length}</strong>全部资料</span>
             <span><strong>{pendingCount}</strong>待整理</span>
             <span><strong>{importItems.length - pendingCount}</strong>已关联</span>
           </div>
@@ -2142,7 +2145,7 @@ export default function AdminV2Page() {
             </select>
           </label>
           <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
-          <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择文件批量上传</button>
+          <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择资料批量上传</button>
           <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
           <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新</button>
         </div>
@@ -2304,11 +2307,11 @@ export default function AdminV2Page() {
             <div className={styles.favoriteTopBar}>
               <div>
                 <h3>收藏夹</h3>
-                <p>收藏会按公司、产品、文件自动归类，也可以通过搜索和筛选快速回到目标资料。</p>
+                <p>收藏会按公司、产品、资料自动归类，也可以通过搜索和筛选快速回到目标资料。</p>
               </div>
               <div className={styles.favoriteStatsPills}>
                 <span>全部 {favoriteStats.all}</span>
-                <span>文件 {favoriteStats.file}</span>
+                <span>资料 {favoriteStats.file}</span>
                 <span>提醒 {favoriteStats.warning}</span>
               </div>
             </div>
@@ -2399,7 +2402,7 @@ export default function AdminV2Page() {
                                   </> : product.productId && <button className={styles.secondaryBtn} onClick={() => openFavoriteTarget('产品', product.productId)}>查看</button>}
                                 </div>
                               </div>
-                              {product.files.length > 0 ? product.files.map((file) => renderFavoriteCard(file, true)) : product.favorite && <div className={styles.favoriteTreeHint}>已收藏该产品，暂无下级文件收藏。</div>}
+                              {product.files.length > 0 ? product.files.map((file) => renderFavoriteCard(file, true)) : product.favorite && <div className={styles.favoriteTreeHint}>已收藏该产品，暂无下级资料收藏。</div>}
                             </div>
                           ))}
                           {company.files.map((file) => renderFavoriteCard(file, true))}
@@ -2409,7 +2412,7 @@ export default function AdminV2Page() {
                   ) : (
                     <div className={styles.favoriteEmptyState}>
                       <strong>没有找到匹配的收藏</strong>
-                      <p>可以换一个关键词，或重置文件类型、状态筛选。</p>
+                      <p>可以换一个关键词，或重置资料类型、状态筛选。</p>
                     </div>
                   )}
                 </div>
@@ -2428,18 +2431,18 @@ export default function AdminV2Page() {
               <div>
                 <span className={styles.historyEyebrow}>浏览历史</span>
                 <h3>继续上次查看的资料</h3>
-                <p>按 B 站历史记录的逻辑整理：最近看过的公司、产品和文件会按时间线归档，方便快速回到现场。</p>
+                <p>按 B 站历史记录的逻辑整理：最近看过的公司、产品和资料会按时间线归档，方便快速回到现场。</p>
               </div>
               <div className={styles.historyHeroStats}>
                 <span><strong>{historyStats.all}</strong>全部</span>
-                <span><strong>{historyStats.file}</strong>文件</span>
+                <span><strong>{historyStats.file}</strong>资料</span>
                 <span><strong>{historyStats.product}</strong>产品</span>
               </div>
             </div>
 
             <div className={styles.historyControlPanel}>
               <div className={styles.historySearchBox}>
-                <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="搜索浏览历史：文件名、产品、公司" />
+                <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="搜索浏览历史：资料名、产品、公司" />
               </div>
               <div className={styles.historyQuickFilters}>
                 {historyTypeOptions.map((item) => (
@@ -2518,7 +2521,7 @@ export default function AdminV2Page() {
             </div>
 
             <div className={styles.toolbar}>
-              {['全部', '未读', '企业邀请', '文件更新', '举报处理', '系统公告'].map((item, index) => (
+              {['全部', '未读', '企业邀请', '资料更新', '举报处理', '系统公告'].map((item, index) => (
                 <button key={item} className={index === 0 ? styles.primaryBtn : styles.secondaryBtn}>{item}</button>
               ))}
             </div>
@@ -2546,7 +2549,7 @@ export default function AdminV2Page() {
     if (activeGroup === 'import') {
       if (!companies.length || !activeCompany) {
         return (
-          <Section title="批量导入" desc="先把文件一股脑上传到待整理资料池，再慢慢关联到产品。">
+          <Section title="批量导入" desc="先把资料一股脑上传到待整理资料池，再慢慢关联到产品。">
             <div className={styles.importBlockedState}>
               <div className={styles.importBlurPreview}>
                 <div />
@@ -2555,7 +2558,7 @@ export default function AdminV2Page() {
               </div>
               <div className={styles.importBlockedCard}>
                 <h3>请先创建或选择公司</h3>
-                <p>批量导入的文件必须归属于某一家公司。请先创建公司，或者选择左侧已有公司后再上传。</p>
+                <p>批量导入的资料必须归属于某一家公司。请先创建公司，或者选择左侧已有公司后再上传。</p>
                 <button className={styles.primaryBtn} onClick={() => setCompanyModal({ open: true, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>创建 / 认领公司</button>
               </div>
             </div>
@@ -2586,16 +2589,16 @@ export default function AdminV2Page() {
       const organizedItems = importItems.filter((item) => item.status === 'organized');
       const activeImportGroup = importGroups.find((group) => group.key === activeImportGroupKey && !group.isDuplicateGroup);
       return (
-        <Section title="批量导入" desc="先把文件一股脑上传到待整理资料池，再慢慢关联到产品。">
+        <Section title="批量导入" desc="先把资料一股脑上传到待整理资料池，再慢慢关联到产品。">
           {renderUploadPanel()}
 
           <div className={styles.importDropHint} onClick={() => importInputRef.current?.click()}>
-            <strong>点击这里选择多个文件</strong>
-            <p>支持多选文件或整个文件夹；会先做文件名识别、PDF文字层提取和规则识别，不产生AI费用。</p>
+            <strong>点击这里选择多份资料</strong>
+            <p>支持多选文件或整个文件夹；资料会先进入待整理状态，不会自动公开。请不要上传图纸、配方、报价、供应商等商业敏感资料。</p>
           </div>
 
           <div className={styles.importList}>
-            {importItems.length === 0 ? <Placeholder title="暂无待整理资料" desc="上传文件后会显示在这里。" /> : (
+            {importItems.length === 0 ? <Placeholder title="暂无待整理资料" desc="上传资料后会显示在这里。" /> : (
               <>
                 <div className={styles.importCardGrid}>
                   {importGroups.map((group) => {
@@ -2604,14 +2607,14 @@ export default function AdminV2Page() {
                     const typeValue = form.documentType || inferImportType(group.items[0], group.type);
                     const confidence = getImportConfidence(group);
                     return (
-                      <button key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复文件卡片，可直接删除重复文件'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
+                      <button key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复资料卡片，可直接删除重复资料'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
                         <div className={styles.importMiniTop}>
                           <span className={styles.fileTypeIcon}>{typeValue.slice(0, 3)}</span>
                           <span className={`${styles.confidenceDot} ${styles[confidence.tone]}`} />
                           {group.isDuplicateGroup && <span className={styles.duplicateBadge}>疑似重复</span>}
                         </div>
                         <strong>{group.model || group.suggestedName}</strong>
-                        <p>{group.isDuplicateGroup ? `${group.items.length} 个重复文件` : `${group.items.length} 个文件`} · {group.languages.join(' / ')} · {group.items.some((item) => item.extractedTextStatus === 'pdf_text_layer') ? '已读PDF文字' : '文件名识别'}</p>
+                        <p>{group.isDuplicateGroup ? `${group.items.length} 份重复资料` : `${group.items.length} 份资料`} · {group.languages.join(' / ')} · {group.items.some((item) => item.extractedTextStatus === 'pdf_text_layer') ? '已读PDF文字' : '文件名识别'}</p>
                         <div className={styles.importMiniFiles}>
                           {group.items.slice(0, 3).map((item) => <span key={item.id} className={styles.fileStackRow}>
                             <span className={styles.fileStackName}>{item.originalName}</span>
@@ -2619,7 +2622,7 @@ export default function AdminV2Page() {
                           </span>)}
                           {group.items.length > 3 && <span>+{group.items.length - 3}</span>}
                         </div>
-                        <em className={`${styles.duplicateReason} ${!group.isDuplicateGroup ? styles.normalCardHint : ''}`}>{group.isDuplicateGroup ? '这些是后上传的重复文件，删除它们不会影响正常卡片。' : '正常文件，可点击卡片继续编辑和归档。'}</em>
+                        <em className={`${styles.duplicateReason} ${!group.isDuplicateGroup ? styles.normalCardHint : ''}`}>{group.isDuplicateGroup ? '这些是后上传的重复资料，删除它们不会影响正常卡片。' : '正常资料，可点击卡片继续编辑和归档。'}</em>
                         <span className={styles.importMiniDanger} onClick={(event) => { event.stopPropagation(); group.isDuplicateGroup ? deleteDuplicateImportItems(group) : deletePendingImportGroup(group); }}>{group.isDuplicateGroup ? '删除重复卡片' : '删除'}</span>
                       </button>
                     );
@@ -2650,7 +2653,7 @@ export default function AdminV2Page() {
                       <div className={styles.importModal} onClick={(event) => event.stopPropagation()}>
                         <div className={styles.importModalHeader}>
                           <div>
-                            <p>待整理文件</p>
+                            <p>待整理资料</p>
                             <h3>{group.model || group.suggestedName}</h3>
                           </div>
                           <button className={styles.secondaryBtn} onClick={() => setActiveImportGroupKey(null)}>关闭</button>
@@ -2661,7 +2664,7 @@ export default function AdminV2Page() {
                             <div className={styles.importFileNameRow}>
                               {group.items.map((item) => <strong key={item.id}>{item.originalName}</strong>)}
                             </div>
-                            <p className={styles.importGroupHint}>系统根据文件名和可读取的PDF文字判断它们可能属于同一个产品。</p>
+                            <p className={styles.importGroupHint}>系统根据资料名称和可读取的PDF文字判断它们可能属于同一个产品。</p>
                             <div className={styles.freeRecognizeChips}>
                               {group.items.some((item) => item.extractedTextStatus === 'pdf_text_layer') && <span>PDF文字层已提取</span>}
                               {[...new Set(group.items.map((item) => item.guessedStandard).filter(Boolean))].map((value) => <span key={value}>标准：{value}</span>)}
@@ -2672,8 +2675,8 @@ export default function AdminV2Page() {
                               const duplicate = group.items.find((item) => item.isDuplicate);
                               return <div className={styles.duplicatePanel}>
                                 <strong>检测到可能重复</strong>
-                                <p>本次上传文件可能已经归档：{duplicate?.duplicateDocumentProduct || '已归档产品'} / {duplicate?.duplicateDocumentTitle || duplicate?.duplicateReason}</p>
-                                <span>你可以批量删除后上传的重复文件，较早文件仍可继续编辑和归档。</span>
+                                <p>本次上传资料可能已经归档：{duplicate?.duplicateDocumentProduct || '已归档产品'} / {duplicate?.duplicateDocumentTitle || duplicate?.duplicateReason}</p>
+                                <span>你可以批量删除后上传的重复资料，较早资料仍可继续编辑和归档。</span>
                               </div>;
                             })()}
                           </div>
@@ -2686,8 +2689,8 @@ export default function AdminV2Page() {
                           <section id={`${formKey}-step-1`} className={importStepClass(styles, form.confirmedStep || 0, 1)}>
                             <div className={styles.questionIndex}>{(form.confirmedStep || 0) >= 1 ? '✓' : '1'}</div>
                             <div className={styles.questionBody}>
-                              <h4>确认这些文件是否属于同一个产品</h4>
-                              <p>如果属于同一个产品就继续；如果系统分错了，直接拆分成单文件整理。</p>
+                              <h4>确认这些资料是否属于同一个产品</h4>
+                              <p>如果属于同一个产品就继续；如果系统分错了，直接拆分成单份资料整理。</p>
                               <div className={styles.finalActions}>
                                 <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>{(form.confirmedStep || 0) >= 1 ? '已确认同一产品' : '确认是同一产品'}</button>
                                 {group.items.length > 1 && <button className={styles.secondaryBtn} onClick={() => { setSplitImportGroups((state) => ({ ...state, [group.key]: true })); setActiveImportGroupKey(null); }}>识别错误？拆分整理</button>}
@@ -2708,7 +2711,7 @@ export default function AdminV2Page() {
                                     if (!ok) return;
                                   }
                                   setImportSelection((state) => ({ ...state, [formKey]: { ...form, productId: nextValue } }));
-                                }}>{recommendedProduct && <option value={recommendedProductId}>{recommendedProduct.name} / {recommendedProduct.model}</option>}{companyProducts.filter((product) => String(product.id) !== recommendedProductId).map((product) => <option key={product.id} value={product.id}>{product.name} / {product.model}</option>)}<option value="">创建新产品</option></select>{recommendedProduct && <em className={styles.matchHint}>系统检测到该文件可能属于上方已选产品，建议优先关联，避免重复创建。</em>}</label>
+                                }}>{recommendedProduct && <option value={recommendedProductId}>{recommendedProduct.name} / {recommendedProduct.model}</option>}{companyProducts.filter((product) => String(product.id) !== recommendedProductId).map((product) => <option key={product.id} value={product.id}>{product.name} / {product.model}</option>)}<option value="">创建新产品</option></select>{recommendedProduct && <em className={styles.matchHint}>系统检测到该资料可能属于上方已选产品，建议优先关联，避免重复创建。</em>}</label>
                                 {!hasSelectedProduct && <label><span>产品/系列名称</span><input value={form.newProductName || group.suggestedName || ''} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, newProductName: event.target.value } }))} placeholder="例如：F60-608" /></label>}
                               </div>
                               {!hasSelectedProduct && <div className={styles.modelEditor}>
@@ -2786,16 +2789,16 @@ export default function AdminV2Page() {
                           <section id={`${formKey}-step-3`} className={importStepClass(styles, form.confirmedStep || 0, 3)}>
                             <div className={styles.questionIndex}>{(form.confirmedStep || 0) >= 3 ? '✓' : '3'}</div>
                             <div className={styles.questionBody}>
-                              <h4>确认每个文件的类型和语言</h4>
-                              <p>同一产品下，不同文件可以分别是证书、DoC 或说明书，也可以对应不同语言。</p>
+                              <h4>确认每份资料的类型和语言</h4>
+                              <p>同一产品下，不同资料可以分别是证书、DoC 或说明书，也可以对应不同语言。</p>
                               <div className={styles.fileConfirmRows}>
                                 {group.items.map((item) => <div key={item.id} className={styles.fileConfirmRow}>
                                   <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
-                                  <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他文件</option></select>
+                                  <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
                                   <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
                                 </div>)}
                               </div>
-                              <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{(form.confirmedStep || 0) >= 3 ? '已确认文件信息' : '确认文件信息'}</button>
+                              <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{(form.confirmedStep || 0) >= 3 ? '已确认资料信息' : '确认资料信息'}</button>
                             </div>
                           </section>
 
@@ -2803,12 +2806,12 @@ export default function AdminV2Page() {
                             <div className={styles.questionIndex}>4</div>
                             <div className={styles.questionBody}>
                               <h4>最终提交</h4>
-                              <p>将{hasSelectedProduct ? '关联到已有产品' : '创建新产品'}，并归档 {group.items.filter((item) => !item.isDuplicate).length || group.items.length} 个保留文件。</p>
+                              <p>将{hasSelectedProduct ? '关联到已有产品' : '创建新产品'}，并归档 {group.items.filter((item) => !item.isDuplicate).length || group.items.length} 份保留资料。</p>
                               <div className={styles.finalActions}>
                                 <button className={styles.primaryBtn} onClick={() => organizeImportGroup(group)}>确认提交归档</button>
-                                {group.items.some((item) => item.isDuplicate) && <button className={styles.dangerSoftBtn} onClick={() => deleteDuplicateImportItems(group)}>只删除重复文件</button>}
+                                {group.items.some((item) => item.isDuplicate) && <button className={styles.dangerSoftBtn} onClick={() => deleteDuplicateImportItems(group)}>只删除重复资料</button>}
                                 <button className={styles.secondaryBtn} onClick={() => { showAction('已保留在待整理池，之后可继续处理'); setActiveImportGroupKey(null); }}>跳过整理，稍后处理</button>
-                                <button className={styles.dangerSoftBtn} onClick={() => deletePendingImportGroup(group)}>删除整组文件</button>
+                                <button className={styles.dangerSoftBtn} onClick={() => deletePendingImportGroup(group)}>删除整组资料</button>
                               </div>
                             </div>
                           </section>
@@ -2829,9 +2832,9 @@ export default function AdminV2Page() {
                           <span className={styles.completedBadge}>已完成</span>
                         </div>
                         <strong>{item.originalName}</strong>
-                        <p>{item.productName || '产品'} · {item.documentTitle || '文件'}</p>
+                        <p>{item.productName || '产品'} · {item.documentTitle || '资料'}</p>
                         <div className={styles.importMiniFiles}>
-                          <span>点击可继续编辑文件信息</span>
+                          <span>点击可继续编辑资料信息</span>
                         </div>
                         <div className={styles.completedActions} onClick={(event) => event.stopPropagation()}>
                           <span onClick={() => linkedDoc ? editDocumentInfo(linkedDoc) : openPage('company', 'files', activeCompany)}>编辑</span>
@@ -2956,7 +2959,7 @@ export default function AdminV2Page() {
                   <input
                     value={productSearchQuery}
                     onChange={(event) => setProductSearchQuery(event.target.value)}
-                    placeholder="搜索产品名称、型号、文件名"
+                    placeholder="搜索产品名称、型号、资料名"
                   />
                 </div>
                 <div className={styles.headerActionsInline}>
@@ -3062,7 +3065,7 @@ export default function AdminV2Page() {
                   ];
                   return (
                     <article key={productKey} className={`${styles.stackProductCard} ${isExpanded ? styles.stackProductSelected : ''}`}>
-                      <button className={styles.stackProductClickLayer} onClick={() => { setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile(isExpanded ? workspaceExpandedPile : '全部文件'); }} aria-label={`查看 ${product.name}`} />
+                      <button className={styles.stackProductClickLayer} onClick={() => { setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile(isExpanded ? workspaceExpandedPile : '全部资料'); }} aria-label={`查看 ${product.name}`} />
                       <div className={styles.stackProductHead}>
                         <div>
                           <h3 className={styles.smartProductTitle}><SmartProductTitle title={product.name} /></h3>
@@ -3083,7 +3086,7 @@ export default function AdminV2Page() {
                                 <span className={styles.stackFileThumb}>{primaryDoc ? documentFileExt(primaryDoc.name) : '无'}</span>
                                 <span className={styles.stackFileMain}>
                                   <em>{label}</em>
-                                  <small>{primaryDoc ? primaryDoc.name : '暂无文件，点击上传'}</small>
+                                  <small>{primaryDoc ? primaryDoc.name : '暂无资料，点击上传'}</small>
                                 </span>
                                 <strong>{docs.length || '+'}</strong>
                               </button>
@@ -3099,11 +3102,11 @@ export default function AdminV2Page() {
                       {workspaceViewMode === 'detail' && (
                         <>
                           <div className={styles.stackInlineModels}>{(models.length ? models : [product.model]).map((model) => <span key={model}>{model}</span>)}</div>
-                          <div className={styles.stackDetailMeta}><span>分类：{product.category}</span><span>文件：{status.productDocs.length} 个</span></div>
+                          <div className={styles.stackDetailMeta}><span>分类：{product.category}</span><span>资料：{status.productDocs.length} 份</span></div>
                         </>
                       )}
                       {workspaceViewMode !== 'overview' && <div className={styles.stackCardActions}>
-                        <button onClick={(event) => { event.stopPropagation(); manageProductFiles(product); }}>管理文件</button>
+                        <button onClick={(event) => { event.stopPropagation(); manageProductFiles(product); }}>管理资料</button>
                         <button onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>编辑产品</button>
                         <button onClick={(event) => { event.stopPropagation(); navigate(`/products/${product.id}`); }}>预览</button>
                       </div>}
@@ -3118,7 +3121,7 @@ export default function AdminV2Page() {
 
       if (activePage === 'files') {
         const fileTypeOptions = [
-          ['all', '全部文件'],
+          ['all', '全部资料'],
           ['certificate', '资质证书'],
           ['declaration_of_conformity', 'DoC声明文件'],
           ['manual', '使用说明书'],
@@ -3142,14 +3145,14 @@ export default function AdminV2Page() {
         });
 
         return (
-          <Section title="文件管理" desc="这里是公司资料库：检查文件归属、语言、类型、证书信息，并处理替换和预览。">
+          <Section title="资料管理" desc="这里是公司资料库：检查资料归属、语言、类型、证书信息，并处理替换和预览。">
             <div className={styles.fileOverviewGrid}>
               {[
-                ['全部文件', companyDocuments.length, '当前公司已归档的全部文件'],
+                ['全部资料', companyDocuments.length, '当前公司已归档的全部资料'],
                 ['资质证书', companyDocuments.filter((doc) => doc.documentType === 'certificate').length, '证明产品测试和认证状态'],
                 ['DoC声明文件', companyDocuments.filter((doc) => doc.documentType === 'declaration_of_conformity').length, '供审核机构查看合规声明'],
                 ['使用说明书', companyDocuments.filter((doc) => doc.documentType === 'manual').length, '帮助用户了解产品使用方式'],
-                ['未绑定产品', companyDocuments.filter((doc) => !doc.productId).length, '这些文件前台产品页可能看不到'],
+                ['未绑定产品', companyDocuments.filter((doc) => !doc.productId).length, '这些资料前台产品页可能看不到'],
                 ['待完善', companyDocuments.filter((doc) => getDocHealth(doc).label === '待完善').length, '类型或语言等信息需要补齐'],
               ].map(([name, count, desc]) => (
                 <button key={name} className={styles.fileOverviewCard} onClick={() => setFileFilters((form) => ({ ...form, type: name === '未绑定产品' ? 'unbound' : form.type, status: name === '待完善' ? '待完善' : form.status }))}>
@@ -3164,19 +3167,19 @@ export default function AdminV2Page() {
               </div>
               <div className={styles.headerActionsInline}>
                 <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量导入</button>
-                <button className={styles.primaryBtn} onClick={uploadDocumentFile}>上传文件</button>
+                <button className={styles.primaryBtn} onClick={uploadDocumentFile}>上传资料</button>
               </div>
             </div>
 
             <div className={`${styles.productTools} ${styles.fileFilterTools}`}>
-              <input value={fileFilters.query} onChange={(event) => setFileFilters((form) => ({ ...form, query: event.target.value }))} placeholder="搜索文件名、产品、证书编号、标准" />
+              <input value={fileFilters.query} onChange={(event) => setFileFilters((form) => ({ ...form, query: event.target.value }))} placeholder="搜索资料名、产品、证书编号、标准" />
               <select value={fileFilters.product} onChange={(event) => setFileFilters((form) => ({ ...form, product: event.target.value }))}><option value="all">全部产品</option>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select>
               <select value={fileFilters.language} onChange={(event) => setFileFilters((form) => ({ ...form, language: event.target.value }))}><option value="all">全部语言</option>{uniqueLanguages.map((lang) => <option key={lang} value={lang}>{lang}</option>)}</select>
               <select value={fileFilters.status} onChange={(event) => setFileFilters((form) => ({ ...form, status: event.target.value }))}><option value="all">全部状态</option><option value="正常">正常</option><option value="待完善">待完善</option><option value="未绑定产品">未绑定产品</option></select>
             </div>
 
             <div className={styles.fileTableHeader}>
-              <span>文件</span><span>归属产品</span><span>关键信息</span><span>状态</span><span>操作</span>
+              <span>资料</span><span>归属产品</span><span>关键信息</span><span>状态</span><span>操作</span>
             </div>
 
             <div className={styles.fileLibraryList}>
@@ -3201,13 +3204,13 @@ export default function AdminV2Page() {
                     </div>
                     <span className={health.tone === 'safe' ? styles.safeTag : styles.warnTag}>{health.label}</span>
                     <div className={styles.fileActions}>
-                      <button className={styles.secondaryBtn} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : showAction('该文件暂无可预览地址')}>预览</button>
+                      <button className={styles.secondaryBtn} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : showAction('该资料暂无可预览地址')}>预览</button>
                       <button className={styles.secondaryBtn} onClick={() => selectDocumentInSlotModal(doc)}>编辑</button>
                       <button className={styles.secondaryBtn} onClick={() => replaceFile(doc)}>替换</button>
                     </div>
                   </article>
                 );
-              }) : <div className={styles.emptyState}>没有符合筛选条件的文件。</div>}
+              }) : <div className={styles.emptyState}>没有符合筛选条件的资料。</div>}
             </div>
           </Section>
         );
@@ -3233,7 +3236,7 @@ export default function AdminV2Page() {
                 ['企业拥有者', '1'],
                 ['企业管理员', '0'],
                 ['产品编辑', '1'],
-                ['文件上传员', '1'],
+                ['资料上传员', '1'],
                 ['只读成员', '0'],
               ].map(([role, count]) => (
                 <div key={role} className={styles.memberRolePill}>
@@ -3257,7 +3260,7 @@ export default function AdminV2Page() {
                   <option value="owner">企业拥有者</option>
                   <option value="admin">企业管理员</option>
                   <option value="editor">产品编辑</option>
-                  <option value="uploader">文件上传员</option>
+                  <option value="uploader">资料上传员</option>
                   <option value="viewer">只读成员</option>
                 </select>
                 <select defaultValue="all">
@@ -3273,7 +3276,7 @@ export default function AdminV2Page() {
                 {[
                   ['admin', 'U-000001', 'admin@legacy.local', '企业拥有者', '正常', '全部权限'],
                   ['质量部成员', 'U-000128', 'quality@example.com', '产品编辑', '正常', '产品管理'],
-                  ['文件上传员', 'U-000256', 'upload@example.com', '文件上传员', '待接受邀请', '文件上传'],
+                  ['资料上传员', 'U-000256', 'upload@example.com', '资料上传员', '待接受邀请', '资料上传'],
                 ].map(([name, code, email, role, status, scope]) => (
                   <article key={code} className={styles.memberCard}>
                     <div className={styles.memberAvatar}>{name.slice(0, 1).toUpperCase()}</div>
@@ -3303,7 +3306,7 @@ export default function AdminV2Page() {
         const verification = getVerificationDisplay(currentCompany);
         const stepTitles = [
           ['1', '填写企业资料', '公司名称、联系方式、地址等基础资料。'],
-          ['2', '上传资质文件', '营业执照、法人证明或授权书。'],
+          ['2', '上传资质资料', '营业执照、法人证明或授权书。'],
           ['3', '平台审核', '平台管理员核对资料真实性。'],
           ['4', '认证通过', '公司主页展示认证状态。'],
         ];
@@ -3367,10 +3370,10 @@ export default function AdminV2Page() {
               </div>
 
               <div className={styles.verifyUploadCard}>
-                <h3>资质文件</h3>
+                <h3>资质资料</h3>
                 <div className={styles.uploadRows}>
                   {[
-                    ['营业执照 / 注册文件', '已上传'],
+                    ['营业执照 / 注册资料', '已上传'],
                     ['法人身份证明', '已上传'],
                     ['企业授权书', '可选'],
                   ].map(([name, status]) => (
@@ -3390,21 +3393,67 @@ export default function AdminV2Page() {
       }
 
       if (activePage === 'plans') {
+        const updatePlanCarouselFade = () => {
+          const el = planCarouselRef.current;
+          if (!el) return;
+          const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+          setPlanCarouselFade({
+            left: el.scrollLeft > 8,
+            right: el.scrollLeft < maxScroll - 8,
+          });
+        };
         const planFeatures = [
           ['最多 50 个产品', true, true, true, true],
-          ['2GB 文件存储', true, true, true, true],
+          ['2GB 资料存储', true, true, true, true],
           ['5 名员工', true, true, true, true],
           ['基础资料展示', true, true, true, true],
           ['自定义公司网址', false, true, true, true],
           ['基础数据统计', false, true, true, true],
           ['批量上传', false, false, true, true],
-          ['文件版本管理', false, false, true, true],
+          ['资料版本管理', false, false, true, true],
           ['缺失资料提醒', false, false, true, true],
           ['高级权限管理', false, false, false, true],
           ['专属支持', false, false, false, true],
           ['企业级数据统计', false, false, false, true],
         ];
-
+        const costViews = {
+          website: {
+            title: '自建官网放资料',
+            tag: '灰色成本项',
+            total: '首年约 ¥2,500-9,000+',
+            note: '适合展示公司形象，但产品资料、证书版本和型号对应关系通常需要人工维护。',
+            items: [
+              ['官网制作', '¥1,500-5,000+'],
+              ['域名 / 服务器', '¥350-1,600/年'],
+              ['功能改版', '¥500-2,000+'],
+              ['后续维护', '¥800-5,000/年'],
+            ],
+          },
+          labor: {
+            title: '业务员手动维护',
+            tag: '隐形时间成本',
+            total: '约 50 小时+/年',
+            note: '资料越多，找资料、确认版本、发送附件和回复客户的问题就越频繁。',
+            items: [
+              ['找证书 / DoC', '10-20 小时/年'],
+              ['反复发送附件', '15-30 小时/年'],
+              ['确认最新版本', '10-20 小时/年'],
+              ['错发旧资料风险', '难以量化'],
+            ],
+          },
+          eudoc: {
+            title: '使用 EU-DOC',
+            tag: '资料入口成本',
+            total: '¥99-9,999/年',
+            note: '围绕产品组织证书、DoC、说明书和检测报告，支持搜索、分享、二维码和持续更新。',
+            items: [
+              ['产品资料页', '已包含'],
+              ['资料分类展示', '已包含'],
+              ['搜索 / 分享 / 二维码', '套餐内开放'],
+              ['后续升级', '按产品和资料规模'],
+            ],
+          },
+        };
         return (
           <Section title={t('admin.plans.title')} desc={t('admin.plans.desc')}>
             <div className={styles.planCurrentMerged}>
@@ -3416,9 +3465,9 @@ export default function AdminV2Page() {
               </div>
               <div className={styles.currentPlanUsage}>
                 {[
-                  ['产品数量', '47 / 50', '94%', '接近上限'],
-                  ['文件存储', '1.2GB / 2GB', '60%', '正常'],
-                  ['员工数量', '3 / 5', '60%', '正常'],
+                  ['产品数量', '2 / 3', '67%', '正常'],
+                  ['资料存储', '120MB / 200MB', '60%', '正常'],
+                  ['资料数量', '12 / 20', '60%', '正常'],
                   ['批量上传', '未开启', '0%', '升级可用'],
                 ].map(([name, value, percent, status]) => (
                   <div key={name} className={styles.currentUsageBarItem} style={{ '--usage': percent }}>
@@ -3434,29 +3483,80 @@ export default function AdminV2Page() {
             </div>
 
             <div className={styles.planBannerCompareGrid}>
-              {[
-                ['免费版', '0/年', '当前套餐', [true, true, true, true, false, false, false, false]],
-                ['基础版', '99/年', '适合小企业', [true, true, true, true, true, true, false, false]],
-                ['专业版', '999/年', '推荐', [true, true, true, true, true, true, true, false]],
-                ['企业版', '9999/年', '高级权益', [true, true, true, true, true, true, true, true]],
-              ].map(([name, price, tag, enabled]) => {
-                const benefits = ['产品资料展示', '文件存储', '员工席位', '基础资料展示', '自定义公司网址', '数据统计', '批量上传 / 版本管理', '高级权限 / 专属支持'];
-                return (
-                  <article key={name} className={`${styles.planFlagCard} ${tag === '推荐' ? styles.recommendedPlan : ''}`}>
-                    <div className={styles.planRibbon}>{tag}</div>
-                    <h3>{name}</h3>
-                    <strong>{price}</strong>
-                    <ul>
-                      {benefits.map((benefit, index) => (
-                        <li key={benefit} className={enabled[index] ? styles.benefitOn : styles.benefitOff}>
-                          <span>{enabled[index] ? '✓' : '—'}</span>{benefit}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className={styles.planFoot}>{name === '免费版' ? '正在使用' : '后续开放'}</div>
-                  </article>
-                );
-              })}
+              <article className={`${styles.planFlagCard} ${styles.planCostFlag}`}>
+                <div className={styles.planRibbon}>最低成本</div>
+                <h3>自建与维护</h3>
+                <strong>¥3,000+/年</strong>
+                <ul className={styles.planCostList}>
+                  {[
+                    ['官网制作', '¥2,000+'],
+                    ['功能改版', '¥500+/次'],
+                    ['域名 / 服务器', '¥500+/年'],
+                    ['后续维护', '¥1,000+/年'],
+                    ['人工成本', '50h+/年'],
+                    ['业务员找资料', ''],
+                    ['反复发送附件', ''],
+                    ['确认最新版本', ''],
+                    ['企业扩张后成本指数级上升', ''],
+                  ].map(([name, cost]) => (
+                    <li key={name} className={!cost && name !== '企业扩张后成本指数级上升' ? styles.subCostLine : ''}>
+                      <span>—</span>{name}{cost && <em>{cost}</em>}
+                    </li>
+                  ))}
+                </ul>
+                <div className={styles.planFoot}>可以自建网站，但长期维护成本高</div>
+              </article>
+              <div className={`${styles.planCarouselShell} ${planCarouselFade.left ? styles.carouselHasLeft : ''} ${planCarouselFade.right ? styles.carouselHasRight : ''}`}>
+                <div
+                  className={styles.planCarousel}
+                  ref={planCarouselRef}
+                  onScroll={updatePlanCarouselFade}
+                  onMouseEnter={updatePlanCarouselFade}
+                >
+                  {[
+                    ['免费试用', '0/限时', '试用体验', [
+                      ['3 个产品', true], ['20 份资料', true], ['200MB 存储', true], ['1GB/月流量', true],
+                      ['二维码分享', false], ['自定义网址', false], ['数据统计', false], ['批量 / 版本管理', false],
+                    ], '正在使用'],
+                    ['入门版', '99/年', '初创企业', [
+                      ['5 个产品', true], ['30 份资料', true], ['500MB 存储', true], ['5GB/月流量', true],
+                      ['二维码分享', true], ['自定义网址', false], ['数据统计', false], ['批量 / 版本管理', false],
+                    ], '后续开放'],
+                    ['基础版', '499/年', '扩张企业', [
+                      ['10 个产品', true], ['100 份资料', true], ['2GB 存储', true], ['30GB/月流量', true],
+                      ['二维码分享', true], ['自定义网址', true], ['基础数据统计', true], ['批量 / 版本管理', false],
+                    ], '后续开放'],
+                    ['标准版', '1999/年', '成长企业', [
+                      ['30 个产品', true], ['500 份资料', true], ['10GB 存储', true], ['150GB/月流量', true],
+                      ['二维码分享', true], ['自定义网址', true], ['数据统计', true], ['批量 / 版本管理', true],
+                    ], '推荐方案'],
+                    ['专业版', '4999/年', '规模企业', [
+                      ['80 个产品', true], ['1500 份资料', true], ['50GB 存储', true], ['1TB/月流量', true],
+                      ['多成员权限', true], ['高级数据统计', true], ['优先支持', true], ['缺失资料提醒', true],
+                    ], '后续开放'],
+                    ['企业版', '10000+/年', '旗舰企业', [
+                      ['产品数定制', true], ['资料数定制', true], ['存储 / 流量定制', true], ['专属品牌页', true],
+                      ['高级权限', true], ['API / 数据导出', true], ['专属支持', true], ['适合 RIF 级企业', true],
+                    ], '联系开通'],
+                  ].map(([name, price, tag, benefits, foot]) => {
+                    return (
+                      <article key={name} className={`${styles.planFlagCard} ${name === '标准版' ? styles.recommendedPlan : ''}`}>
+                        <div className={styles.planRibbon}>{tag}</div>
+                        <h3>{name}</h3>
+                        <strong>{price}</strong>
+                        <ul>
+                          {benefits.map(([benefit, enabled]) => (
+                            <li key={benefit} className={enabled ? styles.benefitOn : styles.benefitOff}>
+                              <span>{enabled ? '✓' : '—'}</span>{benefit}
+                            </li>
+                          ))}
+                        </ul>
+                        <div className={styles.planFoot}>{foot}</div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </Section>
         );
@@ -3469,7 +3569,7 @@ export default function AdminV2Page() {
               {[
                 ['今日操作', '12', '最近活跃'],
                 ['资料修改', '4', '公司 / 产品'],
-                ['文件操作', '6', '上传 / 替换'],
+                ['资料操作', '6', '上传 / 替换'],
                 ['权限变更', '2', '成员 / 角色'],
               ].map(([name, count, desc]) => (
                 <div key={name} className={styles.logSummaryCard}>
@@ -3486,7 +3586,7 @@ export default function AdminV2Page() {
                 <option value="all">全部类型</option>
                 <option value="company">公司资料</option>
                 <option value="product">产品资料</option>
-                <option value="file">文件管理</option>
+                <option value="file">资料管理</option>
                 <option value="member">员工权限</option>
               </select>
               <select defaultValue="7d">
@@ -3499,10 +3599,10 @@ export default function AdminV2Page() {
 
             <div className={styles.timelineList}>
               {[
-                ['今天 15:42', 'admin', '上传文件', '为 Equestrian Helmet F20 上传 DoC 声明文件', '文件管理'],
+                ['今天 15:42', 'admin', '上传资料', '为 Equestrian Helmet F20 上传 DoC 声明文件', '资料管理'],
                 ['今天 14:18', '质量部成员', '编辑产品', '修改产品 F20-201AL 的适用型号', '产品资料'],
                 ['昨天 20:05', 'admin', '修改权限', '将 quality@example.com 设置为产品编辑', '员工权限'],
-                ['昨天 18:30', '文件上传员', '替换文件', '替换 CE Certificate - F20 文件版本', '文件管理'],
+                ['昨天 18:30', '资料上传员', '替换资料', '替换 CE Certificate - F20 文件版本', '资料管理'],
               ].map(([time, user, action, content, type]) => (
                 <article key={`${time}-${action}`} className={styles.timelineItem}>
                   <div className={styles.timelineDot} />
@@ -3686,7 +3786,7 @@ export default function AdminV2Page() {
 
     if (activePage === 'reports') {
       return (
-        <Section title="举报处理" desc="处理用户提交的错误、虚假资料、侵权和过期文件举报。">
+        <Section title="举报处理" desc="处理用户提交的错误、虚假资料、侵权和过期资料举报。">
           <div className={styles.reportSummaryGrid}>
             {[
               ['待处理', '8', '需要平台确认'],
@@ -3703,7 +3803,7 @@ export default function AdminV2Page() {
           </div>
 
           <div className={styles.reportToolbar}>
-            <input placeholder="搜索举报对象、公司、产品、文件" />
+            <input placeholder="搜索举报对象、公司、产品、资料" />
             <select defaultValue="pending">
               <option value="pending">待处理</option>
               <option value="processing">处理中</option>
@@ -3714,15 +3814,15 @@ export default function AdminV2Page() {
               <option value="all">全部类型</option>
               <option value="wrong_info">信息错误</option>
               <option value="fake">疑似虚假</option>
-              <option value="expired">文件过期</option>
+              <option value="expired">资料过期</option>
               <option value="copyright">侵权</option>
             </select>
           </div>
 
           <div className={styles.reportList}>
             {[
-              ['疑似虚假证书', 'CE Certificate - F20', '高风险', '用户反馈证书编号与文件内容不一致', '待处理'],
-              ['文件过期', 'Declaration of Conformity', '普通', 'DoC 文件可能不是最新版本', '处理中'],
+              ['疑似虚假证书', 'CE Certificate - F20', '高风险', '用户反馈证书编号与资料内容不一致', '待处理'],
+              ['资料过期', 'Declaration of Conformity', '普通', 'DoC 资料可能不是最新版本', '处理中'],
               ['产品型号错误', 'Equestrian Helmet F20', '普通', '适用型号显示不完整', '待处理'],
               ['侵权投诉', 'User Manual', '高风险', '举报说明书疑似未经授权上传', '待处理'],
             ].map(([type, target, risk, desc, status]) => (
@@ -3756,7 +3856,7 @@ export default function AdminV2Page() {
         <Section title="平台设置" desc="管理员只修改低风险运营信息；底层规则由平台技术配置维护。">
           <div className={styles.platformSettingNotice}>
             <strong>设置原则</strong>
-            <p>平台公告、联系方式、帮助入口等可以由管理员维护；文件限制、备份、安全策略等属于基础规则，只展示给管理员查看，不能在后台随意修改。</p>
+            <p>平台公告、联系方式、帮助入口等可以由管理员维护；资料限制、备份、安全策略等属于基础规则，只展示给管理员查看，不能在后台随意修改。</p>
           </div>
 
           <div className={styles.systemGrid}>
@@ -3805,13 +3905,13 @@ export default function AdminV2Page() {
             </div>
 
             <div className={styles.systemCardReadonly}>
-              <h3>只读：文件与存储规则</h3>
+              <h3>只读：资料与存储规则</h3>
               <div className={styles.settingRows}>
                 {[
                   ['单文件大小限制', '未认证企业 10MB / 个'],
                   ['允许文件类型', 'PDF / JPG / PNG / WebP / Word'],
-                  ['文件备份策略', '服务器 / 对象存储 / 定时备份'],
-                  ['文件安全扫描', '后续接入'],
+                  ['资料备份策略', '服务器 / 对象存储 / 定时备份'],
+                  ['资料安全扫描', '后续接入'],
                 ].map(([name, value]) => (
                   <div key={name} className={styles.settingRowReadonly}>
                     <span>{name}</span>
@@ -3859,11 +3959,11 @@ export default function AdminV2Page() {
         : {
           title: '审核/合规分类',
           desc: '用于审核机构按法规、认证路径、标准号快速定位 DoC、证书、测试报告。',
-          hint: '一个产品可关联多个合规分类，文件类型仍由 documentType 单独管理。',
+          hint: '一个产品可关联多个合规分类，资料类型仍由 documentType 单独管理。',
         };
       const topCategories = currentCategories.filter((item) => !item.parentId);
       return (
-        <Section title="分类管理" desc="分类现在拆为 C端产品分类和审核/合规分类；文件类型不混入分类树。">
+        <Section title="分类管理" desc="分类现在拆为 C端产品分类和审核/合规分类；资料类型不混入分类树。">
           <div className={styles.categoryHeaderPanel}>
             <div>
               <h3>{categoryCopy.title}</h3>
@@ -4038,7 +4138,7 @@ export default function AdminV2Page() {
                   )}
                   <label className={styles.fullField}>
                     <span>备注</span>
-                    <textarea rows="4" value={favoriteEditModal.note} onChange={(event) => setFavoriteEditModal((form) => ({ ...form, note: event.target.value }))} placeholder="例如：客户下周要核对；投标文件可能会用到。" />
+                    <textarea rows="4" value={favoriteEditModal.note} onChange={(event) => setFavoriteEditModal((form) => ({ ...form, note: event.target.value }))} placeholder="例如：客户下周要核对；投标资料可能会用到。" />
                   </label>
                 </div>
                 <div className={styles.modalActions}>
@@ -4223,7 +4323,7 @@ export default function AdminV2Page() {
 
                   <section className={styles.productEditBlock}>
                     <div className={styles.productEditBlockTitle}>适用型号</div>
-                    <p className={styles.productEditHint}>一个产品系列可以包含多个型号；每个型号单独成框，避免后续证书和文件归档混乱。</p>
+                    <p className={styles.productEditHint}>一个产品系列可以包含多个型号；每个型号单独成框，避免后续证书和资料归档混乱。</p>
                     <div className={styles.productModelEditor}>
                       {productModal.models.map((model, index) => (
                         <div key={`${index}-${productModal.models.length}`} className={styles.productModelPill}>
@@ -4263,10 +4363,10 @@ export default function AdminV2Page() {
                       <div className={styles.productEditFiles}>
                         {getProductDocuments(productModal.product, companyDocuments).length ? getProductDocuments(productModal.product, companyDocuments).map((doc) => (
                           <button key={doc.id} onClick={() => selectDocumentInSlotModal(doc)}><strong>{doc.type}</strong><span>{doc.name}</span><em>{doc.lang}</em></button>
-                        )) : <p>这个产品还没有绑定文件，可通过“添加文件”或“批量导入”补充。</p>}
+                        )) : <p>这个产品还没有绑定资料，可通过“添加资料”或“批量导入”补充。</p>}
                       </div>
                       <div className={styles.productEditInlineActions}>
-                        <button className={styles.secondaryBtn} onClick={uploadDocumentFile}>添加文件</button>
+                        <button className={styles.secondaryBtn} onClick={uploadDocumentFile}>添加资料</button>
                         <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量导入</button>
                       </div>
                     </section>
@@ -4303,27 +4403,27 @@ export default function AdminV2Page() {
                           <>
                             <button type="button" className={`${styles.documentPreviewBody} ${!hasRecord && !documentModal.file ? styles.documentUploadEmpty : ''} ${isMissingFile ? styles.documentFileMissing : ''}`} onClick={() => canPreview ? openDocumentPreview() : documentFileInputRef.current?.click()}>
                               {previewImageUrl ? (
-                                <img src={previewImageUrl} alt={documentModal.file?.name || documentModal.doc?.name || '文件缩略图'} />
+                                <img src={previewImageUrl} alt={documentModal.file?.name || documentModal.doc?.name || '资料缩略图'} />
                               ) : hasActualFile ? (
                                 <strong>{documentModal.file ? documentFileExt(documentModal.file.name) : documentFileExt(documentModal.doc?.name || docUrl || 'FILE')}</strong>
                               ) : isMissingFile ? (
                                 <span className={styles.documentMissingPrompt}>
                                   <b>!</b>
                                   <strong>资料信息已存在</strong>
-                                  <em>但没有找到对应文件，请补传或替换文件</em>
+                                  <em>但没有找到对应资料，请补传或替换资料</em>
                                 </span>
                               ) : (
                                 <span className={styles.documentUploadPrompt}>
                                   <b>+</b>
-                                  <strong>点击上传文件</strong>
-                                  <em>支持 PDF、PNG、JPG、WebP、Word，单个文件不超过 10MB</em>
+                                  <strong>点击上传资料</strong>
+                                  <em>支持 PDF、PNG、JPG、WebP、Word，单份资料不超过 10MB</em>
                                 </span>
                               )}
                             </button>
                             <div className={styles.documentPreviewMeta}>
                               <div>
-                                <span>{documentModal.file?.name || documentModal.doc?.name || '当前槽位暂无文件'}</span>
-                                <em>{hasActualFile ? '点击图片放大查看文件' : isMissingFile ? '已有资料信息，但服务器未关联文件地址' : '上传后会自动带入标题与语言，可继续修改'}</em>
+                                <span>{documentModal.file?.name || documentModal.doc?.name || '当前槽位暂无资料'}</span>
+                                <em>{hasActualFile ? '点击图片放大查看资料' : isMissingFile ? '已有资料信息，但服务器未关联资料地址' : '上传后会自动带入标题与语言，可继续修改'}</em>
                               </div>
                               {(hasRecord || documentModal.file) && <button type="button" onClick={() => documentFileInputRef.current?.click()}>{isMissingFile ? '补传' : '替换'}</button>}
                             </div>
@@ -4342,15 +4442,15 @@ export default function AdminV2Page() {
                 <section className={styles.documentInfoColumn}>
                   <button className={styles.iconCloseBtn} onClick={() => closeDocumentModal()}>×</button>
                   <div className={styles.documentSplitHeader}>
-                    <h3>{documentModal.mode === 'upload' ? '补充资料文件' : '维护资料文件'}</h3>
-                    <p>{documentModal.source === 'slot' ? '已根据入口锁定产品和资料类型，只需要上传或校对文件信息。' : '资质证书、DoC 声明和使用说明书都可以在这里维护。'}</p>
+                    <h3>{documentModal.mode === 'upload' ? '补充产品资料' : '维护产品资料'}</h3>
+                    <p>{documentModal.source === 'slot' ? '已根据入口锁定产品和资料类型，只需要上传或校对资料信息。' : '资质证书、DoC 声明和使用说明书都可以在这里维护。'}请仅维护适合对外展示的产品资料，不要上传商业敏感资料。</p>
                   </div>
 
                   {documentModal.docs?.length > 1 && (
                     <div className={styles.documentPageTabs}>
                       {documentModal.docs.map((doc, index) => (
                         <button key={doc.id} className={String(documentModal.doc?.id) === String(doc.id) ? styles.documentPageActive : ''} onClick={() => selectDocumentInSlotModal(doc)}>
-                          <span>文件 {index + 1}</span>
+                          <span>资料 {index + 1}</span>
                           <strong>{doc.name}</strong>
                         </button>
                       ))}
@@ -4364,11 +4464,11 @@ export default function AdminV2Page() {
                       <label><span>绑定产品</span><select value={documentModal.productId} onChange={(event) => setDocumentModal((form) => ({ ...form, productId: event.target.value, productName: companyProducts.find((product) => String(product.id) === String(event.target.value))?.name || '' }))}>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
                     )}
                     {documentModal.lockedType ? (
-                      <label className={styles.documentLockedField}><span>文件类型</span><input value={importTypeLabel(documentModal.documentType)} readOnly /></label>
+                      <label className={styles.documentLockedField}><span>资料类型</span><input value={importTypeLabel(documentModal.documentType)} readOnly /></label>
                     ) : (
-                      <label><span>文件类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他文件</option></select></label>
+                      <label><span>资料类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select></label>
                     )}
-                    <label><span>文件标题</span><input value={documentModal.title} placeholder="选择文件后自动带入，可修改" onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
+                    <label><span>资料标题</span><input value={documentModal.title} placeholder="选择资料后自动带入，可修改" onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
                     <label><span>语言</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>
                     {documentModal.documentType === 'certificate' && <label><span>证书编号</span><input value={documentModal.certNo} placeholder="可稍后补充" onChange={(event) => setDocumentModal((form) => ({ ...form, certNo: event.target.value }))} /></label>}
                     {documentModal.documentType === 'certificate' && <label><span>认证标准</span><input value={documentModal.standard} placeholder="例如 EN 1384 / CE" onChange={(event) => setDocumentModal((form) => ({ ...form, standard: event.target.value }))} /></label>}
@@ -4388,16 +4488,16 @@ export default function AdminV2Page() {
               <div className={styles.previewModal} onClick={(event) => event.stopPropagation()}>
                 <div className={styles.previewHeader}>
                   <div>
-                    <h3>{documentPreview.title || '文件预览'}</h3>
-                    <p>用于快速核对文件内容，不会修改当前资料。</p>
+                    <h3>{documentPreview.title || '资料预览'}</h3>
+                    <p>用于快速核对资料内容，不会修改当前资料。</p>
                   </div>
                   <button className={styles.iconCloseBtn} onClick={closeDocumentPreview}>×</button>
                 </div>
                 <div className={styles.previewFrameWrap}>
                   {documentPreview.url.match(/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i) || documentPreview.objectUrl ? (
-                    <img src={documentPreview.url} alt={documentPreview.title || '文件预览'} />
+                    <img src={documentPreview.url} alt={documentPreview.title || '资料预览'} />
                   ) : (
-                    <iframe src={documentPreview.url} title={documentPreview.title || '文件预览'} />
+                    <iframe src={documentPreview.url} title={documentPreview.title || '资料预览'} />
                   )}
                 </div>
               </div>
@@ -4511,7 +4611,7 @@ function StacklandsProductsTestPage({ onBack }) {
   const [products, setProducts] = useState(initialProducts);
   const [pendingFiles, setPendingFiles] = useState(initialPendingFiles);
   const [selectedProductId, setSelectedProductId] = useState('f66');
-  const [selectedPile, setSelectedPile] = useState('全部文件');
+  const [selectedPile, setSelectedPile] = useState('全部资料');
   const [focusMode, setFocusMode] = useState('all');
   const [viewMode, setViewMode] = useState('standard');
   const visibleProducts = products.filter((product) => focusMode === 'all' || getStackProductHealth(product).status === focusMode);
@@ -4549,7 +4649,7 @@ function StacklandsProductsTestPage({ onBack }) {
         <div>
           <span className={styles.stackEyebrow}>TEST PAGE · Stacklands style</span>
           <h1>产品资料桌面</h1>
-          <p>用“产品卡 + 文件堆 + 空卡槽”替代复杂表格，先体验效率和缺陷。</p>
+          <p>用“产品卡 + 资料堆 + 空卡槽”替代复杂表格，先体验效率和缺陷。</p>
         </div>
         <div className={styles.stackTopActions}>
           <button className={styles.secondaryBtn} onClick={() => setProducts(initialProducts)}>重置产品</button>
@@ -4559,8 +4659,8 @@ function StacklandsProductsTestPage({ onBack }) {
 
       <div className={styles.stackBoard}>
         <aside className={styles.stackInbox}>
-          <div className={styles.stackPanelTitle}>待整理文件堆</div>
-          <p>点击“归档”会模拟把文件放进推荐产品；重复文件可直接删除。</p>
+          <div className={styles.stackPanelTitle}>待整理资料堆</div>
+          <p>点击“归档”会模拟把资料放进推荐产品；重复资料可直接删除。</p>
           <div className={styles.stackPendingPile}>
             {pendingFiles.length ? pendingFiles.map((file, index) => (
               <div key={file.id} className={`${styles.stackPendingCard} ${file.duplicate ? styles.stackDuplicatePending : ''}`} style={{ '--tilt': `${index % 2 ? 1.5 : -1.2}deg` }}>
@@ -4571,7 +4671,7 @@ function StacklandsProductsTestPage({ onBack }) {
                   <button onClick={() => removePendingFile(file)}>{file.duplicate ? '删除重复' : '删除'}</button>
                 </div>
               </div>
-            )) : <div className={styles.stackEmptyPile}>待整理文件已清空</div>}
+            )) : <div className={styles.stackEmptyPile}>待整理资料已清空</div>}
           </div>
         </aside>
 
@@ -4579,7 +4679,7 @@ function StacklandsProductsTestPage({ onBack }) {
           <div className={styles.stackDeskHeader}>
             <div>
               <h2>产品卡片</h2>
-              <p>默认只看产品名、完整度和文件堆；缺失资料会直接变成空卡槽。</p>
+              <p>默认只看产品名、完整度和资料堆；缺失资料会直接变成空卡槽。</p>
             </div>
             <div className={styles.stackFilters}>
               {['all', '资料完整', '缺资料', '待整理'].map((item) => <button key={item} className={focusMode === item ? styles.stackFilterActive : ''} onClick={() => setFocusMode(item)}>{item === 'all' ? '全部' : item}</button>)}
@@ -4592,7 +4692,7 @@ function StacklandsProductsTestPage({ onBack }) {
                 <button key={mode} className={viewMode === mode ? styles.stackFilterActive : ''} onClick={() => setViewMode(mode)}>{mode === 'overview' ? '概览' : mode === 'standard' ? '标准' : '详细'}</button>
               ))}
             </div>
-            <span>{viewMode === 'overview' ? '快速看哪些产品缺资料。' : viewMode === 'standard' ? '日常整理用，信息和效率平衡。' : '核对文件名、语言和型号时使用。'}</span>
+            <span>{viewMode === 'overview' ? '快速看哪些产品缺资料。' : viewMode === 'standard' ? '日常整理用，信息和效率平衡。' : '核对资料名、语言和型号时使用。'}</span>
           </div>
 
           <div className={`${styles.stackProductGrid} ${styles[`stackView_${viewMode}`]}`}>
@@ -4600,7 +4700,7 @@ function StacklandsProductsTestPage({ onBack }) {
               const health = getStackProductHealth(product);
               return (
                 <article key={product.id} className={`${styles.stackProductCard} ${selectedProductId === product.id ? styles.stackProductSelected : ''}`}>
-                  <button className={styles.stackProductClickLayer} onClick={() => { setSelectedProductId(product.id); setSelectedPile(selectedProductId === product.id ? selectedPile : '全部文件'); }} aria-label={`查看 ${product.name}`} />
+                  <button className={styles.stackProductClickLayer} onClick={() => { setSelectedProductId(product.id); setSelectedPile(selectedProductId === product.id ? selectedPile : '全部资料'); }} aria-label={`查看 ${product.name}`} />
                   <div className={styles.stackProductHead}>
                     <div>
                       <h3 className={styles.smartProductTitle}><SmartProductTitle title={product.name} /></h3>
@@ -4620,7 +4720,7 @@ function StacklandsProductsTestPage({ onBack }) {
                       const shouldShowFiles = viewMode === 'detail' || (viewMode === 'standard' && active);
                       return (
                         <div key={type} className={`${styles.stackFileRowWrap} ${active || viewMode === 'detail' ? styles.stackFileRowOpen : ''}`}>
-                          <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); viewMode === 'overview' ? setSelectedProductId(product.id) : files.length ? (setSelectedProductId(product.id), setSelectedPile(active ? '全部文件' : type)) : addMissingFile(product.id, type); }}>
+                          <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); viewMode === 'overview' ? setSelectedProductId(product.id) : files.length ? (setSelectedProductId(product.id), setSelectedPile(active ? '全部资料' : type)) : addMissingFile(product.id, type); }}>
                             <span>{type}</span>
                             <strong>{files.length || '+'}</strong>
                           </button>
@@ -4642,7 +4742,7 @@ function StacklandsProductsTestPage({ onBack }) {
                   )}
 
                   {viewMode !== 'overview' && <div className={styles.stackCardActions}>
-                    <button onClick={(event) => { event.stopPropagation(); setSelectedProductId(product.id); setSelectedPile('资质证书'); }}>管理文件</button>
+                    <button onClick={(event) => { event.stopPropagation(); setSelectedProductId(product.id); setSelectedPile('资质证书'); }}>管理资料</button>
                     <button onClick={(event) => event.stopPropagation()}>编辑产品</button>
                     <button onClick={(event) => event.stopPropagation()}>预览</button>
                   </div>}

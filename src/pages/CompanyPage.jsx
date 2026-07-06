@@ -400,7 +400,7 @@ export default function CompanyPage() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <input type="text" className={styles.searchInput} placeholder="搜索产品名称、型号、资料文件" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" className={styles.searchInput} placeholder="搜索产品名称、型号、资料" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 {searchQuery && <button className={styles.clearBtn} onClick={() => setSearchQuery('')}>✕</button>}
               </div>
               <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>

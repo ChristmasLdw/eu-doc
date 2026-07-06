@@ -104,13 +104,14 @@ export default function CompanyVerificationPage() {
       <div className={styles.container}>
         <h1 className={styles.title}>企业认证申请</h1>
         <p className={styles.subtitle}>提交企业认证资料，获得认证标识和更多权益</p>
+        <p className={styles.subtitle}>认证通过前，企业页面和产品资料不会自动公开；企业可在后台自行控制资料展示状态。</p>
 
         <div className={styles.benefits}>
           <h3>认证企业权益</h3>
           <ul>
             <li>✓ 企业认证标识展示</li>
-            <li>✓ 文档优先审核</li>
-            <li>✓ 更多产品和文档上传配额</li>
+            <li>✓ 产品资料优先审核</li>
+            <li>✓ 更多产品和资料上传配额</li>
             <li>✓ 提升企业可信度</li>
           </ul>
         </div>

@@ -48,11 +48,11 @@ export default function PrivacyPage() {
                   <li>联系方式（可选）</li>
                 </ul>
 
-                <h3>2.2 证书信息</h3>
+                <h3>2.2 产品公开资料信息</h3>
                 <ul>
                   <li>证书编号、产品名称、型号</li>
                   <li>发证机构、有效期</li>
-                  <li>上传的证书文件（PDF）</li>
+                  <li>上传的证书、DoC 声明、说明书、公开检测报告等产品资料</li>
                 </ul>
 
                 <h3>2.3 日志信息</h3>
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
                 <h2>三、信息使用方式</h2>
                 <h3>3.1 提供服务</h3>
                 <ul>
-                  <li>存储和展示证书信息</li>
+                  <li>存储和展示企业主动公开的产品资料</li>
                   <li>生成分享链接</li>
                   <li>发送到期提醒（需用户授权）</li>
                 </ul>
@@ -98,8 +98,8 @@ export default function PrivacyPage() {
                 </ol>
 
                 <h3>4.3 公开信息</h3>
-                <p>以下信息可能被公开展示：证书编号、产品名称、型号、公司名称、证书状态。</p>
-                <p className={styles.highlight}><strong>注意：用户主动分享的证书链接，任何持有链接的人都可访问。</strong></p>
+                <p>以下信息可能被公开展示：企业主动公开的证书编号、产品名称、型号、公司名称、证书状态、DoC 声明、说明书和公开检测报告等产品资料。</p>
+                <p className={styles.highlight}><strong>请勿上传商业秘密、个人隐私或不适合公开展示的内容。用户主动分享的资料链接，任何持有链接的人都可能访问。</strong></p>
               </section>
 
               <section>

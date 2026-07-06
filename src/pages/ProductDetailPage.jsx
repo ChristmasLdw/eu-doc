@@ -10,7 +10,7 @@ const RESOURCE_TYPES = [
   { key: 'certificate', label: '资质证书', shortLabel: '证书', hint: 'CE、UKCA、检测认证等', tone: 'blue' },
   { key: 'declaration_of_conformity', label: 'DoC 声明', shortLabel: 'DoC', hint: '符合性声明、责任主体与语言版本', tone: 'indigo' },
   { key: 'manual', label: '使用说明书', shortLabel: '说明书', hint: '安装、使用、维护和安全说明', tone: 'cyan' },
-  { key: 'test_report', label: '检测报告', shortLabel: '报告', hint: '实验室测试和技术验证文件', tone: 'slate' },
+  { key: 'test_report', label: '检测报告', shortLabel: '报告', hint: '实验室测试和技术验证资料', tone: 'slate' },
 ];
 
 const TYPE_LABELS = RESOURCE_TYPES.reduce((map, item) => ({ ...map, [item.key]: item.label }), {});
@@ -220,7 +220,7 @@ export default function ProductDetailPage() {
             <span className={styles.eyebrowV3}>产品资料中心</span>
             <h1>{product.name}</h1>
             {product.name_en && <p className={styles.productEnglishName}>{product.name_en}</p>}
-            <p className={styles.productIntro}>{product.description || '该页面集中展示产品基础信息、适用型号、合规资料和说明文档，方便用户确认产品并进入对应文件详情页。'}</p>
+            <p className={styles.productIntro}>{product.description || '该页面集中展示产品基础信息、适用型号、合规资料和说明文档，方便用户确认产品并进入对应资料详情页。'}</p>
             <div className={styles.heroMetaV3}>
               <span>产品编号：{productCode(product)}</span>
               {product.category_name && <span>{product.category_name}</span>}
@@ -242,7 +242,7 @@ export default function ProductDetailPage() {
 
         <div className={styles.platformNoticeV3}>
           <strong>资料来源说明</strong>
-          <span>本页资料由企业上传并对真实性负责。EU-DOC 提供展示与管理工具，不作为认证机构，不对文件真实性、有效性或产品合规性作出背书。</span>
+          <span>本页资料由企业上传并对真实性负责。EU-DOC 提供展示与管理工具，不作为认证机构，不对资料真实性、有效性或产品合规性作出背书。</span>
         </div>
 
         <section className={styles.productContentGrid}>
@@ -277,7 +277,7 @@ export default function ProductDetailPage() {
             <section className={styles.infoPanelV3}>
               <div className={styles.sectionHeadV3}>
                 <h2>资料中心</h2>
-                <p>产品页只做资料总览；点击具体文件后进入独立文件详情页。</p>
+                <p>产品页只做资料总览；点击具体资料后进入独立资料详情页。</p>
               </div>
               <div className={styles.resourceListV3}>
                 {groupedResources.map((group) => {
@@ -287,7 +287,7 @@ export default function ProductDetailPage() {
                       <button className={styles.resourceSummaryV3} onClick={() => group.docs.length && setExpandedTypes((current) => current.includes(group.key) ? current.filter((key) => key !== group.key) : [...current, group.key])}>
                         <div>
                           <span>{group.label}</span>
-                          <p>{group.docs.length ? `${group.docs.length} 份文件${group.languages.length ? ` · ${group.languages.map((lang) => lang.toUpperCase()).join(' / ')}` : ''}` : group.hint}</p>
+                          <p>{group.docs.length ? `${group.docs.length} 份资料${group.languages.length ? ` · ${group.languages.map((lang) => lang.toUpperCase()).join(' / ')}` : ''}` : group.hint}</p>
                         </div>
                         <strong>{group.docs.length ? '查看' : '暂未公开'}</strong>
                       </button>
@@ -303,10 +303,10 @@ export default function ProductDetailPage() {
                                   {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={doc.title} /> : isImageFile(filePath) ? <img src={toAssetUrl(filePath)} alt={doc.title} /> : <span>{group.shortLabel}</span>}
                                 </div>
                                 <div>
-                                  <h3>{doc.title || doc.cert_no || `文件 ${doc.id}`}</h3>
-                                  <p>{TYPE_LABELS[normalizeDocType(doc)] || '其他文件'} · 编号：{documentCode(doc)} · {doc.language ? doc.language.toUpperCase() : '未设置语言'} · {compactDate(doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt)}</p>
+                                  <h3>{doc.title || doc.cert_no || `资料 ${doc.id}`}</h3>
+                                  <p>{TYPE_LABELS[normalizeDocType(doc)] || '其他资料'} · 编号：{documentCode(doc)} · {doc.language ? doc.language.toUpperCase() : '未设置语言'} · {compactDate(doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt)}</p>
                                 </div>
-                                <em>进入文件详情 →</em>
+                                <em>进入资料详情 →</em>
                               </button>
                             );
                           })}
@@ -370,7 +370,7 @@ export default function ProductDetailPage() {
           onClose={() => setShareOpen(false)}
           typeLabel="产品分享"
           title={product.name}
-          subtitle={product.description || '查看产品基础信息、适用型号、公开资料和文件详情。'}
+          subtitle={product.description || '查看产品基础信息、适用型号、公开资料和资料详情。'}
           url={`${window.location.origin}/eu-doc/products/${id}`}
           meta={[productCode(product), product.company_name, productPublicStatus]}
         />

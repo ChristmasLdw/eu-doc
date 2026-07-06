@@ -173,8 +173,9 @@ export default function DocumentUploadPage() {
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
-                  <span className={styles.uploadText}>点击上传文件</span>
+                  <span className={styles.uploadText}>点击上传资料</span>
                   <span className={styles.uploadHint}>支持 PDF、PNG、JPG、WebP、Word，最大10MB</span>
+                  <span className={styles.uploadHint}>仅上传适合对外展示的产品资料，不要上传商业敏感内容</span>
                 </>
               )}
             </label>

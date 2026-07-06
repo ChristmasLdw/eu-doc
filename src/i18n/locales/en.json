@@ -32,8 +32,8 @@
     "about": "About Us"
   },
   "home": {
-    "title": "EU-DOC Certificate System",
-    "subtitle": "Transform certificates from email attachments into verifiable online credentials",
+    "title": "EU-DOC Public Product Documentation Platform",
+    "subtitle": "Turn company-approved certificates, DoC declarations, and manuals into searchable, shareable product document pages",
     "searchPlaceholder": "Enter certificate number, company name, product model...",
     "searchButton": "Search",
     "features": {

@@ -32,9 +32,9 @@
     "about": "关于我们"
   },
   "home": {
-    "title": "EU-DOC 证书查询系统",
-    "subtitle": "让证书从「邮件里的附件」变成「在线可查的凭证」",
-    "searchPlaceholder": "输入证书编号、公司名称、产品型号...",
+    "title": "EU-DOC 产品公开资料平台",
+    "subtitle": "把企业主动公开的证书、DoC 声明和说明书，变成可搜索、可分享、可扫码查看的产品资料页",
+    "searchPlaceholder": "输入产品型号、公司名称、证书编号...",
     "searchButton": "搜索",
     "features": {
       "title": "为什么选择 EU-DOC？",
