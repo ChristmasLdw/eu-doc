@@ -22,6 +22,7 @@ router.get('/', (req, res) => {
       reviewStatus,
       issuer,
       standard,
+      category,
       companyId,
       sortBy = 'created_at',
       sortOrder = 'DESC',
@@ -51,6 +52,46 @@ router.get('/', (req, res) => {
       params.push(keyword, keyword, keyword, keyword, keyword);
     }
 
+    const getCategoryFilter = (categoryName) => {
+      if (!categoryName) return null;
+
+      // 分类筛选按“整棵分类树”匹配：选择一级分类时，也包含其下所有二/三级分类。
+      const descendants = db.prepare(`
+        WITH RECURSIVE category_tree AS (
+          SELECT id, name, parent_id
+          FROM categories
+          WHERE name = ? AND status = 'active'
+          UNION ALL
+          SELECT c.id, c.name, c.parent_id
+          FROM categories c
+          INNER JOIN category_tree ct ON c.parent_id = ct.id
+          WHERE c.status = 'active'
+        )
+        SELECT id, name FROM category_tree
+      `).all(categoryName);
+
+      const ids = descendants.map((item) => item.id);
+      const names = Array.from(new Set([categoryName, ...descendants.map((item) => item.name)]));
+      const parts = [];
+      const values = [];
+
+      if (ids.length > 0) {
+        parts.push(`p.category_primary_id IN (${ids.map(() => '?').join(', ')})`);
+        values.push(...ids);
+      }
+      if (names.length > 0) {
+        const placeholders = names.map(() => '?').join(', ');
+        parts.push(`cat.name IN (${placeholders})`);
+        parts.push(`parent_cat.name IN (${placeholders})`);
+        parts.push(`grand_cat.name IN (${placeholders})`);
+        parts.push(`cl.category IN (${placeholders})`);
+        values.push(...names, ...names, ...names, ...names);
+      }
+
+      if (parts.length === 0) return null;
+      return { condition: `(${parts.join(' OR ')})`, values };
+    };
+
     // 筛选条件
     if (status) {
       conditions.push('cm.certificate_status = ?');
@@ -67,6 +108,13 @@ router.get('/', (req, res) => {
     if (standard) {
       conditions.push('cm.standard LIKE ?');
       params.push(`%${standard}%`);
+    }
+    if (category) {
+      const categoryFilter = getCategoryFilter(category);
+      if (categoryFilter) {
+        conditions.push(categoryFilter.condition);
+        params.push(...categoryFilter.values);
+      }
     }
     if (companyId) {
       conditions.push('d.company_id = ?');
@@ -88,6 +136,10 @@ router.get('/', (req, res) => {
       INNER JOIN certificate_metadata cm ON d.id = cm.document_id
       LEFT JOIN companies comp ON d.company_id = comp.id
       LEFT JOIN products p ON d.product_id = p.id
+      LEFT JOIN certificates_legacy cl ON d.id = cl.id
+      LEFT JOIN categories cat ON p.category_primary_id = cat.id
+      LEFT JOIN categories parent_cat ON cat.parent_id = parent_cat.id
+      LEFT JOIN categories grand_cat ON parent_cat.parent_id = grand_cat.id
       ${whereClause}
     `;
     const { total } = db.prepare(countSql).get(...params);
@@ -113,12 +165,16 @@ router.get('/', (req, res) => {
         cm.remark,
         d.created_at,
         d.updated_at,
-        comp.name as company_name
+        comp.name as company_name,
+        COALESCE(cat.name, cl.category) as category
       FROM documents d
       INNER JOIN certificate_metadata cm ON d.id = cm.document_id
       LEFT JOIN certificates_legacy cl ON d.id = cl.id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
+      LEFT JOIN categories cat ON p.category_primary_id = cat.id
+      LEFT JOIN categories parent_cat ON cat.parent_id = parent_cat.id
+      LEFT JOIN categories grand_cat ON parent_cat.parent_id = grand_cat.id
       ${whereClause}
       ORDER BY ${orderByField} ${safeSortOrder}
       LIMIT ? OFFSET ?

@@ -632,3 +632,63 @@
     height: 24px;
   }
 }
+
+/* 首页分类弱化：只做搜索辅助，不抢主搜索入口。 */
+.categories {
+  margin-top: -2px;
+  gap: 10px !important;
+  opacity: 0.82;
+}
+
+.categoriesLabel {
+  position: relative;
+  padding-right: 4px;
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.categoryList {
+  gap: 7px !important;
+  flex-wrap: nowrap !important;
+}
+
+.categoryTag {
+  padding: 4px 11px !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  background: rgba(255, 255, 255, 0.66) !important;
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 650;
+}
+
+.categoryTag:hover {
+  opacity: 1;
+  color: var(--text-secondary) !important;
+  transform: translateY(-1px);
+}
+
+.categoryMoreTag {
+  border-style: dashed !important;
+  background: transparent !important;
+}
+
+@media (max-width: 720px) {
+  .categories {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px !important;
+  }
+
+  .categoryList {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start !important;
+    padding-bottom: 4px;
+  }
+
+  .categoryTag {
+    flex: 0 0 auto;
+  }
+}

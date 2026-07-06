@@ -63,6 +63,13 @@ function formatDate(value) {
   return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+
+function documentCode(doc = {}) {
+  const item = doc || {};
+  const meta = item.certificate_metadata || item.certificateMetadata || {};
+  return meta.cert_no || item.cert_no || item.certNo || item.document_no || item.documentNo || item.version || item.file_no || item.fileNo || `EU-D-${String(item.id || '').padStart(6, '0')}`;
+}
+
 function formatSize(bytes) {
   const size = Number(bytes || 0);
   if (!size) return '未记录';
@@ -295,6 +302,15 @@ export default function DocumentDetailPage() {
           subtitle={`查看 ${documentData.product_name || documentData.productName || '对应产品'} 的公开资料详情。`}
           url={`${window.location.origin}/eu-doc/documents/${id}`}
           meta={[typeLabel, documentData.language ? String(documentData.language).toUpperCase() : '', documentPublicStatus]}
+          context={{
+            kind: 'document',
+            companyName: documentData.company_name || documentData.companyName,
+            productName: documentData.product_name || documentData.productName,
+            documentTitle: title,
+            documentType: typeLabel,
+            documentCode: documentCode(documentData),
+            language: documentData.language,
+          }}
         />
       </main>
     </div>

@@ -177,6 +177,21 @@
   border-left: 3px solid var(--status-expired);
 }
 
+.type_doc {
+  background: transparent;
+  border-left: 3px solid var(--accent-blue);
+}
+
+.type_manual {
+  background: transparent;
+  border-left: 3px solid var(--accent-indigo);
+}
+
+.type_file {
+  background: transparent;
+  border-left: 3px solid var(--text-muted);
+}
+
 .type_company:hover {
   background: var(--bg-card-hover);
 }
@@ -190,6 +205,12 @@
 }
 
 .type_certNo:hover {
+  background: var(--bg-card-hover);
+}
+
+.type_doc:hover,
+.type_manual:hover,
+.type_file:hover {
   background: var(--bg-card-hover);
 }
 
@@ -223,6 +244,24 @@
 
 .suggestionType[data-type="certNo"] {
   background: var(--status-expired);
+  color: white;
+  opacity: 0.9;
+}
+
+.suggestionType[data-type="doc"] {
+  background: var(--accent-blue);
+  color: white;
+  opacity: 0.9;
+}
+
+.suggestionType[data-type="manual"] {
+  background: var(--accent-indigo);
+  color: white;
+  opacity: 0.9;
+}
+
+.suggestionType[data-type="file"] {
+  background: var(--text-secondary);
   color: white;
   opacity: 0.9;
 }
@@ -343,43 +382,12 @@
   margin-bottom: 4px;
 }
 
-/* ===== 筛选行：分类标签 + 下拉筛选 ===== */
+/* ===== 筛选行：统一使用下拉筛选 ===== */
 .filterRow {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-}
-
-/* 分类筛选标签 */
-.filterTags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.filterTag {
-  padding: 6px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 100px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filterTag:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-}
-
-.filterActive {
-  background: var(--accent-blue);
-  border-color: var(--accent-blue);
-  color: white;
-  opacity: 0.9;
 }
 
 /* 更多筛选下拉框 */
@@ -1109,4 +1117,19 @@
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
+}
+
+/* 搜索页分类改回下拉筛选，避免大量分类标签铺开造成页面复杂。 */
+.filterRow {
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.filterDropdowns {
+  width: 100%;
+  align-items: center;
+}
+
+.filterSelect:first-child {
+  min-width: 190px;
 }

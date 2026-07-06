@@ -507,6 +507,7 @@ export default function AdminV2Page() {
   const [activePage, setActivePage] = useState('profile');
   const [sidebarScrolling, setSidebarScrolling] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState({ open: false, percent: 0, phase: 'idle', title: '', detail: '' });
   const planCarouselRef = useRef(null);
   const [planCarouselFade, setPlanCarouselFade] = useState({ left: false, right: true });
   const [favoriteFilter, setFavoriteFilter] = useState('全部收藏');
@@ -605,6 +606,7 @@ export default function AdminV2Page() {
   const avatarInputRef = useRef(null);
   const companyLogoInputRef = useRef(null);
   const sidebarScrollTimer = useRef(null);
+  const uploadProgressTimer = useRef(null);
   const userCode = savedUserCode || admin?.user_code || `U-${String(admin?.id || 1).padStart(6, '0')}`;
 
   useEffect(() => {
@@ -1451,13 +1453,48 @@ export default function AdminV2Page() {
       return;
     }
     if (!files?.length) return;
+    const fileList = Array.from(files || []);
     const companyName = currentCompany?.name || '当前公司';
-    if (!window.confirm(`确认把这 ${files.length} 份资料上传到「${companyName}」吗？`)) return;
+    if (!window.confirm(`确认把这 ${fileList.length} 份资料上传到「${companyName}」吗？`)) return;
+    if (uploadProgressTimer.current) clearTimeout(uploadProgressTimer.current);
+    setUploadProgress({
+      open: true,
+      percent: 2,
+      phase: 'uploading',
+      title: '正在上传资料',
+      detail: `${fileList.length} 份资料 · ${companyName}`,
+    });
     try {
-      const result = await api.uploadImportFiles(activeCompany, files);
-      showAction(result.message || `已上传 ${files.length} 份资料到 ${companyName}`);
+      const result = await api.uploadImportFiles(activeCompany, fileList, {
+        onProgress: ({ percent, phase }) => {
+          setUploadProgress((state) => ({
+            ...state,
+            open: true,
+            percent,
+            phase,
+            title: phase === 'processing' ? '正在生成待整理资料' : '正在上传资料',
+            detail: phase === 'processing' ? '上传已完成，系统正在识别资料信息。' : `${fileList.length} 份资料 · ${companyName}`,
+          }));
+        },
+      });
+      setUploadProgress({
+        open: true,
+        percent: 100,
+        phase: 'done',
+        title: '上传完成',
+        detail: result.message || `已上传 ${fileList.length} 份资料到 ${companyName}`,
+      });
+      showAction(result.message || `已上传 ${fileList.length} 份资料到 ${companyName}`);
       await refreshImportItems();
+      uploadProgressTimer.current = setTimeout(() => setUploadProgress((state) => ({ ...state, open: false })), 2200);
     } catch (error) {
+      setUploadProgress({
+        open: true,
+        percent: 100,
+        phase: 'error',
+        title: '上传失败',
+        detail: error.message || '批量导入失败',
+      });
       showAction(error.message || '批量导入失败');
     }
   };
@@ -4083,6 +4120,19 @@ export default function AdminV2Page() {
 
         <div>
           {actionMessage && <div className={styles.actionToast}>{actionMessage}</div>}
+          {uploadProgress.open && (
+            <div className={`${styles.uploadProgressToast} ${uploadProgress.phase === 'done' ? styles.uploadProgressDone : ''} ${uploadProgress.phase === 'error' ? styles.uploadProgressError : ''}`}>
+              <div className={styles.uploadProgressHeader}>
+                <span>{uploadProgress.phase === 'done' ? '✓' : uploadProgress.phase === 'error' ? '!' : '↑'}</span>
+                <div>
+                  <strong>{uploadProgress.title}</strong>
+                  <em>{uploadProgress.detail}</em>
+                </div>
+              </div>
+              <div className={styles.uploadProgressTrack}><i style={{ width: `${uploadProgress.percent}%` }} /></div>
+              <p>{uploadProgress.phase === 'processing' ? '请稍等，不要关闭页面。' : uploadProgress.phase === 'error' ? '请检查文件大小、格式或网络后重试。' : `${uploadProgress.percent}%`}</p>
+            </div>
+          )}
           {renderContent()}
 
 

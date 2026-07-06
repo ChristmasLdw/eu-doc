@@ -373,6 +373,12 @@ export default function ProductDetailPage() {
           subtitle={product.description || '查看产品基础信息、适用型号、公开资料和资料详情。'}
           url={`${window.location.origin}/eu-doc/products/${id}`}
           meta={[productCode(product), product.company_name, productPublicStatus]}
+          context={{
+            kind: 'product',
+            companyName: product.company_name || product.companyName,
+            productName: product.name,
+            documentCode: productCode(product),
+          }}
         />
       </div>
     </div>

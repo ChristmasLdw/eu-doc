@@ -15,6 +15,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCertificates, getStats, getCompanies, getSearchSuggestions } from '../services/api';
+import { categories as defaultCategories } from '../data/mockData';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
@@ -54,6 +55,25 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState(initialSort);
   const [currentPage, setCurrentPage] = useState(initialPage);
 
+  useEffect(() => {
+    const nextQuery = searchParams.get('q') || '';
+    const nextCategory = searchParams.get('category') || '';
+    const nextStatus = searchParams.get('status') || '';
+    const nextIssuer = searchParams.get('issuer') || '';
+    const nextStandard = searchParams.get('standard') || '';
+    const nextSort = searchParams.get('sort') || 'relevance';
+    const nextPage = parseInt(searchParams.get('page') || '1', 10);
+
+    setQuery(nextQuery);
+    setSubmittedQuery(nextQuery);
+    setActiveCategory(nextCategory);
+    setActiveStatus(nextStatus);
+    setActiveIssuer(nextIssuer);
+    setActiveStandard(nextStandard);
+    setSortBy(nextSort);
+    setCurrentPage(Number.isNaN(nextPage) ? 1 : nextPage);
+  }, [searchParams]);
+
   // API 返回的数据
   const [results, setResults] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
@@ -68,8 +88,13 @@ export default function SearchPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
-  // 分类列表（从 API 获取）
-  const [categories, setCategories] = useState([]);
+  // 搜索页分类固定使用下拉框；不要再恢复为按钮标签列表，避免分类过多时铺满页面。
+  const categories = useMemo(() => {
+    if (activeCategory && !defaultCategories.includes(activeCategory)) {
+      return [activeCategory, ...defaultCategories];
+    }
+    return defaultCategories;
+  }, [activeCategory]);
 
   // 发证机构和认证标准列表（从 API 统计数据获取）
   const [issuers, setIssuers] = useState([]);
@@ -287,9 +312,23 @@ export default function SearchPage() {
   };
 
   const handleFilterChange = (setter, value) => {
-    setter(value === undefined ? '' : value);
+    const nextValue = value === undefined ? '' : value;
+    const nextCategory = setter === setActiveCategory ? nextValue : activeCategory;
+    const nextStatus = setter === setActiveStatus ? nextValue : activeStatus;
+    const nextIssuer = setter === setActiveIssuer ? nextValue : activeIssuer;
+    const nextStandard = setter === setActiveStandard ? nextValue : activeStandard;
+
+    setter(nextValue);
     setCurrentPage(1);
-    syncUrl(1);
+
+    const params = {};
+    if (submittedQuery) params.q = submittedQuery;
+    if (nextCategory) params.category = nextCategory;
+    if (nextStatus) params.status = nextStatus;
+    if (nextIssuer) params.issuer = nextIssuer;
+    if (nextStandard) params.standard = nextStandard;
+    if (sortBy !== 'relevance') params.sort = sortBy;
+    setSearchParams(params);
   };
 
   // 高亮匹配文本
@@ -314,8 +353,9 @@ export default function SearchPage() {
     setActiveStandard('');
     setSortBy('relevance');
     setCurrentPage(1);
-    // 延迟同步 URL，让所有 state 批量更新后再写入
-    setTimeout(() => syncUrl(1), 0);
+    const params = {};
+    if (submittedQuery) params.q = submittedQuery;
+    setSearchParams(params);
   };
 
   // 生成分页按钮
@@ -477,28 +517,19 @@ export default function SearchPage() {
             </div>
           </form>
 
-          {/* 分类筛选标签 */}
+          {/* 筛选条件 */}
           <div className={styles.filterRow}>
-            <div className={styles.filterTags}>
-              <button
-                className={`${styles.filterTag} ${!activeCategory ? styles.filterActive : ''}`}
-                onClick={() => handleFilterChange(setActiveCategory, undefined)}
-              >
-                {t('search.filters.allCategories')}
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  className={`${styles.filterTag} ${activeCategory === cat ? styles.filterActive : ''}`}
-                  onClick={() => handleFilterChange(setActiveCategory, activeCategory === cat ? undefined : cat)}
-                >
-                  {t(`search.categories.${cat}`) || cat}
-                </button>
-              ))}
-            </div>
-
-            {/* 更多筛选条件 */}
             <div className={styles.filterDropdowns}>
+              <select
+                className={styles.filterSelect}
+                value={activeCategory}
+                onChange={(e) => handleFilterChange(setActiveCategory, e.target.value || undefined)}
+              >
+                <option value="">{t('search.filters.allCategories')}</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
               <select
                 className={styles.filterSelect}
                 value={activeStatus}
@@ -547,7 +578,7 @@ export default function SearchPage() {
                   className={styles.activeFilterTag}
                   onClick={() => handleFilterChange(setActiveCategory, undefined)}
                 >
-                  {t(`search.categories.${activeCategory}`) || activeCategory}
+                  {activeCategory}
                   <span className={styles.removeFilter}>✕</span>
                 </button>
               )}

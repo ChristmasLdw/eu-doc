@@ -90,8 +90,14 @@ export default function HomePage() {
   };
 
   const handleCategoryClick = (category) => {
+    if (category === 'more') {
+      navigate('/search');
+      return;
+    }
     navigate(`/search?category=${encodeURIComponent(category)}`);
   };
+
+  const featuredCategories = categories.slice(0, 4);
 
   // 获取建议类型的显示文本
   const getSuggestionTypeLabel = (type) => {
@@ -157,9 +163,9 @@ export default function HomePage() {
 
           {/* 快捷分类入口 */}
           <div className={styles.categories}>
-            <span className={styles.categoriesLabel}>{t('search.filters.category')}：</span>
+            <span className={styles.categoriesLabel}>常用方向</span>
             <div className={styles.categoryList}>
-              {categories.map((cat) => (
+              {featuredCategories.map((cat) => (
                 <button
                   key={cat}
                   className={styles.categoryTag}
@@ -168,6 +174,7 @@ export default function HomePage() {
                   {cat}
                 </button>
               ))}
+              <button className={`${styles.categoryTag} ${styles.categoryMoreTag}`} onClick={() => handleCategoryClick('more')}>更多分类</button>
             </div>
           </div>
         </div>

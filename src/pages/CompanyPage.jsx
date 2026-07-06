@@ -455,6 +455,10 @@ export default function CompanyPage() {
           subtitle={company.description || '查看该企业公开的产品资料包、合规文件与企业基础信息。'}
           url={`${window.location.origin}/eu-doc/companies/${id}`}
           meta={[company.nameEn || company.name_en, `${totalProducts} 个产品资料包`, companyPublicStatus]}
+          context={{
+            kind: 'company',
+            companyName: company.name,
+          }}
         />
       </div>
     </div>

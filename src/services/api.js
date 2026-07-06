@@ -330,6 +330,57 @@ export function uploadCertificateFile(id, file) {
   });
 }
 
+
+function uploadFormDataWithProgress(url, formData, { onProgress } = {}) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${BASE_URL}${url}`);
+
+    const headers = createHeaders({}, {});
+    delete headers['Content-Type'];
+    Object.entries(headers).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || !onProgress) return;
+      const percent = Math.max(1, Math.min(99, Math.round((event.loaded / event.total) * 100)));
+      onProgress({ percent, loaded: event.loaded, total: event.total, phase: 'uploading' });
+    };
+
+    xhr.onload = () => {
+      if (onProgress) onProgress({ percent: 100, phase: 'processing' });
+      let data = null;
+      try {
+        data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        reject(new Error('服务器返回内容无法解析'));
+        return;
+      }
+
+      if (xhr.status === 401) {
+        localStorage.removeItem('admin_token');
+        const pathname = window.location.pathname;
+        const shouldRedirectToLogin = pathname.includes('/admin') || pathname.includes('/company-verification');
+        if (shouldRedirectToLogin && !pathname.includes('/admin/login') && !pathname.includes('/admin/register')) {
+          window.location.href = `${BASENAME}/admin/login`;
+        }
+        reject(new Error('登录已过期，请重新登录'));
+        return;
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(data?.message || `请求失败 (${xhr.status})`));
+        return;
+      }
+
+      resolve(data?.data !== undefined ? data.data : data);
+    };
+
+    xhr.onerror = () => reject(new Error('网络连接失败，请检查后端服务是否运行'));
+    xhr.onabort = () => reject(new Error('上传已取消'));
+    xhr.send(formData);
+  });
+}
+
 // ===== 企业管理 API =====
 
 /** 获取企业列表（支持搜索和分页） */
@@ -644,14 +695,17 @@ export function getImportItems(companyId) {
   });
 }
 
-export function uploadImportFiles(companyId, files) {
+export function uploadImportFiles(companyId, files, options = {}) {
   const formData = new FormData();
   formData.append('companyId', companyId);
   Array.from(files || []).forEach((file) => formData.append('files', file, file.webkitRelativePath || file.name));
-  return request('/v2/imports/upload', {
-    method: 'POST',
-    body: formData,
-  }).then(keysToCamelCase);
+  const uploadTask = options.onProgress
+    ? uploadFormDataWithProgress('/v2/imports/upload', formData, options)
+    : request('/v2/imports/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  return uploadTask.then(keysToCamelCase);
 }
 
 export function organizeImportItem(id, data) {
