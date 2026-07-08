@@ -134,7 +134,7 @@ app.use((err, req, res, _next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
-      message: '文件大小超过限制（最大 10MB）',
+      message: '文件大小超过限制（最大 20MB）',
     });
   }
 

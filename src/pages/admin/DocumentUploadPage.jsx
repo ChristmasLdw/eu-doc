@@ -1,6 +1,6 @@
 /**
- * EU-DOC 后台管理 - 文档上传页面
- * 给指定产品上传证书、DoC、说明书等文档
+ * EU-DOC 后台管理 - 产品资料上传页面
+ * 给指定产品上传证书、DoC、说明书等产品资料
  */
 
 import { useState, useEffect } from 'react';
@@ -52,8 +52,8 @@ export default function DocumentUploadPage() {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('文件大小不能超过10MB');
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        setError('文件大小不能超过20MB');
         return;
       }
       setFile(selectedFile);
@@ -78,7 +78,7 @@ export default function DocumentUploadPage() {
       return;
     }
     if (!formData.title) {
-      setError('请填写文档标题');
+      setError('请填写资料标题');
       return;
     }
     if (!confirmations.confirmedAuthentic || !confirmations.confirmedAuthorized || !confirmations.acceptedDisclaimer) {
@@ -110,13 +110,13 @@ export default function DocumentUploadPage() {
       const result = await res.json();
 
       if (result.success) {
-        alert('文档上传成功！');
+        alert('资料上传成功！');
         navigate('/admin/products');
       } else {
         setError(result.message || '上传失败');
       }
     } catch (err) {
-      console.error('上传文档错误:', err);
+      console.error('上传资料错误:', err);
       setError('上传失败，请稍后重试');
     } finally {
       setLoading(false);
@@ -126,9 +126,9 @@ export default function DocumentUploadPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>上传文档</h1>
+        <h1 className={styles.title}>上传资料</h1>
         <p className={styles.subtitle}>
-          {product ? `为产品 "${product.name}" 上传文档` : '上传文档'}
+          {product ? `为产品 "${product.name}" 上传资料` : '上传资料'}
         </p>
       </div>
 
@@ -174,7 +174,7 @@ export default function DocumentUploadPage() {
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                   <span className={styles.uploadText}>点击上传资料</span>
-                  <span className={styles.uploadHint}>支持 PDF、PNG、JPG、WebP、Word，最大10MB</span>
+                  <span className={styles.uploadHint}>支持 PDF、PNG、JPG、WebP、Word，最大20MB</span>
                   <span className={styles.uploadHint}>仅上传适合对外展示的产品资料，不要上传商业敏感内容</span>
                 </>
               )}
@@ -182,14 +182,14 @@ export default function DocumentUploadPage() {
           </div>
         </div>
 
-        {/* 文档信息 */}
+        {/* 资料信息 */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>2. 填写文档信息</h2>
+          <h2 className={styles.sectionTitle}>2. 填写资料信息</h2>
 
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
               <label className={styles.label}>
-                文档类型 <span className={styles.required}>*</span>
+                资料类型 <span className={styles.required}>*</span>
               </label>
               <select
                 name="documentType"
@@ -207,14 +207,14 @@ export default function DocumentUploadPage() {
 
             <div className={styles.formGroup}>
               <label className={styles.label}>
-                文档标题 <span className={styles.required}>*</span>
+                资料标题 <span className={styles.required}>*</span>
               </label>
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                placeholder="文档标题"
+                placeholder="资料标题"
                 className={styles.input}
                 required
               />
@@ -310,7 +310,7 @@ export default function DocumentUploadPage() {
                 onChange={(e) => setConfirmations(prev => ({ ...prev, confirmedAuthentic: e.target.checked }))}
                 style={{ marginTop: '4px' }}
               />
-              <span>我确认此文档真实有效</span>
+              <span>我确认此资料真实有效</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
               <input
@@ -319,7 +319,7 @@ export default function DocumentUploadPage() {
                 onChange={(e) => setConfirmations(prev => ({ ...prev, confirmedAuthorized: e.target.checked }))}
                 style={{ marginTop: '4px' }}
               />
-              <span>我确认本人有权代表该企业上传此文档</span>
+              <span>我确认本人有权代表该企业上传此资料</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
               <input
@@ -353,7 +353,7 @@ export default function DocumentUploadPage() {
             className={styles.submitBtn}
             disabled={loading}
           >
-            {loading ? '上传中...' : '上传文档'}
+            {loading ? '上传中...' : '上传资料'}
           </button>
         </div>
       </form>

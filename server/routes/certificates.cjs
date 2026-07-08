@@ -13,6 +13,14 @@ const router = Router();
 
 // GET /api/certificates - 获取证书列表（支持搜索、筛选、排序）
 router.get('/', (req, res) => {
+  const needsPrivateScope = Boolean(req.query.reviewStatus || req.query.myUploads);
+  if (needsPrivateScope && !req.admin) {
+    return authMiddleware(req, res, () => handleCertificateList(req, res));
+  }
+  return handleCertificateList(req, res);
+});
+
+function handleCertificateList(req, res) {
   try {
     const {
       page = 1,
@@ -26,6 +34,7 @@ router.get('/', (req, res) => {
       companyId,
       sortBy = 'created_at',
       sortOrder = 'DESC',
+      myUploads,
     } = req.query;
 
     // 参数校验
@@ -37,12 +46,25 @@ router.get('/', (req, res) => {
     const conditions = ["d.document_type = 'certificate'"];
     const params = [];
 
-    // 未登录用户只能看到已审核通过的证书
-    const authHeader = req.headers.authorization;
-    const hasToken = authHeader && authHeader.startsWith('Bearer ');
+    const isPrivateQuery = Boolean(req.admin && (reviewStatus || myUploads));
+    const isPlatformAdmin = req.admin && (req.admin.role === 'admin' || req.admin.role === 'platform_admin');
 
-    if (!hasToken || !reviewStatus) {
+    if (!isPrivateQuery) {
       conditions.push("d.review_status = 'approved'");
+      conditions.push("COALESCE(d.status, 'active') != 'deleted'");
+      conditions.push("COALESCE(comp.verification_status, 'pending') = 'verified'");
+      conditions.push('COALESCE(comp.public_visible, 1) = 1');
+    } else if (!isPlatformAdmin) {
+      conditions.push(`d.company_id IN (
+        SELECT company_id FROM company_members
+        WHERE user_id = ? AND status = 'active'
+      )`);
+      params.push(req.admin.id);
+    }
+
+    if (myUploads && !isPlatformAdmin) {
+      conditions.push('d.uploaded_by = ?');
+      params.push(req.admin.id);
     }
 
     // 搜索条件
@@ -199,7 +221,7 @@ router.get('/', (req, res) => {
       message: '查询证书列表失败: ' + error.message,
     });
   }
-});
+}
 
 // GET /api/certificates/:id - 获取证书详情
 router.get('/:id', (req, res) => {
@@ -231,7 +253,12 @@ router.get('/:id', (req, res) => {
       LEFT JOIN certificates_legacy cl ON d.id = cl.id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
-      WHERE d.id = ? AND d.document_type = 'certificate'
+      WHERE d.id = ?
+        AND d.document_type = 'certificate'
+        AND COALESCE(d.status, 'active') != 'deleted'
+        AND COALESCE(d.review_status, 'approved') = 'approved'
+        AND COALESCE(comp.verification_status, 'pending') = 'verified'
+        AND COALESCE(comp.public_visible, 1) = 1
     `).get(req.params.id);
 
     if (!cert) {
@@ -296,7 +323,7 @@ router.post('/', authMiddleware, (req, res) => {
   }
 
   // 确定审核状态：管理员直接通过，普通用户待审核
-  const reviewStatus = req.admin.role === 'admin' ? 'approved' : 'pending';
+  const reviewStatus = ['admin', 'platform_admin'].includes(req.admin.role) ? 'approved' : 'pending';
 
   // 如果用户有 company_name 且未指定 company_id，自动关联企业
   let finalCompanyId = company_id || null;
@@ -441,7 +468,7 @@ router.put('/:id', authMiddleware, (req, res) => {
       }
 
       // 更新 documents 表
-      if (req.admin.role === 'admin' && req.body.reviewStatus !== undefined) {
+      if (['admin', 'platform_admin'].includes(req.admin.role) && req.body.reviewStatus !== undefined) {
         db.prepare('UPDATE documents SET review_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
           .run(req.body.reviewStatus, cert.id);
         changes.review_status = { old: cert.review_status, new: req.body.reviewStatus };
@@ -558,7 +585,7 @@ const { generateThumbnail } = require('../utils/pdfThumbnail.cjs');
 
 const upload = multer({
   dest: path.join(__dirname, '..', 'uploads'),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
@@ -639,7 +666,7 @@ router.post('/import', authMiddleware, (req, res) => {
   );
   const getCompany = db.prepare('SELECT id FROM companies WHERE name = ?');
 
-  const reviewStatus = req.admin.role === 'admin' ? 'approved' : 'pending';
+  const reviewStatus = ['admin', 'platform_admin'].includes(req.admin.role) ? 'approved' : 'pending';
 
   // 使用事务确保批量操作的原子性
   const result = db.transaction(() => {

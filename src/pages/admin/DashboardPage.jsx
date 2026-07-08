@@ -23,13 +23,13 @@ export default function DashboardPage() {
       const token = localStorage.getItem('admin_token');
       
       // 获取产品数量
-      const productsRes = await fetch('/eu-doc/api/v2/products?pageSize=1', {
+      const productsRes = await fetch('/eu-doc/api/v2/products?mine=1&pageSize=1', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const productsData = await productsRes.json();
 
       // 获取资料数量
-      const docsRes = await fetch('/eu-doc/api/v2/documents?pageSize=1', {
+      const docsRes = await fetch('/eu-doc/api/v2/documents?mine=1&pageSize=1', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const docsData = await docsRes.json();

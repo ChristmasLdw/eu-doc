@@ -533,7 +533,7 @@
 }
 
 .packageStatusGood,
-.packageStatusWarn {
+.packageStatusGood {
   display: inline-flex;
   align-items: center;
   width: fit-content;
@@ -541,19 +541,11 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-}
-
-.packageStatusGood {
   color: #6366f1;
   background: rgba(99, 102, 241, 0.14);
 }
 
-.packageStatusWarn {
-  color: #c2410c;
-  background: rgba(249, 115, 22, 0.13);
-}
-
-.packagePercent {
+.packageTypeCount {
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 800;
@@ -580,21 +572,6 @@
   white-space: nowrap;
 }
 
-.packageProgress {
-  width: 100%;
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.18);
-}
-
-.packageProgress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
-}
-
 .packageTypes {
   display: grid;
   gap: 8px;
@@ -617,9 +594,11 @@
   justify-content: center;
   min-width: 26px;
   height: 26px;
+  padding: 0 8px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.72);
-  font-size: 14px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .typeReady {

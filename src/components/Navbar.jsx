@@ -135,7 +135,7 @@ export default function Navbar() {
           <Link
             to={personalPagePath('favorites')}
             className={`${styles.navButton} ${location.pathname === '/favorites' ? styles.active : ''}`}
-            title="我的收藏"
+            title={t('nav.favorites')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m12 17.3-5.5 3 1.1-6.2L3 9.8l6.3-.9L12 3.2l2.7 5.7 6.3.9-4.6 4.3 1.1 6.2z" />
@@ -233,7 +233,7 @@ export default function Navbar() {
                 className={`${styles.textButton} ${styles.adminButton} ${(location.pathname.startsWith('/admin') || location.pathname.startsWith('/admin-v2')) ? styles.active : ''}`}
                 onClick={() => { setShowAdminMenu(false); navigate('/admin'); }}
               >
-                {isAdmin ? t('nav.admin') : '我的上传'}
+                {isAdmin ? t('nav.admin') : t('nav.myUploads')}
               </button>
               {showAdminMenu && (
                 <div className={styles.adminDropdown}>
@@ -242,14 +242,14 @@ export default function Navbar() {
                     className={styles.adminOption}
                     onClick={() => setShowAdminMenu(false)}
                   >
-                    <span>进入后台</span>
+                    <span>{t('nav.enterAdmin')}</span>
                   </Link>
                   <button
                     type="button"
                     className={`${styles.adminOption} ${styles.logoutOption}`}
                     onClick={handleLogout}
                   >
-                    <span>退出</span>
+                    <span>{t('common.logout')}</span>
                   </button>
                 </div>
               )}

@@ -119,6 +119,14 @@ ensureProductExtraColumns();
 
 // GET /api/v2/products - 获取产品列表
 router.get('/', (req, res) => {
+  const needsPrivateAuth = req.query.mine === '1' || req.query.status === 'all';
+  if (needsPrivateAuth) {
+    return authMiddleware(req, res, () => listProducts(req, res));
+  }
+  return listProducts(req, res);
+});
+
+function listProducts(req, res) {
   try {
     const {
       page = 1,
@@ -141,8 +149,28 @@ router.get('/', (req, res) => {
     const params = [];
     const authHeader = req.headers.authorization;
     const hasToken = authHeader && authHeader.startsWith('Bearer ');
+    const mineOnly = req.query.mine === '1';
+    const privateStatusRequested = status === 'all';
 
-    if (!hasToken) {
+    if (mineOnly) {
+      if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
+        conditions.push(`p.company_id IN (
+          SELECT company_id FROM company_members
+          WHERE user_id = ? AND status = 'active'
+        )`);
+        params.push(req.admin.id);
+      }
+    } else if (privateStatusRequested) {
+      if (!req.admin) return res.status(401).json({ success: false, message: '查看全部状态产品需要登录' });
+      if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
+        if (!companyId) return res.status(403).json({ success: false, message: '请选择有权限的企业' });
+        const membership = db.prepare(`
+          SELECT id FROM company_members
+          WHERE user_id = ? AND company_id = ? AND status = 'active'
+        `).get(req.admin.id, Number(companyId));
+        if (!membership) return res.status(403).json({ success: false, message: '无权查看该企业的产品资料' });
+      }
+    } else {
       conditions.push("COALESCE(c.verification_status, 'pending') = 'verified'");
       conditions.push('COALESCE(c.public_visible, 1) = 1');
     }
@@ -230,7 +258,7 @@ router.get('/', (req, res) => {
       message: '查询产品列表失败: ' + error.message,
     });
   }
-});
+}
 
 // GET /api/v2/products/:id/related - 获取同公司相关产品
 router.get('/:id/related', (req, res) => {
@@ -344,15 +372,22 @@ router.get('/:id/documents', (req, res) => {
     const documents = db.prepare(`
       SELECT
         d.*,
+        cl.thumbnail_path as legacy_thumbnail_path,
         CASE
           WHEN d.document_type = 'certificate' THEN cm.cert_no
           ELSE NULL
         END as cert_no
       FROM documents d
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id AND d.document_type = 'certificate'
+      LEFT JOIN certificates_legacy cl ON d.id = cl.id
       WHERE d.product_id = ?
       ORDER BY d.created_at DESC
     `).all(req.params.id);
+
+    documents.forEach((doc) => {
+      if (!doc.thumbnail_path && doc.legacy_thumbnail_path) doc.thumbnail_path = doc.legacy_thumbnail_path;
+      delete doc.legacy_thumbnail_path;
+    });
 
     res.json({
       success: true,

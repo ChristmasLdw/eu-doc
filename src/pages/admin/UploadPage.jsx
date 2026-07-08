@@ -45,8 +45,8 @@ export default function UploadPage() {
         setError('请上传PDF格式的证书文件');
         return;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        setError('文件大小不能超过10MB');
+      if (file.size > 20 * 1024 * 1024) {
+        setError('文件大小不能超过20MB');
         return;
       }
       setPdfFile(file);
@@ -92,7 +92,7 @@ export default function UploadPage() {
       });
 
       // 提交到后端
-      const response = await fetch('/api/certificates/upload', {
+      const response = await fetch('/eu-doc/api/certificates/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -165,7 +165,7 @@ export default function UploadPage() {
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                   <span className={styles.uploadText}>点击上传PDF证书文件</span>
-                  <span className={styles.uploadHint}>支持PDF格式，最大10MB</span>
+                  <span className={styles.uploadHint}>支持PDF格式，最大20MB</span>
                 </>
               )}
             </label>

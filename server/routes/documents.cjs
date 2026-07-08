@@ -42,8 +42,16 @@ const upload = multer({
   fileFilter: documentFileFilter,
 });
 
-// GET /api/v2/documents - 获取文档列表
+// GET /api/v2/documents - 获取资料列表
 router.get('/', (req, res) => {
+  const needsPrivateAuth = req.query.mine === '1' || req.query.status === 'all' || req.query.reviewStatus === 'all';
+  if (needsPrivateAuth) {
+    return authMiddleware(req, res, () => listDocuments(req, res));
+  }
+  return listDocuments(req, res);
+});
+
+function listDocuments(req, res) {
   try {
     const {
       page = 1,
@@ -76,11 +84,34 @@ router.get('/', (req, res) => {
     const authHeader = req.headers.authorization;
     const hasToken = authHeader && authHeader.startsWith('Bearer ');
 
-    if (!hasToken) {
+    const mineOnly = req.query.mine === '1';
+    const privateStatusRequested = status === 'all' || reviewStatus === 'all';
+
+    if (mineOnly) {
+      if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
+        conditions.push(`d.company_id IN (
+          SELECT company_id FROM company_members
+          WHERE user_id = ? AND status = 'active'
+        )`);
+        params.push(req.admin.id);
+      }
+    } else if (privateStatusRequested) {
+      if (!req.admin) return res.status(401).json({ success: false, message: '查看全部状态资料需要登录' });
+      if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
+        if (!companyId) return res.status(403).json({ success: false, message: '请选择有权限的企业' });
+        const membership = db.prepare(`
+          SELECT id FROM company_members
+          WHERE user_id = ? AND company_id = ? AND status = 'active'
+        `).get(req.admin.id, Number(companyId));
+        if (!membership) return res.status(403).json({ success: false, message: '无权查看该企业的资料' });
+      }
+    } else {
       conditions.push("d.review_status = 'approved'");
       conditions.push("COALESCE(c.verification_status, 'pending') = 'verified'");
       conditions.push('COALESCE(c.public_visible, 1) = 1');
-    } else if (reviewStatus && reviewStatus !== 'all') {
+    }
+
+    if (reviewStatus && reviewStatus !== 'all') {
       conditions.push('d.review_status = ?');
       params.push(reviewStatus);
     }
@@ -123,6 +154,7 @@ router.get('/', (req, res) => {
     const dataSql = `
       SELECT
         d.*,
+        cl.thumbnail_path as legacy_thumbnail_path,
         p.name as product_name,
         p.model as product_model,
         c.name as company_name,
@@ -135,6 +167,7 @@ router.get('/', (req, res) => {
       FROM documents d
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies c ON d.company_id = c.id
+      LEFT JOIN certificates_legacy cl ON d.id = cl.id
       LEFT JOIN users u ON d.uploaded_by = u.id
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
       ${whereClause}
@@ -142,7 +175,11 @@ router.get('/', (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const documents = db.prepare(dataSql).all(...params, Number(pageSize), offset);
+    const documents = db.prepare(dataSql).all(...params, Number(pageSize), offset).map((doc) => {
+      if (!doc.thumbnail_path && doc.legacy_thumbnail_path) doc.thumbnail_path = doc.legacy_thumbnail_path;
+      delete doc.legacy_thumbnail_path;
+      return doc;
+    });
 
     res.json({
       success: true,
@@ -161,7 +198,7 @@ router.get('/', (req, res) => {
       message: '查询文档列表失败: ' + error.message,
     });
   }
-});
+}
 
 // GET /api/v2/documents/:id - 获取文档详情
 router.get('/:id', (req, res) => {
@@ -169,6 +206,7 @@ router.get('/:id', (req, res) => {
     const document = db.prepare(`
       SELECT
         d.*,
+        cl.thumbnail_path as legacy_thumbnail_path,
         p.name as product_name,
         p.model as product_model,
         c.name as company_name,
@@ -178,6 +216,7 @@ router.get('/:id', (req, res) => {
       FROM documents d
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies c ON d.company_id = c.id
+      LEFT JOIN certificates_legacy cl ON d.id = cl.id
       LEFT JOIN users u ON d.uploaded_by = u.id
       LEFT JOIN users reviewer ON d.reviewed_by = reviewer.id
       WHERE d.id = ?
@@ -189,6 +228,11 @@ router.get('/:id', (req, res) => {
         message: '文档不存在',
       });
     }
+
+    if (!document.thumbnail_path && document.legacy_thumbnail_path) {
+      document.thumbnail_path = document.legacy_thumbnail_path;
+    }
+    delete document.legacy_thumbnail_path;
 
     // 如果是证书，获取证书元数据
     if (document.document_type === 'certificate') {

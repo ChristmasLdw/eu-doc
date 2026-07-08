@@ -12,13 +12,51 @@ import { useTranslation } from 'react-i18next';
 import { getCompany } from '../services/api';
 import * as api from '../services/api';
 import ShareModal from '../components/ShareModal';
-import { getPublicStatusLabel } from '../utils/publicStatus';
+import { formatPublicDate, isEnglishLanguage, localizedField, publicStatusLabel } from '../utils/languageContent';
 import styles from './CompanyPage.module.css';
 
 export default function CompanyPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const isEn = isEnglishLanguage(i18n.language);
+  const ui = {
+    center: isEn ? 'Company Document Center' : '企业资料中心',
+    intro: isEn ? 'This page presents company basics, public product document packages, and compliance documents so users can confirm the company and open product document pages.' : '该页面集中展示企业基础信息、公开产品资料包与合规文件，方便用户确认企业并进入对应产品资料页。',
+    productPackages: isEn ? 'Product document packages' : '产品资料包',
+    publicDocuments: isEn ? 'Public documents' : '公开资料',
+    frontendStatus: isEn ? 'Public status' : '前台状态',
+    logoPending: isEn ? 'Company logo not provided' : '公司 Logo 待企业补充',
+    favorited: isEn ? '★ Favorited' : '★ 已收藏',
+    favorite: isEn ? '☆ Favorite' : '☆ 收藏',
+    favoriteTitle: isEn ? 'Favorite company' : '收藏公司',
+    unfavoriteTitle: isEn ? 'Remove favorite' : '取消收藏',
+    shareCompany: isEn ? 'Share company' : '分享公司',
+    publicStatus: isEn ? 'Public status' : '公开状态',
+    verificationStatus: isEn ? 'Verification' : '认证状态',
+    verified: isEn ? 'Company verified' : '已完成企业认证',
+    verificationPending: isEn ? 'Verification pending' : '认证信息待完善',
+    mainCategory: isEn ? 'Main category' : '主营方向',
+    contactEmail: isEn ? 'Email' : '联系邮箱',
+    address: isEn ? 'Address' : '企业地址',
+    joined: isEn ? 'Joined' : '入驻时间',
+    notProvided: isEn ? 'Not provided by company' : '企业暂未补充',
+    website: isEn ? 'Website' : '企业官网',
+    visitWebsite: isEn ? 'Visit website' : '访问官网',
+    searchPlaceholder: isEn ? 'Search product name, model, or document' : '搜索产品名称、型号、资料',
+    publicCount: isEn ? 'public documents' : '份资料',
+    typeCount: isEn ? 'document types' : '类资料',
+    certificate: isEn ? 'Certificate' : '资质证书',
+    doc: isEn ? 'DoC Declaration' : 'DoC声明',
+    manual: isEn ? 'Manual' : '说明书',
+    notPublic: isEn ? 'Not public yet' : '暂未公开',
+    viewProduct: isEn ? 'View product documents →' : '查看产品资料 →',
+    noMatched: isEn ? 'No matching product document packages' : '没有匹配的产品资料包',
+    noPackages: isEn ? 'This company has not published product document packages yet' : '该公司暂未公开产品资料包',
+    clearSearch: isEn ? 'Clear search' : '清除搜索',
+    shareType: isEn ? 'Company page share' : '企业主页分享',
+    shareSubtitle: isEn ? 'View this company’s public product document packages, compliance documents, and company basics.' : '查看该企业公开的产品资料包、合规文件与企业基础信息。',
+  };
 
   const [company, setCompany] = useState(null);
   const [products, setProducts] = useState([]);
@@ -50,11 +88,6 @@ export default function CompanyPage() {
     setError(null);
     getCompany(id)
       .then(async (data) => {
-        console.log('Company data received:', data);
-        console.log('Certificates:', data?.certificates);
-        if (data?.certificates?.[0]) {
-          console.log('First cert keys:', Object.keys(data.certificates[0]));
-        }
         setCompany(data);
         const [productResult, documentResult] = await Promise.all([
           api.getCompanyProducts(id).catch(() => ({ data: [] })),
@@ -64,7 +97,7 @@ export default function CompanyPage() {
         setDocuments((documentResult.data || []).filter((doc) => doc.status !== 'deleted'));
         // 加载收藏状态和账号浏览记录。未登录时会静默跳过。
         loadFavoriteStatus(id);
-        api.recordHistory('公司', parseInt(id, 10), data.name, data.nameEn || data.name_en || '', '查看公司').catch(() => {});
+        api.recordHistory('公司', parseInt(id, 10), localizedField(data, 'name', i18n.language), data.nameEn || data.name_en || '', isEn ? 'View company' : '查看公司').catch(() => {});
       })
       .catch((err) => {
         console.error('Error loading company:', err);
@@ -72,7 +105,7 @@ export default function CompanyPage() {
         setCompany(null);
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, i18n.language, isEn, t]);
 
   // 加载收藏状态
   const loadFavoriteStatus = async (companyId) => {
@@ -138,8 +171,8 @@ export default function CompanyPage() {
       const certs = docs.filter((doc) => getDocType(doc) === 'certificate');
       const declarations = docs.filter((doc) => ['declaration_of_conformity', 'declaration'].includes(getDocType(doc)));
       const manuals = docs.filter((doc) => getDocType(doc) === 'manual');
-      const completed = [certs.length, declarations.length, manuals.length].filter(Boolean).length;
-      return { ...product, docs, certs, declarations, manuals, completed, completeness: Math.round((completed / 3) * 100) };
+      const publicTypeCount = [certs.length, declarations.length, manuals.length].filter(Boolean).length;
+      return { ...product, docs, certs, declarations, manuals, publicTypeCount };
     });
 
     if (searchQuery) {
@@ -265,23 +298,19 @@ export default function CompanyPage() {
   }
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '未知';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return formatPublicDate(dateStr, i18n.language, isEn ? 'Unknown' : '未知');
   };
-  const displayValue = (value) => value || '企业暂未补充';
-  const companyPublicStatus = getPublicStatusLabel(company, 'company');
+  const displayValue = (value) => value || ui.notProvided;
+  const companyPublicStatus = publicStatusLabel(company, 'company', i18n.language);
+  const companyName = localizedField(company, 'name', i18n.language);
+  const companyDescription = localizedField(company, 'description', i18n.language);
   const companyBasics = [
-    { label: '公开状态', value: companyPublicStatus },
-    { label: '认证状态', value: company.verificationStatus === 'verified' || company.verification_status === 'verified' ? '已完成企业认证' : '认证信息待完善' },
-    { label: '主营方向', value: company.mainCategory || company.main_category },
-    { label: '联系邮箱', value: company.contactEmail || company.contact_email },
-    { label: '企业地址', value: company.address },
-    { label: '入驻时间', value: formatDate(company.createdAt || company.created_at) },
+    { label: ui.publicStatus, value: companyPublicStatus },
+    { label: ui.verificationStatus, value: company.verificationStatus === 'verified' || company.verification_status === 'verified' ? ui.verified : ui.verificationPending },
+    { label: ui.mainCategory, value: company.mainCategory || company.main_category },
+    { label: ui.contactEmail, value: company.contactEmail || company.contact_email },
+    { label: ui.address, value: isEn ? (company.addressEn || company.address_en || company.address) : company.address },
+    { label: ui.joined, value: formatDate(company.createdAt || company.created_at) },
   ];
   const website = company.website || company.websiteUrl || company.website_url;
 
@@ -302,24 +331,24 @@ export default function CompanyPage() {
           <div className={styles.companyInfo}>
             <div className={styles.companyHeroGrid}>
               <div className={styles.companyCopy}>
-                <span className={styles.companyEyebrow}>企业资料中心</span>
-                <h1 className={styles.companyName}>{company.name}</h1>
-                {company.nameEn && company.nameEn !== company.name && (
+                <span className={styles.companyEyebrow}>{ui.center}</span>
+                <h1 className={styles.companyName}>{companyName}</h1>
+                {!isEn && company.nameEn && company.nameEn !== company.name && (
                   <p className={styles.companyNameEn}>{company.nameEn}</p>
                 )}
-                <p className={styles.companyIntro}>{company.description || '该页面集中展示企业基础信息、公开产品资料包与合规文件，方便用户确认企业并进入对应产品资料页。'}</p>
+                <p className={styles.companyIntro}>{companyDescription || ui.intro}</p>
                 <div className={styles.companyStats}>
                   <div className={styles.statItem}>
                     <span className={styles.statNumber}>{totalProducts}</span>
-                    <span className={styles.statLabel}>产品资料包</span>
+                    <span className={styles.statLabel}>{ui.productPackages}</span>
                   </div>
                   <div className={styles.statItem}>
                     <span className={styles.statNumber}>{totalDocuments}</span>
-                    <span className={styles.statLabel}>公开资料</span>
+                    <span className={styles.statLabel}>{ui.publicDocuments}</span>
                   </div>
                   <div className={styles.statItem}>
                     <span className={styles.statNumber}>{companyPublicStatus}</span>
-                    <span className={styles.statLabel}>前台状态</span>
+                    <span className={styles.statLabel}>{ui.frontendStatus}</span>
                   </div>
                 </div>
               </div>
@@ -327,7 +356,7 @@ export default function CompanyPage() {
               <aside className={styles.companyHeroAside}>
                 <div className={styles.companyLogoVisual}>
                   {company.logoUrl ? (
-                    <img src={company.logoUrl} alt={company.name} className={styles.companyLogo} />
+                    <img src={company.logoUrl} alt={companyName} className={styles.companyLogo} />
                   ) : (
                     <div>
                       <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -339,24 +368,24 @@ export default function CompanyPage() {
                         <path d="M9 15v.01" />
                         <path d="M9 18v.01" />
                       </svg>
-                      <span>公司 Logo 待企业补充</span>
+                      <span>{ui.logoPending}</span>
                     </div>
                   )}
                 </div>
                 <div className={styles.companyActions}>
                   <button
                     onClick={handleFavorite}
-                    title={isFavorited ? '取消收藏' : '收藏公司'}
+                    title={isFavorited ? ui.unfavoriteTitle : ui.favoriteTitle}
                     className={styles.companyActionButton}
                   >
-                    {isFavorited ? '★ 已收藏' : '☆ 收藏'}
+                    {isFavorited ? ui.favorited : ui.favorite}
                   </button>
                   <button
                     onClick={handleShare}
-                    title="分享公司"
+                    title={ui.shareCompany}
                     className={`${styles.companyActionButton} ${styles.companyActionPrimary}`}
                   >
-                    分享公司
+                    {ui.shareCompany}
                   </button>
                 </div>
               </aside>
@@ -371,8 +400,8 @@ export default function CompanyPage() {
                 ))}
                 {website && (
                   <a href={website.startsWith('http') ? website : `https://${website}`} target="_blank" rel="noreferrer">
-                    <span>企业官网</span>
-                    <strong>访问官网</strong>
+                    <span>{ui.website}</span>
+                    <strong>{ui.visitWebsite}</strong>
                   </a>
                 )}
               </div>
@@ -389,9 +418,9 @@ export default function CompanyPage() {
                   <path d="m3.3 7 8.7 5 8.7-5" />
                   <path d="M12 22V12" />
                 </svg>
-                产品资料包
+                {ui.productPackages}
               </h2>
-              <span className={styles.resultCount}>{searchQuery ? `${productPackages.length} / ${totalProducts}` : totalProducts} 个产品 · {totalDocuments} 份资料</span>
+              <span className={styles.resultCount}>{searchQuery ? `${productPackages.length} / ${totalProducts}` : totalProducts} {ui.productPackages} · {totalDocuments} {ui.publicDocuments}</span>
             </div>
 
             <div className={styles.toolbar}>
@@ -400,7 +429,7 @@ export default function CompanyPage() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <input type="text" className={styles.searchInput} placeholder="搜索产品名称、型号、资料" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" className={styles.searchInput} placeholder={ui.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 {searchQuery && <button className={styles.clearBtn} onClick={() => setSearchQuery('')}>✕</button>}
               </div>
               <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
@@ -413,20 +442,19 @@ export default function CompanyPage() {
                 {productPackages.map((product) => (
                   <Link key={product.id} to={`/products/${product.id}`} className={styles.productPackageCard}>
                     <div className={styles.packageTopline}>
-                      <span className={product.completed === 3 ? styles.packageStatusGood : styles.packageStatusWarn}>{product.completed === 3 ? '资料完整' : `缺 ${3 - product.completed} 类资料`}</span>
-                      <span className={styles.packagePercent}>{product.completeness}%</span>
+                      <span className={styles.packageStatusGood}>{isEn ? 'Public' : '已公开'} {product.docs.length} {ui.publicCount}</span>
+                      <span className={styles.packageTypeCount}>{product.publicTypeCount} {ui.typeCount}</span>
                     </div>
-                    <h3>{product.name}</h3>
-                    <p>{product.model || product.categoryName || product.category_name || '产品资料包'}</p>
-                    <div className={styles.packageProgress}><span style={{ width: `${product.completeness}%` }} /></div>
+                    <h3>{localizedField(product, 'name', i18n.language)}</h3>
+                    <p>{product.model || localizedField({ name: product.categoryName || product.category_name, name_en: product.categoryNameEn || product.category_name_en }, 'name', i18n.language) || ui.productPackages}</p>
                     <div className={styles.packageTypes}>
-                      <span className={product.certs.length ? styles.typeReady : styles.typeMissing}>资质证书 <strong>{product.certs.length || '+'}</strong></span>
-                      <span className={product.declarations.length ? styles.typeReady : styles.typeMissing}>DoC声明 <strong>{product.declarations.length || '+'}</strong></span>
-                      <span className={product.manuals.length ? styles.typeReady : styles.typeMissing}>说明书 <strong>{product.manuals.length || '+'}</strong></span>
+                      <span className={product.certs.length ? styles.typeReady : styles.typeMissing}>{ui.certificate} <strong>{product.certs.length || ui.notPublic}</strong></span>
+                      <span className={product.declarations.length ? styles.typeReady : styles.typeMissing}>{ui.doc} <strong>{product.declarations.length || ui.notPublic}</strong></span>
+                      <span className={product.manuals.length ? styles.typeReady : styles.typeMissing}>{ui.manual} <strong>{product.manuals.length || ui.notPublic}</strong></span>
                     </div>
                     <div className={styles.packageFooter}>
-                      <span>{product.docs.length} 份资料</span>
-                      <em>查看产品资料 →</em>
+                      <span>{product.docs.length} {ui.publicCount}</span>
+                      <em>{ui.viewProduct}</em>
                     </div>
                   </Link>
                 ))}
@@ -437,27 +465,27 @@ export default function CompanyPage() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <p>{searchQuery ? '没有匹配的产品资料包' : '该公司暂未公开产品资料包'}</p>
-                {searchQuery && <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>清除搜索</button>}
+                <p>{searchQuery ? ui.noMatched : ui.noPackages}</p>
+                {searchQuery && <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>{ui.clearSearch}</button>}
               </div>
             )}
         </section>
 
         {/* 页脚 */}
         <footer className={styles.footer}>
-          <p>© 2025 EU-DOC 证书查询系统 · 版本 1.0.4</p>
+          <p>© 2025 EU-DOC</p>
         </footer>
         <ShareModal
           open={shareOpen}
           onClose={() => setShareOpen(false)}
-          typeLabel="企业主页分享"
-          title={company.name}
-          subtitle={company.description || '查看该企业公开的产品资料包、合规文件与企业基础信息。'}
+          typeLabel={ui.shareType}
+          title={companyName}
+          subtitle={companyDescription || ui.shareSubtitle}
           url={`${window.location.origin}/eu-doc/companies/${id}`}
-          meta={[company.nameEn || company.name_en, `${totalProducts} 个产品资料包`, companyPublicStatus]}
+          meta={[company.nameEn || company.name_en, `${totalProducts} ${ui.productPackages}`, companyPublicStatus]}
           context={{
             kind: 'company',
-            companyName: company.name,
+            companyName,
           }}
         />
       </div>

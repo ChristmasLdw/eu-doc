@@ -3,24 +3,27 @@
  */
 
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styles from './Footer.module.css';
 
 export default function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
         <div className={styles.links}>
-          <Link to="/solutions">解决方案</Link>
-          <Link to="/guide">使用指南</Link>
-          <Link to="/terms">服务条款</Link>
-          <Link to="/privacy">隐私政策</Link>
-          <Link to="/disclaimer">免责声明</Link>
-          <Link to="/upload-commitment">上传承诺书</Link>
-          <Link to="/enterprise-agreement">企业入驻</Link>
-          <Link to="/contact">联系我们</Link>
+          <Link to="/solutions">{t('footer.solutions')}</Link>
+          <Link to="/guide">{t('footer.guide')}</Link>
+          <Link to="/terms">{t('footer.terms')}</Link>
+          <Link to="/privacy">{t('footer.privacy')}</Link>
+          <Link to="/disclaimer">{t('footer.disclaimer')}</Link>
+          <Link to="/upload-commitment">{t('footer.uploadCommitment')}</Link>
+          <Link to="/enterprise-agreement">{t('footer.enterpriseAgreement')}</Link>
+          <Link to="/contact">{t('footer.contact')}</Link>
         </div>
         <div className={styles.copyright}>
-          © 2025 EU-DOC 产品合规文档平台
+          {t('footer.copyright')}
         </div>
       </div>
     </footer>

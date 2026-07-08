@@ -16,6 +16,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCertificates, getStats, getCompanies, getSearchSuggestions } from '../services/api';
 import { categories as defaultCategories } from '../data/mockData';
+import { categoryLabel, localizedField } from '../utils/languageContent';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
@@ -31,7 +32,7 @@ export default function SearchPage() {
   const searchBoxRef = useRef(null);
   const suggestionsRef = useRef(null);
   const isUserTyping = useRef(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // 获取排序选项（使用多语言）
   const sortOptions = getSortOptions(t);
@@ -422,8 +423,8 @@ export default function SearchPage() {
                 value={query}
                 onChange={(e) => { isUserTyping.current = true; setQuery(e.target.value); setShowSuggestions(true); }}
                 onFocus={() => {
-                  // 只在有输入内容时显示建议，否则不显示历史记录
-                  if (query.trim()) {
+                  // 只在用户主动输入后显示建议，避免直接打开搜索页时自动遮挡结果。
+                  if (isUserTyping.current && query.trim()) {
                     setShowSuggestions(true);
                   }
                 }}
@@ -500,7 +501,7 @@ export default function SearchPage() {
                   {/* 无建议和无历史时的提示 */}
                   {query && suggestions.length === 0 && (
                     <div className={styles.noSuggestions}>
-                      <div>{suggestionsLoading ? '正在匹配相关结果...' : t('search.noSuggestions')}</div>
+                      <div>{suggestionsLoading ? t('search.matchingSuggestions') : t('search.noSuggestions')}</div>
                       <div className={styles.searchTip}>{t('search.searchTipsContent')}</div>
                     </div>
                   )}
@@ -527,7 +528,7 @@ export default function SearchPage() {
               >
                 <option value="">{t('search.filters.allCategories')}</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{categoryLabel(cat, i18n.language)}</option>
                 ))}
               </select>
               <select
@@ -578,7 +579,7 @@ export default function SearchPage() {
                   className={styles.activeFilterTag}
                   onClick={() => handleFilterChange(setActiveCategory, undefined)}
                 >
-                  {activeCategory}
+                  {categoryLabel(activeCategory, i18n.language)}
                   <span className={styles.removeFilter}>✕</span>
                 </button>
               )}
@@ -625,9 +626,9 @@ export default function SearchPage() {
               ) : error ? (
                 <>{t('common.loadFailed')}</>
               ) : matchedCompanies.length > 0 && totalResults === 0 ? (
-                <>找到 <strong>{matchedCompanies.length}</strong> 个公司结果</>
+                <>{t('search.matchedCompanyResult', { count: matchedCompanies.length })}</>
               ) : matchedCompanies.length > 0 ? (
-                <>找到 <strong>{matchedCompanies.length + totalResults}</strong> 条结果 <em>包含 {matchedCompanies.length} 个公司、{totalResults} 份证书</em></>
+                <>{t('search.mixedResult', { total: matchedCompanies.length + totalResults })} <em>{t('search.mixedResultDetail', { companyCount: matchedCompanies.length, docCount: totalResults })}</em></>
               ) : (
                 <>{t('search.foundResults', { count: totalResults }).replace('<strong>', '').replace('</strong>', '')
                   .split(totalResults.toString())
@@ -680,15 +681,15 @@ export default function SearchPage() {
                   </svg>
                 </div>
                 <div className={styles.companyInfo}>
-                  <h3 className={styles.companyName}>{highlightText(company.name)}</h3>
-                  {company.nameEn && company.nameEn !== company.name && (
+                  <h3 className={styles.companyName}>{highlightText(localizedField(company, 'name', i18n.language))}</h3>
+                  {company.nameEn && company.nameEn !== localizedField(company, 'name', i18n.language) && (
                     <p className={styles.companyNameEn}>{company.nameEn}</p>
                   )}
                 </div>
                 <div className={styles.companyBadge}>
-                  <span className={styles.companyCertCount}>{company.productCount || 0} 个产品</span>
-                  <span className={styles.companyDocCount}>{company.documentCount || company.certCount || 0} 份资料</span>
-                  <span className={styles.companyViewBtn}>查看公司 →</span>
+                  <span className={styles.companyCertCount}>{t('search.productCount', { count: company.productCount || 0 })}</span>
+                  <span className={styles.companyDocCount}>{t('search.documentCount', { count: company.documentCount || company.certCount || 0 })}</span>
+                  <span className={styles.companyViewBtn}>{t('search.viewCompany')}</span>
                 </div>
               </Link>
             ))}

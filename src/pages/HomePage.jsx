@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
 import { getCertificates } from '../services/api';
+import { categoryLabel } from '../utils/languageContent';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
@@ -20,7 +21,7 @@ export default function HomePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchBoxRef = useRef(null);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // 搜索建议数据源
   const [suggestionData, setSuggestionData] = useState([]);
@@ -163,7 +164,7 @@ export default function HomePage() {
 
           {/* 快捷分类入口 */}
           <div className={styles.categories}>
-            <span className={styles.categoriesLabel}>常用方向</span>
+            <span className={styles.categoriesLabel}>{t('home.featuredCategories')}</span>
             <div className={styles.categoryList}>
               {featuredCategories.map((cat) => (
                 <button
@@ -171,10 +172,10 @@ export default function HomePage() {
                   className={styles.categoryTag}
                   onClick={() => handleCategoryClick(cat)}
                 >
-                  {cat}
+                  {categoryLabel(cat, i18n.language)}
                 </button>
               ))}
-              <button className={`${styles.categoryTag} ${styles.categoryMoreTag}`} onClick={() => handleCategoryClick('more')}>更多分类</button>
+              <button className={`${styles.categoryTag} ${styles.categoryMoreTag}`} onClick={() => handleCategoryClick('more')}>{t('home.moreCategories')}</button>
             </div>
           </div>
         </div>

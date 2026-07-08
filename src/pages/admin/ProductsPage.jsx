@@ -32,7 +32,7 @@ export default function ProductsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setCurrentUser(data.admin);
+        setCurrentUser(data.user);
       }
     } catch (err) {
       console.error('获取用户信息失败:', err);
@@ -48,18 +48,7 @@ export default function ProductsPage() {
       });
       if (search) params.append('search', search);
 
-      // 非管理员只查看自己企业的产品
-      if (currentUser && currentUser.role !== 'admin' && currentUser.company_name) {
-        // 根据企业名称查找企业 ID
-        const token = localStorage.getItem('admin_token');
-        const companiesRes = await fetch(`/eu-doc/api/companies?search=${encodeURIComponent(currentUser.company_name)}&pageSize=1`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const companiesData = await companiesRes.json();
-        if (companiesData.success && companiesData.data.length > 0) {
-          params.append('companyId', companiesData.data[0].id);
-        }
-      }
+      params.append('mine', '1');
 
       const token = localStorage.getItem('admin_token');
       const res = await fetch(`/eu-doc/api/v2/products?${params}`, {
@@ -145,7 +134,7 @@ export default function ProductsPage() {
                 <th>型号</th>
                 <th>企业</th>
                 <th>分类</th>
-                <th>文档数</th>
+                <th>资料数</th>
                 <th>状态</th>
                 <th>操作</th>
               </tr>
@@ -176,7 +165,7 @@ export default function ProductsPage() {
                         className={styles.editBtn}
                         onClick={() => navigate(`/admin/products/${p.id}/upload`)}
                       >
-                        上传文档
+                        上传资料
                       </button>
                       <button
                         className={styles.deleteBtn}

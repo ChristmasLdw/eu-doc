@@ -175,6 +175,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage, limits: { fileSize: UNVERIFIED_COMPANY_MAX_FILE_SIZE, files: 80 }, fileFilter: documentFileFilter });
 
+function fallbackCertNo(item) {
+  return item?.guessed_cert_no || path.basename(item?.original_name || 'certificate', path.extname(item?.original_name || '')) || `CERT-${Date.now()}`;
+}
 
 function buildDuplicateInfo(row) {
   const earlierPending = db.prepare(`
@@ -355,7 +358,7 @@ router.post('/organize-group', authMiddleware, (req, res) => {
       const docResult = insertDocument.run(companyId, productId, itemDocType, item.original_name, languageOverride || item.guessed_language || 'en', item.file_path, item.file_size, item.mime_type, req.admin.id);
       const documentId = docResult.lastInsertRowid;
       if (itemDocType === 'certificate') {
-        insertMeta.run(documentId, cert_no || item.guessed_cert_no || null, standard || item.guessed_standard || null, issuer || item.guessed_issuer || null);
+        insertMeta.run(documentId, cert_no || fallbackCertNo(item), standard || item.guessed_standard || null, issuer || item.guessed_issuer || null);
       }
       markDone.run(productId, documentId, item.id);
       created.push({ itemId: item.id, documentId });
@@ -415,7 +418,7 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
       db.prepare(`
         INSERT INTO certificate_metadata (document_id, cert_no, standard, issuer)
         VALUES (?, ?, ?, ?)
-      `).run(documentId, cert_no || item.guessed_cert_no || null, standard || null, issuer || null);
+      `).run(documentId, cert_no || fallbackCertNo(item), standard || null, issuer || null);
     }
 
     db.prepare(`

@@ -722,8 +722,9 @@ export function organizeImportGroup(data) {
   }).then(keysToCamelCase);
 }
 
-export function getCompanyProducts(companyId) {
-  return request(`/v2/products?companyId=${companyId}&status=all&pageSize=500`, { raw: true }).then((response) => {
+export function getCompanyProducts(companyId, options = {}) {
+  const privateQuery = options.includePrivate ? '&status=all' : '';
+  return request(`/v2/products?companyId=${companyId}${privateQuery}&pageSize=500`, { raw: true, skipAuth: !options.includePrivate }).then((response) => {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
     return response;
   });
@@ -739,8 +740,9 @@ export function getCategories(taxonomyType = 'consumer', options = {}) {
   });
 }
 
-export function getCompanyDocuments(companyId) {
-  return request(`/v2/documents?companyId=${companyId}&reviewStatus=all&status=all&pageSize=500`, { raw: true }).then((response) => {
+export function getCompanyDocuments(companyId, options = {}) {
+  const privateQuery = options.includePrivate ? '&reviewStatus=all&status=all' : '';
+  return request(`/v2/documents?companyId=${companyId}${privateQuery}&pageSize=500`, { raw: true, skipAuth: !options.includePrivate }).then((response) => {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
     return response;
   });

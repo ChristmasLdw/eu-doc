@@ -22,7 +22,7 @@ export default function CompanyVerificationAdminPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/eu-doc/api/v2/companies/verifications?status=${filter === 'all' ? '' : filter}`, {
+      const response = await fetch(`/eu-doc/api/companies/verifications?status=${filter === 'all' ? '' : filter}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -46,7 +46,7 @@ export default function CompanyVerificationAdminPage() {
     setReviewing(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/eu-doc/api/v2/companies/${companyId}/verification`, {
+      const response = await fetch(`/eu-doc/api/companies/${companyId}/verification`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -199,8 +199,8 @@ export default function CompanyVerificationAdminPage() {
               </div>
 
               <div className={styles.section}>
-                <h3>认证文件</h3>
-                <p className={styles.hint}>文件已上传到服务器，需要管理员下载查看</p>
+                <h3>认证材料</h3>
+                <p className={styles.hint}>认证材料已上传到服务器，需要管理员下载查看</p>
               </div>
 
               {selectedVerification.verification_status === 'pending' && (

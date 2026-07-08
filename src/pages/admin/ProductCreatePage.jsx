@@ -128,7 +128,7 @@ export default function ProductCreatePage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>创建产品</h1>
-        <p className={styles.subtitle}>创建新产品后可以上传证书、DoC、说明书等文档</p>
+        <p className={styles.subtitle}>创建新产品后可以上传证书、DoC、说明书等产品资料</p>
       </div>
 
       {error && (

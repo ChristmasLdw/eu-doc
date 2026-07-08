@@ -25,6 +25,7 @@ export default function DocumentsPage() {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         pageSize: pagination.pageSize.toString(),
+        mine: '1',
       });
       if (search) params.append('search', search);
       if (filterType) params.append('documentType', filterType);
@@ -41,14 +42,14 @@ export default function DocumentsPage() {
         setPagination(data.pagination);
       }
     } catch (err) {
-      console.error('获取文档列表失败:', err);
+      console.error('获取资料列表失败:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id, title) => {
-    if (!confirm(`确定要删除文档 "${title}" 吗？`)) return;
+    if (!confirm(`确定要删除资料 "${title}" 吗？`)) return;
 
     try {
       const token = localStorage.getItem('admin_token');
@@ -65,7 +66,7 @@ export default function DocumentsPage() {
         alert(data.message || '删除失败');
       }
     } catch (err) {
-      console.error('删除文档失败:', err);
+      console.error('删除资料失败:', err);
       alert('删除失败');
     }
   };
@@ -138,7 +139,7 @@ export default function DocumentsPage() {
           </svg>
           <input
             type="text"
-            placeholder="搜索文档标题..."
+            placeholder="搜索资料标题..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPagination(p => ({ ...p, page: 1 })); }}
             className={styles.searchInput}
@@ -174,14 +175,14 @@ export default function DocumentsPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>加载中...</div>
       ) : documents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>暂无文档</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>暂无资料</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
                 <th>ID</th>
-                <th>文档标题</th>
+                <th>资料标题</th>
                 <th>类型</th>
                 <th>产品</th>
                 <th>企业</th>

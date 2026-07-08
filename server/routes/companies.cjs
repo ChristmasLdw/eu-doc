@@ -141,7 +141,7 @@ router.get('/', (req, res) => {
 });
 
 /**
- * GET /api/v2/companies/verifications
+ * GET /api/companies/verifications
  * 获取企业认证申请列表（仅管理员）
  */
 router.get('/verifications', authMiddleware, requireAdmin, (req, res) => {
@@ -425,7 +425,7 @@ router.delete('/:id', authMiddleware, (req, res) => {
     );
   })();
 
-  res.json({ success: true, message: '公司草稿已删除' });
+  res.json({ success: true, message: isDraftCompany ? '公司草稿已删除' : '公司已删除' });
 });
 
 /**

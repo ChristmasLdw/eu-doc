@@ -3,7 +3,7 @@ const path = require('path');
 const { db } = require('../db.cjs');
 
 const UNVERIFIED_COMPANY_MAX_FILES = 20;
-const UNVERIFIED_COMPANY_MAX_FILE_SIZE = 10 * 1024 * 1024;
+const UNVERIFIED_COMPANY_MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ALLOWED_DOCUMENT_FILE_TYPES = new Set([
   'application/pdf',
   'image/jpeg',
@@ -65,7 +65,7 @@ function assertUnverifiedCompanyUploadAllowed(companyId, files = [], additionalC
 
   const oversized = files.find((file) => file.size > UNVERIFIED_COMPANY_MAX_FILE_SIZE);
   if (oversized) {
-    throw new Error('未认证公司单个文件不能超过 10MB，请认证企业后再上传更大的文件');
+    throw new Error('未认证公司单个文件不能超过 20MB，请认证企业后再上传更大的文件');
   }
 
   const currentCount = getCompanyUploadedFileCount(companyId);

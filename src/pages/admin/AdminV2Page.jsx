@@ -176,7 +176,7 @@ const products = [
 
 const documents = [
   { name: 'CE Certificate - F20', type: '资质证书', product: 'Equestrian Helmet F20', lang: 'EN', backup: '已备份' },
-  { name: 'Declaration of Conformity', type: 'DoC声明文件', product: 'Equestrian Helmet F20', lang: 'EN / DE', backup: '已备份' },
+  { name: 'Declaration of Conformity', type: 'DoC声明资料', product: 'Equestrian Helmet F20', lang: 'EN / DE', backup: '已备份' },
   { name: 'User Manual', type: '使用说明书', product: 'Riding Helmet F20-202', lang: 'ZH / EN', backup: '待备份' },
 ];
 
@@ -330,7 +330,7 @@ function getUploadResultFileUrl(result = {}) {
 }
 
 function importTypeLabel(type) {
-  if (type === 'declaration_of_conformity') return 'DoC声明文件';
+  if (type === 'declaration_of_conformity') return 'DoC声明资料';
   if (type === 'certificate') return '资质证书';
   if (type === 'manual') return '使用说明书';
   return '其他资料';
@@ -430,7 +430,7 @@ function getProductDocuments(product, docs) {
 function getProductFileStatus(product, docs) {
   const productDocs = getProductDocuments(product, docs);
   const hasCert = productDocs.some((doc) => doc.documentType === 'certificate' || doc.type === '资质证书');
-  const hasDoc = productDocs.some((doc) => doc.documentType === 'declaration_of_conformity' || doc.type === 'DoC声明文件');
+  const hasDoc = productDocs.some((doc) => doc.documentType === 'declaration_of_conformity' || (doc.type === 'DoC声明资料' || doc.type === 'DoC声明文件'));
   const hasManual = productDocs.some((doc) => doc.documentType === 'manual' || doc.type === '使用说明书');
   const missing = [!hasCert && '缺证书', !hasDoc && '缺DoC', !hasManual && '缺说明书'].filter(Boolean);
   return { productDocs, hasCert, hasDoc, hasManual, missing, label: missing.length ? missing.join(' / ') : '资料完整' };
@@ -1314,7 +1314,7 @@ export default function AdminV2Page() {
       .catch((error) => {
         if (!cancelled) showAction(error.message || '公司资料读取失败');
       });
-    api.getCompanyProducts(companyId)
+    api.getCompanyProducts(companyId, { includePrivate: true })
       .then((response) => {
         if (cancelled) return;
         setCompanyProducts((response.data || []).map((item) => ({
@@ -1350,13 +1350,13 @@ export default function AdminV2Page() {
       .catch(() => {
         if (!cancelled) setCompanyProducts([]);
       });
-    api.getCompanyDocuments(companyId)
+    api.getCompanyDocuments(companyId, { includePrivate: true })
       .then((response) => {
         if (cancelled) return;
         setCompanyDocuments((response.data || []).map((item) => ({
           id: item.id,
           name: item.title || item.fileName || '未命名资料',
-          type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' || item.documentType === 'declaration' ? 'DoC声明文件' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
+          type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' || item.documentType === 'declaration' ? 'DoC声明资料' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
           documentType: item.documentType || 'other',
           productId: item.productId || item.product_id || '',
           product: item.productName || '-',
@@ -1805,8 +1805,8 @@ export default function AdminV2Page() {
 
   const refreshCompanyAssets = async () => {
     const [productResponse, documentResponse] = await Promise.all([
-      api.getCompanyProducts(activeCompany),
-      api.getCompanyDocuments(activeCompany),
+      api.getCompanyProducts(activeCompany, { includePrivate: true }),
+      api.getCompanyDocuments(activeCompany, { includePrivate: true }),
     ]);
     setCompanyProducts((productResponse.data || []).map((item) => ({
       id: item.id,
@@ -1840,7 +1840,7 @@ export default function AdminV2Page() {
     setCompanyDocuments((documentResponse.data || []).map((item) => ({
       id: item.id,
       name: item.title || item.fileName || '未命名资料',
-      type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' ? 'DoC声明文件' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
+      type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' ? 'DoC声明资料' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
       product: item.productName || '-',
       productId: item.productId,
       documentType: item.documentType,
@@ -2832,7 +2832,7 @@ export default function AdminV2Page() {
                               <div className={styles.fileConfirmRows}>
                                 {group.items.map((item) => <div key={item.id} className={styles.fileConfirmRow}>
                                   <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
-                                  <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
+                                  <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
                                   <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
                                 </div>)}
                               </div>
@@ -3098,7 +3098,7 @@ export default function AdminV2Page() {
                   };
                   const fileRows = [
                     ['资质证书', 'certificate', status.productDocs.filter((doc) => doc.documentType === 'certificate' || doc.type === '资质证书')],
-                    ['DoC声明', 'declaration_of_conformity', status.productDocs.filter((doc) => doc.documentType === 'declaration_of_conformity' || doc.type === 'DoC声明文件')],
+                    ['DoC声明', 'declaration_of_conformity', status.productDocs.filter((doc) => doc.documentType === 'declaration_of_conformity' || (doc.type === 'DoC声明资料' || doc.type === 'DoC声明文件'))],
                     ['说明书', 'manual', status.productDocs.filter((doc) => doc.documentType === 'manual' || doc.type === '使用说明书')],
                   ];
                   return (
@@ -3161,7 +3161,7 @@ export default function AdminV2Page() {
         const fileTypeOptions = [
           ['all', '全部资料'],
           ['certificate', '资质证书'],
-          ['declaration_of_conformity', 'DoC声明文件'],
+          ['declaration_of_conformity', 'DoC声明资料'],
           ['manual', '使用说明书'],
           ['unbound', '未绑定产品'],
         ];
@@ -3188,7 +3188,7 @@ export default function AdminV2Page() {
               {[
                 ['全部资料', companyDocuments.length, '当前公司已归档的全部资料'],
                 ['资质证书', companyDocuments.filter((doc) => doc.documentType === 'certificate').length, '证明产品测试和认证状态'],
-                ['DoC声明文件', companyDocuments.filter((doc) => doc.documentType === 'declaration_of_conformity').length, '供审核机构查看合规声明'],
+                ['DoC声明资料', companyDocuments.filter((doc) => doc.documentType === 'declaration_of_conformity').length, '供审核机构查看合规声明'],
                 ['使用说明书', companyDocuments.filter((doc) => doc.documentType === 'manual').length, '帮助用户了解产品使用方式'],
                 ['未绑定产品', companyDocuments.filter((doc) => !doc.productId).length, '这些资料前台产品页可能看不到'],
                 ['待完善', companyDocuments.filter((doc) => getDocHealth(doc).label === '待完善').length, '类型或语言等信息需要补齐'],
@@ -3637,10 +3637,10 @@ export default function AdminV2Page() {
 
             <div className={styles.timelineList}>
               {[
-                ['今天 15:42', 'admin', '上传资料', '为 Equestrian Helmet F20 上传 DoC 声明文件', '资料管理'],
+                ['今天 15:42', 'admin', '上传资料', '为 Equestrian Helmet F20 上传 DoC 声明资料', '资料管理'],
                 ['今天 14:18', '质量部成员', '编辑产品', '修改产品 F20-201AL 的适用型号', '产品资料'],
                 ['昨天 20:05', 'admin', '修改权限', '将 quality@example.com 设置为产品编辑', '员工权限'],
-                ['昨天 18:30', '资料上传员', '替换资料', '替换 CE Certificate - F20 文件版本', '资料管理'],
+                ['昨天 18:30', '资料上传员', '替换资料', '替换 CE Certificate - F20 资料版本', '资料管理'],
               ].map(([time, user, action, content, type]) => (
                 <article key={`${time}-${action}`} className={styles.timelineItem}>
                   <div className={styles.timelineDot} />
@@ -3946,7 +3946,7 @@ export default function AdminV2Page() {
               <h3>只读：资料与存储规则</h3>
               <div className={styles.settingRows}>
                 {[
-                  ['单文件大小限制', '未认证企业 10MB / 个'],
+                  ['单文件大小限制', '未认证企业 20MB / 个'],
                   ['允许文件类型', 'PDF / JPG / PNG / WebP / Word'],
                   ['资料备份策略', '服务器 / 对象存储 / 定时备份'],
                   ['资料安全扫描', '后续接入'],
@@ -4467,7 +4467,7 @@ export default function AdminV2Page() {
                                 <span className={styles.documentUploadPrompt}>
                                   <b>+</b>
                                   <strong>点击上传资料</strong>
-                                  <em>支持 PDF、PNG、JPG、WebP、Word，单份资料不超过 10MB</em>
+                                  <em>支持 PDF、PNG、JPG、WebP、Word，单份资料不超过 20MB</em>
                                 </span>
                               )}
                             </button>
@@ -4517,7 +4517,7 @@ export default function AdminV2Page() {
                     {documentModal.lockedType ? (
                       <label className={styles.documentLockedField}><span>资料类型</span><input value={importTypeLabel(documentModal.documentType)} readOnly /></label>
                     ) : (
-                      <label><span>资料类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明文件</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select></label>
+                      <label><span>资料类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select></label>
                     )}
                     <label><span>资料标题</span><input value={documentModal.title} placeholder="选择资料后自动带入，可修改" onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
                     <label><span>语言</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>

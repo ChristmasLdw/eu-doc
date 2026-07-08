@@ -22,7 +22,7 @@ export default function BatchUploadPage() {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch('/eu-doc/api/v2/products?pageSize=100', {
+      const res = await fetch('/eu-doc/api/v2/products?mine=1&pageSize=100', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -35,8 +35,8 @@ export default function BatchUploadPage() {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const validFiles = selectedFiles.filter(file => {
-      if (file.size > 10 * 1024 * 1024) {
-        setError(`文件 ${file.name} 超过10MB限制`);
+      if (file.size > 20 * 1024 * 1024) {
+        setError(`文件 ${file.name} 超过20MB限制`);
         return false;
       }
       return true;
@@ -111,7 +111,7 @@ export default function BatchUploadPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>批量上传</h1>
-        <p className={styles.subtitle}>选择产品后批量上传多个文档</p>
+        <p className={styles.subtitle}>选择产品后批量上传多份产品资料</p>
       </div>
 
       {error && (
@@ -158,7 +158,7 @@ export default function BatchUploadPage() {
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             <span className={styles.uploadText}>点击选择多份资料</span>
-            <span className={styles.uploadHint}>支持 PDF、JPG、PNG 格式，单文件最大10MB</span>
+            <span className={styles.uploadHint}>支持 PDF、JPG、PNG 格式，单文件最大20MB</span>
             <span className={styles.uploadHint}>仅上传适合对外展示的产品资料，不要上传图纸、报价、供应商等商业敏感内容</span>
           </label>
         </div>

@@ -154,7 +154,14 @@ router.get('/me', authMiddleware, (req, res) => {
 
   // 获取用户的企业列表
   const companies = db.prepare(`
-    SELECT c.id, c.name, cm.role as member_role
+    SELECT
+      c.id,
+      c.name,
+      c.name_en,
+      c.verification_status,
+      c.public_visible,
+      c.status,
+      cm.role as member_role
     FROM company_members cm
     JOIN companies c ON cm.company_id = c.id
     WHERE cm.user_id = ? AND cm.status = 'active'

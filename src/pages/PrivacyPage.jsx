@@ -78,7 +78,7 @@ export default function PrivacyPage() {
                 <h3>3.2 改进服务</h3>
                 <ul>
                   <li>分析用户使用习惯，优化产品功能</li>
-                  <li>统计证书类型分布，提供行业报告</li>
+                  <li>统计产品资料类型分布，提供行业报告</li>
                 </ul>
 
                 <p className={styles.highlight}><strong>我们承诺不会将您的个人信息用于其他目的。</strong></p>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
                 </ol>
 
                 <h3>4.3 公开信息</h3>
-                <p>以下信息可能被公开展示：企业主动公开的证书编号、产品名称、型号、公司名称、证书状态、DoC 声明、说明书和公开检测报告等产品资料。</p>
+                <p>以下信息可能被公开展示：企业主动公开的资料编号、证书编号、产品名称、型号、公司名称、资料状态、DoC 声明、说明书和公开检测报告等产品资料。</p>
                 <p className={styles.highlight}><strong>请勿上传商业秘密、个人隐私或不适合公开展示的内容。用户主动分享的资料链接，任何持有链接的人都可能访问。</strong></p>
               </section>
 
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
                 <ul>
                   <li><strong>访问权</strong> - 随时登录账户查看和下载您的个人信息</li>
                   <li><strong>更正权</strong> - 如发现信息有误，您可以自行修改</li>
-                  <li><strong>删除权</strong> - 您可以删除证书信息或注销账户</li>
+                  <li><strong>删除权</strong> - 您可以删除产品资料信息或注销账户</li>
                   <li><strong>撤回授权</strong> - 您可以随时撤回授权（如邮件提醒）</li>
                 </ul>
               </section>
@@ -151,11 +151,11 @@ export default function PrivacyPage() {
                   <li>Contact information (optional)</li>
                 </ul>
 
-                <h3>2.2 Certificate Information</h3>
+                <h3>2.2 Product Documentation Information</h3>
                 <ul>
-                  <li>Certificate number, product name, model</li>
+                  <li>Document number, certificate number, product name, model</li>
                   <li>Issuing authority, validity period</li>
-                  <li>Uploaded certificate files (PDF)</li>
+                  <li>Uploaded certificates, DoC declarations, manuals, public test reports, and related product documentation</li>
                 </ul>
 
                 <h3>2.3 Log Information</h3>
@@ -173,7 +173,7 @@ export default function PrivacyPage() {
                 <h2>3. How We Use Information</h2>
                 <h3>3.1 Service Provision</h3>
                 <ul>
-                  <li>Store and display certificate information</li>
+                  <li>Store and display company-published product documentation</li>
                   <li>Generate sharing links</li>
                   <li>Send expiry reminders (with user authorization)</li>
                 </ul>
@@ -181,7 +181,7 @@ export default function PrivacyPage() {
                 <h3>3.2 Service Improvement</h3>
                 <ul>
                   <li>Analyze user behavior to optimize features</li>
-                  <li>Provide industry reports based on certificate statistics</li>
+                  <li>Provide aggregate reports based on product documentation statistics</li>
                 </ul>
 
                 <p className={styles.highlight}><strong>We will not use your personal information for any other purposes.</strong></p>
@@ -201,8 +201,8 @@ export default function PrivacyPage() {
                 </ol>
 
                 <h3>4.3 Public Information</h3>
-                <p>The following information may be publicly displayed: certificate number, product name, model, company name, certificate status.</p>
-                <p className={styles.highlight}><strong>Note: Certificate links shared by users are accessible to anyone with the link.</strong></p>
+                <p>The following information may be publicly displayed: document number, certificate number, product name, model, company name, document status, DoC declarations, manuals, public test reports, and related product documentation.</p>
+                <p className={styles.highlight}><strong>Note: Documentation links shared by users may be accessible to anyone with the link.</strong></p>
               </section>
 
               <section>
@@ -225,7 +225,7 @@ export default function PrivacyPage() {
                 <ul>
                   <li><strong>Access Right</strong> - View and download your personal information anytime</li>
                   <li><strong>Correction Right</strong> - Modify information if found incorrect</li>
-                  <li><strong>Deletion Right</strong> - Delete certificate information or close your account</li>
+                  <li><strong>Deletion Right</strong> - Delete product documentation information or close your account</li>
                   <li><strong>Withdrawal Right</strong> - Withdraw authorization at any time (e.g., email reminders)</li>
                 </ul>
               </section>

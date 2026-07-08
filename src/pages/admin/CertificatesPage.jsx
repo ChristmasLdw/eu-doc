@@ -514,7 +514,7 @@ export default function CertificatesPage() {
                     <label>{t('admin.certificatesPage.certFile')}</label>
                     <FileUpload
                       accept=".pdf"
-                      maxSize={10 * 1024 * 1024}
+                      maxSize={20 * 1024 * 1024}
                       onUpload={(file) => handleFileUpload(editingCert.id, file)}
                       existingFile={editingCert.fileUrl ? { url: editingCert.fileUrl, type: 'pdf' } : null}
                     />

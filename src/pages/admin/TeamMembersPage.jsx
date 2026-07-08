@@ -121,8 +121,8 @@ export default function TeamMembersPage() {
   const getRoleDescription = (role) => {
     const descMap = {
       'owner': '拥有所有权限',
-      'admin': '管理产品和文档',
-      'uploader': '只能上传文档',
+      'admin': '管理产品和资料',
+      'uploader': '只能上传资料',
       'viewer': '只能查看'
     };
     return descMap[role] || '';
@@ -242,8 +242,8 @@ export default function TeamMembersPage() {
                   <label>角色</label>
                   <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
                     <option value="viewer">查看者 - 只能查看</option>
-                    <option value="uploader">上传者 - 可以上传文档</option>
-                    <option value="admin">管理员 - 可以管理产品和文档</option>
+                    <option value="uploader">上传者 - 可以上传资料</option>
+                    <option value="admin">管理员 - 可以管理产品和资料</option>
                   </select>
                 </div>
               </div>

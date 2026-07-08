@@ -1,6 +1,6 @@
 /**
  * EU-DOC 后台管理 - 上传确认记录管理
- * 查看所有文档上传时的确认记录
+ * 查看所有产品资料上传时的确认记录
  */
 
 import { useState, useEffect } from 'react';
@@ -56,7 +56,7 @@ export default function UploadConfirmationsPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>上传确认记录</h1>
-          <p className={styles.subtitle}>查看所有文档上传时的确认声明记录</p>
+          <p className={styles.subtitle}>查看所有产品资料上传时的确认声明记录</p>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ export default function UploadConfirmationsPage() {
         <form onSubmit={handleSearch} className={styles.searchForm}>
           <input
             type="text"
-            placeholder="搜索文档标题、用户邮箱..."
+            placeholder="搜索资料标题、用户邮箱..."
             className={styles.searchInput}
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -85,7 +85,7 @@ export default function UploadConfirmationsPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>文档标题</th>
+                  <th>资料标题</th>
                   <th>上传者</th>
                   <th>企业</th>
                   <th>真实性确认</th>
@@ -98,7 +98,7 @@ export default function UploadConfirmationsPage() {
               <tbody>
                 {confirmations.map((record) => (
                   <tr key={record.id}>
-                    <td>{record.document_title || `文档 #${record.document_id}`}</td>
+                    <td>{record.document_title || `资料 #${record.document_id}`}</td>
                     <td>{record.user_email || record.user_display_name || '-'}</td>
                     <td>{record.company_name || '-'}</td>
                     <td>

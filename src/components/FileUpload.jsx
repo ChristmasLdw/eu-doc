@@ -9,7 +9,7 @@ import styles from './FileUpload.module.css';
 
 export default function FileUpload({
   accept = '.pdf',
-  maxSize = 10 * 1024 * 1024, // 10MB
+  maxSize = 20 * 1024 * 1024, // 20MB
   onUpload,
   existingFile = null
 }) {

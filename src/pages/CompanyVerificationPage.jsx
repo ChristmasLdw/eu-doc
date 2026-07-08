@@ -78,7 +78,7 @@ export default function CompanyVerificationPage() {
       }
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/eu-doc/api/v2/companies/${selectedCompany}/verification`, {
+      const response = await fetch(`/eu-doc/api/companies/${selectedCompany}/verification`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
