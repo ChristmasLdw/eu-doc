@@ -8,11 +8,11 @@
  * - 适配主题切换
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { categories } from '../data/mockData';
-import { getCertificates } from '../services/api';
+import { getSearchSuggestions } from '../services/api';
 import { categoryLabel } from '../utils/languageContent';
 import styles from './HomePage.module.css';
 
@@ -23,49 +23,29 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
-  // 搜索建议数据源
-  const [suggestionData, setSuggestionData] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
 
-  // 组件挂载时获取数据
   useEffect(() => {
-    // 获取搜索建议数据源（按id升序，优先显示有缩略图的早期证书）
-    getCertificates({ pageSize: 100, sortBy: 'id', sortOrder: 'ASC' })
-      .then((result) => {
-        if (result && Array.isArray(result.data)) {
-          setSuggestionData(result.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // 搜索建议
-  const suggestions = useMemo(() => {
-    if (!searchQuery || searchQuery.length < 1) return [];
-    const q = searchQuery.toLowerCase();
-    const seen = new Set();
-    const results = [];
-    suggestionData.forEach((cert) => {
-      const fields = [
-        { type: 'product', value: cert.productName },
-        { type: 'model', value: cert.model },
-        { type: 'company', value: cert.companyName },
-        { type: 'certNo', value: cert.certNo },
-      ];
-      fields.forEach(({ type, value }) => {
-        if (value && value.toLowerCase().includes(q) && !seen.has(value)) {
-          seen.add(value);
-          results.push({ type, value });
-        }
-      });
-      if (results.length >= 20) return;
-    });
-    const typeOrder = { company: 0, product: 1, model: 2, certNo: 3 };
-    results.sort((a, b) => {
-      if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
-      return a.value.localeCompare(b.value, 'zh-CN', { numeric: true });
-    });
-    return results;
-  }, [searchQuery, suggestionData]);
+    const keyword = searchQuery.trim();
+    if (!keyword) {
+      setSuggestions([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      getSearchSuggestions(keyword, 12)
+        .then((items) => {
+          if (!cancelled) setSuggestions(items);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        });
+    }, 60);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
