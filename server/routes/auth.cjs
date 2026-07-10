@@ -12,6 +12,24 @@ const { authMiddleware, requireAdmin, generateToken } = require('../middleware/a
 
 const router = Router();
 
+
+function getClientIp(req) {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  return req.ip;
+}
+
+function getUserAgent(req) {
+  return String(req.headers['user-agent'] || '').slice(0, 300);
+}
+
+function recordAuthAudit({ userId = null, action, targetId = null, detail, req }) {
+  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(userId, action, 'user', targetId, detail ? JSON.stringify(detail) : null, getClientIp(req));
+}
+
 /**
  * POST /api/auth/register
  * 用户注册（邮箱）
@@ -62,17 +80,25 @@ router.post('/register', (req, res) => {
     const user = db.prepare('SELECT id, email, display_name, platform_role, session_version FROM users WHERE id = ?').get(userId);
     const token = generateToken(user);
 
-    // 记录日志
-    db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(userId, 'register', 'user', userId, JSON.stringify({ email }), req.ip);
+    recordAuthAudit({
+      userId,
+      action: 'register',
+      targetId: userId,
+      detail: { email, userAgent: getUserAgent(req) },
+      req,
+    });
 
-    res.status(201).json({
+    const response = {
       success: true,
       message: '注册成功，请查收验证邮件',
       token,
       user: { id: user.id, email: user.email, displayName: user.display_name, role: user.platform_role },
-      verifyToken, // 开发环境返回，生产环境应通过邮件发送
-    });
+    };
+    if (process.env.NODE_ENV === 'development') {
+      response.verifyToken = verifyToken;
+    }
+
+    res.status(201).json(response);
   } catch (err) {
     console.error('注册失败:', err);
     res.status(500).json({ success: false, message: '注册失败，请稍后重试' });
@@ -100,6 +126,11 @@ router.post('/login', (req, res) => {
     if (legacyAdmin) {
       const isLegacyMatch = bcrypt.compareSync(password, legacyAdmin.password_hash);
       if (!isLegacyMatch) {
+        recordAuthAudit({
+          action: 'login_failed',
+          detail: { loginId, reason: 'bad_legacy_password', userAgent: getUserAgent(req) },
+          req,
+        });
         return res.status(401).json({ success: false, message: '用户名或密码错误' });
       }
 
@@ -109,11 +140,23 @@ router.post('/login', (req, res) => {
   }
 
   if (!user) {
+    recordAuthAudit({
+      action: 'login_failed',
+      detail: { loginId, reason: 'user_not_found', userAgent: getUserAgent(req) },
+      req,
+    });
     return res.status(401).json({ success: false, message: '邮箱/用户名或密码错误' });
   }
 
   const isMatch = bcrypt.compareSync(password, user.password_hash);
   if (!isMatch) {
+    recordAuthAudit({
+      userId: user.id,
+      action: 'login_failed',
+      targetId: user.id,
+      detail: { loginId, reason: 'bad_password', userAgent: getUserAgent(req) },
+      req,
+    });
     return res.status(401).json({ success: false, message: '邮箱/用户名或密码错误' });
   }
 
@@ -123,8 +166,13 @@ router.post('/login', (req, res) => {
 
   const token = generateToken(user);
 
-  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?)')
-    .run(user.id, 'login', 'user', user.id, req.ip);
+  recordAuthAudit({
+    userId: user.id,
+    action: 'login',
+    targetId: user.id,
+    detail: { userAgent: getUserAgent(req) },
+    req,
+  });
 
   res.json({
     success: true,

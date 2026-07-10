@@ -34,6 +34,9 @@ const { db, initDatabase } = require('./db.cjs');
 const app = express();
 const PORT = process.env.PORT || 3007;
 
+// EU-DOC runs behind Nginx in production; trust proxy headers so req.ip records the real client IP.
+app.set('trust proxy', true);
+
 /**
  * 中间件配置（按顺序执行，顺序很重要）
  */
