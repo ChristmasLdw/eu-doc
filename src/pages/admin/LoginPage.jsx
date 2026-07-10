@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import styles from './LoginPage.module.css';
 
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAdmin();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,7 +26,7 @@ export default function LoginPage() {
     setError('');
 
     if (!username.trim() || !password.trim()) {
-      setError('请输入用户名和密码');
+      setError(t('authFlow.usernameRequired'));
       return;
     }
 
@@ -33,7 +35,7 @@ export default function LoginPage() {
       await login(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || '登录失败');
+      setError(err.message || t('authFlow.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -51,16 +53,16 @@ export default function LoginPage() {
           </div>
           <h1 className={styles.title}>EU-DOC</h1>
         </div>
-        <p className={styles.subtitle}>登录管理后台</p>
+        <p className={styles.subtitle}>{t('authFlow.loginSubtitle')}</p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="username">用户名</label>
+            <label className={styles.label} htmlFor="username">{t('auth.username')}</label>
             <input
               id="username"
               type="text"
               className={styles.input}
-              placeholder="请输入用户名"
+              placeholder={t('authFlow.usernamePlaceholder')}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -69,19 +71,19 @@ export default function LoginPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">密码</label>
+            <label className={styles.label} htmlFor="password">{t('auth.password')}</label>
             <input
               id="password"
               type="password"
               className={styles.input}
-              placeholder="请输入密码"
+              placeholder={t('authFlow.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
             />
             <div style={{ marginTop: '8px', textAlign: 'right' }}>
               <Link to="/forgot-password" className={styles.link} style={{ fontSize: '14px' }}>
-                忘记密码？
+                {t('auth.forgotPassword')}
               </Link>
             </div>
           </div>
@@ -102,13 +104,13 @@ export default function LoginPage() {
             className={styles.submitBtn}
             disabled={loading}
           >
-            {loading ? '登录中...' : '登录'}
+            {loading ? t('authFlow.loggingIn') : t('auth.loginButton')}
           </button>
         </form>
 
         <div className={styles.footer}>
-          还没有账号？
-          <Link to="/admin/register" className={styles.link}>立即注册</Link>
+          {t('authFlow.noAccount')}
+          <Link to="/admin/register" className={styles.link}>{t('auth.goToRegister')}</Link>
         </div>
       </div>
     </div>

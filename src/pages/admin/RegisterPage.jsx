@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import styles from './RegisterPage.module.css';
 
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAdmin();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -25,30 +27,30 @@ export default function RegisterPage() {
 
     // 前端校验
     if (!email.trim() || !password.trim()) {
-      setError('请输入邮箱和密码');
+      setError(t('authFlow.emailPasswordRequired'));
       return;
     }
 
     // 邮箱格式校验
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('邮箱格式不正确');
+      setError(t('authFlow.invalidEmail'));
       return;
     }
 
     if (password.length < 6) {
-      setError('密码长度不能少于6位');
+      setError(t('authFlow.passwordTooShort'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致');
+      setError(t('authFlow.passwordMismatch'));
       return;
     }
 
     // 检查是否同意协议
     if (!agreedToTerms) {
-      setError('请阅读并同意用户协议和隐私政策');
+      setError(t('authFlow.termsRequired'));
       return;
     }
 
@@ -58,7 +60,7 @@ export default function RegisterPage() {
       // 注册成功后自动登录，跳转到后台（引导用户创建企业）
       navigate('/admin/company', { replace: true });
     } catch (err) {
-      setError(err.message || '注册失败');
+      setError(err.message || t('authFlow.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -79,12 +81,12 @@ export default function RegisterPage() {
           </div>
           <h1 className={styles.title}>EU-DOC</h1>
         </div>
-        <p className={styles.subtitle}>创建账号</p>
+        <p className={styles.subtitle}>{t('authFlow.registerSubtitle')}</p>
 
         {/* 注册表单 */}
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">邮箱 *</label>
+            <label className={styles.label} htmlFor="email">{t('authFlow.email')} *</label>
             <input
               id="email"
               type="email"
@@ -98,24 +100,24 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="displayName">显示名称</label>
+            <label className={styles.label} htmlFor="displayName">{t('authFlow.displayName')}</label>
             <input
               id="displayName"
               type="text"
               className={styles.input}
-              placeholder="您的名称（可选）"
+              placeholder={t('authFlow.displayNamePlaceholder')}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
             />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">密码 *</label>
+            <label className={styles.label} htmlFor="password">{t('auth.password')} *</label>
             <input
               id="password"
               type="password"
               className={styles.input}
-              placeholder="至少6位"
+              placeholder={t('authFlow.passwordMinPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
@@ -123,12 +125,12 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="confirmPassword">确认密码 *</label>
+            <label className={styles.label} htmlFor="confirmPassword">{t('auth.confirmPassword')} *</label>
             <input
               id="confirmPassword"
               type="password"
               className={styles.input}
-              placeholder="再次输入密码"
+              placeholder={t('authFlow.confirmPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
@@ -145,13 +147,13 @@ export default function RegisterPage() {
                 className={styles.checkbox}
               />
               <span className={styles.agreementText}>
-                我已阅读并同意
+                {t('authFlow.agreePrefix')}
                 <Link to="/terms" target="_blank" className={styles.agreementLink}>
-                  用户协议
+                  {t('auth.userAgreement')}
                 </Link>
-                和
+                {t('auth.and')}
                 <Link to="/privacy" target="_blank" className={styles.agreementLink}>
-                  隐私政策
+                  {t('auth.privacyPolicy')}
                 </Link>
               </span>
             </label>
@@ -174,14 +176,14 @@ export default function RegisterPage() {
             className={styles.submitBtn}
             disabled={loading}
           >
-            {loading ? '注册中...' : '注册'}
+            {loading ? t('authFlow.registering') : t('auth.registerButton')}
           </button>
         </form>
 
         {/* 已有账号链接 */}
         <div className={styles.footer}>
-          已有账号？
-          <Link to="/admin/login" className={styles.link}>立即登录</Link>
+          {t('auth.hasAccount')}
+          <Link to="/admin/login" className={styles.link}>{t('auth.goToLogin')}</Link>
         </div>
       </div>
     </div>

@@ -5,9 +5,11 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styles from './EmailVerifyPage.module.css';
 
 export default function EmailVerifyPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('verifying'); // verifying / success / error
@@ -17,12 +19,12 @@ export default function EmailVerifyPage() {
   useEffect(() => {
     if (!token) {
       setStatus('error');
-      setMessage('验证链接无效，缺少验证令牌');
+      setMessage(t('authFlow.invalidVerifyLink'));
       return;
     }
 
     verifyEmail(token);
-  }, [token]);
+  }, [token, t]);
 
   const verifyEmail = async (token) => {
     try {
@@ -36,7 +38,7 @@ export default function EmailVerifyPage() {
 
       if (data.success) {
         setStatus('success');
-        setMessage('邮箱验证成功！');
+        setMessage(t('authFlow.verifySuccessMessage'));
 
         // 3秒后跳转到登录页
         setTimeout(() => {
@@ -44,11 +46,11 @@ export default function EmailVerifyPage() {
         }, 3000);
       } else {
         setStatus('error');
-        setMessage(data.message || '验证失败');
+        setMessage(data.message || t('authFlow.verifyFailed'));
       }
     } catch (err) {
       setStatus('error');
-      setMessage('验证失败，请稍后重试');
+      setMessage(t('authFlow.verifyFailedRetry'));
     }
   };
 
@@ -81,9 +83,9 @@ export default function EmailVerifyPage() {
 
         {/* 标题 */}
         <h1 className={styles.title}>
-          {status === 'verifying' && '正在验证邮箱...'}
-          {status === 'success' && '验证成功'}
-          {status === 'error' && '验证失败'}
+          {status === 'verifying' && t('authFlow.verifyEmailChecking')}
+          {status === 'success' && t('authFlow.verifySuccess')}
+          {status === 'error' && t('authFlow.verifyFailed')}
         </h1>
 
         {/* 消息 */}
@@ -92,11 +94,11 @@ export default function EmailVerifyPage() {
         {/* 操作按钮 */}
         <div className={styles.actions}>
           {status === 'success' && (
-            <p className={styles.hint}>页面将在 3 秒后自动跳转到登录页</p>
+            <p className={styles.hint}>{t('authFlow.redirectToLogin')}</p>
           )}
           {status === 'error' && (
             <Link to="/admin/login" className={styles.btn}>
-              返回登录
+              {t('authFlow.backToLogin')}
             </Link>
           )}
         </div>

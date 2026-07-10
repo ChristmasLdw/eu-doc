@@ -5,9 +5,11 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styles from './admin/LoginPage.module.css';
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
@@ -19,31 +21,31 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     if (!token) {
-      setError('重置链接无效，缺少令牌');
+      setError(t('authFlow.invalidResetLinkMissing'));
     }
-  }, [token]);
+  }, [token, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!token) {
-      setError('重置链接无效');
+      setError(t('authFlow.invalidResetLink'));
       return;
     }
 
     if (!newPassword.trim()) {
-      setError('请输入新密码');
+      setError(t('authFlow.newPasswordRequired'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setError('密码长度不能少于6位');
+      setError(t('authFlow.passwordTooShort'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('两次输入的密码不一致');
+      setError(t('authFlow.passwordMismatch'));
       return;
     }
 
@@ -64,10 +66,10 @@ export default function ResetPasswordPage() {
           navigate('/admin/login');
         }, 3000);
       } else {
-        setError(data.message || '重置失败');
+        setError(data.message || t('authFlow.resetFailed'));
       }
     } catch (err) {
-      setError('网络错误，请稍后重试');
+      setError(t('authFlow.networkError'));
     } finally {
       setLoading(false);
     }
@@ -84,11 +86,11 @@ export default function ResetPasswordPage() {
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <h1 className={styles.title}>密码重置成功</h1>
+            <h1 className={styles.title}>{t('authFlow.resetSuccess')}</h1>
           </div>
-          <p className={styles.subtitle}>您的密码已成功重置，请使用新密码登录</p>
+          <p className={styles.subtitle}>{t('authFlow.resetSuccessDesc')}</p>
           <p className={styles.subtitle} style={{ fontSize: '14px', color: '#a0aec0' }}>
-            页面将在 3 秒后自动跳转到登录页
+            {t('authFlow.redirectToLogin')}
           </p>
         </div>
       </div>
@@ -105,18 +107,18 @@ export default function ResetPasswordPage() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          <h1 className={styles.title}>重置密码</h1>
+          <h1 className={styles.title}>{t('authFlow.resetTitle')}</h1>
         </div>
-        <p className={styles.subtitle}>请输入您的新密码</p>
+        <p className={styles.subtitle}>{t('authFlow.resetSubtitle')}</p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="newPassword">新密码</label>
+            <label className={styles.label} htmlFor="newPassword">{t('authFlow.newPassword')}</label>
             <input
               id="newPassword"
               type="password"
               className={styles.input}
-              placeholder="至少6位"
+              placeholder={t('authFlow.passwordMinPlaceholder')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               autoComplete="new-password"
@@ -125,12 +127,12 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="confirmPassword">确认密码</label>
+            <label className={styles.label} htmlFor="confirmPassword">{t('authFlow.confirmNewPassword')}</label>
             <input
               id="confirmPassword"
               type="password"
               className={styles.input}
-              placeholder="再次输入新密码"
+              placeholder={t('authFlow.confirmNewPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
@@ -153,12 +155,12 @@ export default function ResetPasswordPage() {
             className={styles.submitBtn}
             disabled={loading || !token}
           >
-            {loading ? '重置中...' : '重置密码'}
+            {loading ? t('authFlow.resetting') : t('authFlow.resetPassword')}
           </button>
         </form>
 
         <div className={styles.footer}>
-          <Link to="/admin/login" className={styles.link}>返回登录</Link>
+          <Link to="/admin/login" className={styles.link}>{t('authFlow.backToLogin')}</Link>
         </div>
       </div>
     </div>

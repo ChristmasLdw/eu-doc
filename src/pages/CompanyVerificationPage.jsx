@@ -5,12 +5,14 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
 import styles from './CompanyVerificationPage.module.css';
 
 export default function CompanyVerificationPage() {
   const navigate = useNavigate();
   const { admin } = useAdmin();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [myCompanies, setMyCompanies] = useState([]);
@@ -39,7 +41,7 @@ export default function CompanyVerificationPage() {
         setMyCompanies(data.user.companies);
       }
     } catch (err) {
-      console.error('获取企业列表失败:', err);
+      console.error(t('companyVerification.fetchCompaniesFailed'), err);
     }
   };
 
@@ -47,7 +49,7 @@ export default function CompanyVerificationPage() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError('文件大小不能超过5MB');
+        setError(t('companyVerification.fileTooLarge'));
         return;
       }
       setFiles(prev => ({ ...prev, [field]: file }));
@@ -60,12 +62,12 @@ export default function CompanyVerificationPage() {
     setError('');
 
     if (!selectedCompany) {
-      setError('请选择要认证的企业');
+      setError(t('companyVerification.companyRequired'));
       return;
     }
 
     if (!files.businessLicense) {
-      setError('请上传营业执照');
+      setError(t('companyVerification.licenseRequired'));
       return;
     }
 
@@ -87,13 +89,13 @@ export default function CompanyVerificationPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('认证申请提交成功，等待管理员审核');
+        alert(t('companyVerification.submitSuccess'));
         navigate('/admin/company');
       } else {
-        setError(data.message || '提交失败');
+        setError(data.message || t('companyVerification.submitFailed'));
       }
     } catch (err) {
-      setError('提交失败，请稍后重试');
+      setError(t('companyVerification.submitRetry'));
     } finally {
       setLoading(false);
     }
@@ -102,24 +104,24 @@ export default function CompanyVerificationPage() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <h1 className={styles.title}>企业认证申请</h1>
-        <p className={styles.subtitle}>提交企业认证资料，获得认证标识和更多权益</p>
-        <p className={styles.subtitle}>认证通过前，企业页面和产品资料不会自动公开；企业可在后台自行控制资料展示状态。</p>
+        <h1 className={styles.title}>{t('companyVerification.title')}</h1>
+        <p className={styles.subtitle}>{t('companyVerification.subtitle')}</p>
+        <p className={styles.subtitle}>{t('companyVerification.visibilityHint')}</p>
 
         <div className={styles.benefits}>
-          <h3>认证企业权益</h3>
+          <h3>{t('companyVerification.benefitsTitle')}</h3>
           <ul>
-            <li>✓ 企业认证标识展示</li>
-            <li>✓ 产品资料优先审核</li>
-            <li>✓ 更多产品和资料上传配额</li>
-            <li>✓ 提升企业可信度</li>
+            <li>✓ {t('companyVerification.benefitBadge')}</li>
+            <li>✓ {t('companyVerification.benefitReview')}</li>
+            <li>✓ {t('companyVerification.benefitQuota')}</li>
+            <li>✓ {t('companyVerification.benefitTrust')}</li>
           </ul>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label className={styles.label}>
-              选择企业 <span className={styles.required}>*</span>
+              {t('companyVerification.selectCompany')} <span className={styles.required}>*</span>
             </label>
             <select
               className={styles.select}
@@ -127,7 +129,7 @@ export default function CompanyVerificationPage() {
               onChange={(e) => setSelectedCompany(e.target.value)}
               required
             >
-              <option value="">请选择要认证的企业</option>
+              <option value="">{t('companyVerification.selectCompanyPlaceholder')}</option>
               {myCompanies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
@@ -138,7 +140,7 @@ export default function CompanyVerificationPage() {
 
           <div className={styles.field}>
             <label className={styles.label}>
-              营业执照 <span className={styles.required}>*</span>
+              {t('companyVerification.businessLicense')} <span className={styles.required}>*</span>
             </label>
             <input
               type="file"
@@ -148,13 +150,13 @@ export default function CompanyVerificationPage() {
               required
             />
             {files.businessLicense && (
-              <p className={styles.fileName}>已选择: {files.businessLicense.name}</p>
+              <p className={styles.fileName}>{t('companyVerification.selectedFile', { name: files.businessLicense.name })}</p>
             )}
-            <p className={styles.hint}>支持 JPG、PNG、PDF 格式，不超过 5MB</p>
+            <p className={styles.hint}>{t('companyVerification.licenseHint')}</p>
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>授权书（可选）</label>
+            <label className={styles.label}>{t('companyVerification.authorizationLetter')}</label>
             <input
               type="file"
               accept="image/*,application/pdf"
@@ -162,9 +164,9 @@ export default function CompanyVerificationPage() {
               className={styles.fileInput}
             />
             {files.authorizationLetter && (
-              <p className={styles.fileName}>已选择: {files.authorizationLetter.name}</p>
+              <p className={styles.fileName}>{t('companyVerification.selectedFile', { name: files.authorizationLetter.name })}</p>
             )}
-            <p className={styles.hint}>如非企业法人申请，请上传企业授权书</p>
+            <p className={styles.hint}>{t('companyVerification.authorizationHint')}</p>
           </div>
 
           {error && (
@@ -185,10 +187,10 @@ export default function CompanyVerificationPage() {
               className={styles.cancelBtn}
               disabled={loading}
             >
-              取消
+              {t('common.cancel')}
             </button>
             <button type="submit" className={styles.submitBtn} disabled={loading}>
-              {loading ? '提交中...' : '提交认证申请'}
+              {loading ? t('companyVerification.submitting') : t('companyVerification.submit')}
             </button>
           </div>
         </form>

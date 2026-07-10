@@ -1,31 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
 import * as api from '../services/api';
 import styles from './PersonalLibraryPage.module.css';
 
 const typeOptions = [
-  { value: 'all', label: '全部' },
-  { value: '公司', label: '公司' },
-  { value: '产品', label: '产品' },
-  { value: '文件', label: '资料' },
+  { value: 'all', labelKey: 'personalLibrary.typeAll' },
+  { value: '公司', labelKey: 'personalLibrary.typeCompany' },
+  { value: '产品', labelKey: 'personalLibrary.typeProduct' },
+  { value: '文件', labelKey: 'personalLibrary.typeFile' },
 ];
 
 const fileTypeOptions = [
-  { value: 'all', label: '全部资料' },
-  { value: 'certificate', label: '资质证书' },
-  { value: 'doc', label: 'DoC 声明' },
-  { value: 'manual', label: '说明书' },
-  { value: 'report', label: '检测报告' },
+  { value: 'all', labelKey: 'personalLibrary.allFiles' },
+  { value: 'certificate', labelKey: 'personalLibrary.certificate' },
+  { value: 'doc', labelKey: 'personalLibrary.doc' },
+  { value: 'manual', labelKey: 'personalLibrary.manual' },
+  { value: 'report', labelKey: 'personalLibrary.report' },
 ];
 
 const rangeOptions = [
-  { value: 'all', label: '全部时间' },
-  { value: 'today', label: '今天' },
-  { value: 'yesterday', label: '昨天' },
-  { value: '7d', label: '近 7 天' },
-  { value: '30d', label: '近 30 天' },
-  { value: '90d', label: '近 90 天' },
+  { value: 'all', labelKey: 'personalLibrary.allTime' },
+  { value: 'today', labelKey: 'personalLibrary.today' },
+  { value: 'yesterday', labelKey: 'personalLibrary.yesterday' },
+  { value: '7d', labelKey: 'personalLibrary.last7Days' },
+  { value: '30d', labelKey: 'personalLibrary.last30Days' },
+  { value: '90d', labelKey: 'personalLibrary.last90Days' },
 ];
 
 function getTargetPath(type, itemId) {
@@ -74,6 +75,7 @@ function parseTime(time) {
 export default function PersonalLibraryPage({ mode }) {
   const navigate = useNavigate();
   const { admin } = useAdmin();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [historyEnabled, setHistoryEnabled] = useState(true);
@@ -84,6 +86,15 @@ export default function PersonalLibraryPage({ mode }) {
   const [editModal, setEditModal] = useState({ open: false, item: null, group: '未分组', newGroup: '', note: '' });
 
   const isFavorites = mode === 'favorites';
+  const displayType = (type) => {
+    if (type === '公司') return t('personalLibrary.typeCompany');
+    if (type === '产品') return t('personalLibrary.typeProduct');
+    if (type === '文件') return t('personalLibrary.typeFile');
+    return type;
+  };
+  const displayFileType = (fileType) => t(fileTypeOptions.find((option) => option.value === fileType)?.labelKey || 'personalLibrary.typeFile');
+  const displayStatus = (status) => status === '正常' ? t('personalLibrary.normal') : status;
+  const displayGroup = (group) => group === '未分组' ? t('personalLibrary.ungrouped') : group;
 
   useEffect(() => {
     if (!admin) {
@@ -118,7 +129,7 @@ export default function PersonalLibraryPage({ mode }) {
             itemId: item.itemId,
             title: item.title,
             company: item.company || '-',
-            action: item.actionLabel || '查看',
+            action: item.actionLabel || t('personalLibrary.view'),
             time: item.viewedAt || item.createdAt,
             timestamp: parseTime(item.viewedAt || item.createdAt),
             targetPath: getTargetPath(item.itemType, item.itemId),
@@ -177,9 +188,9 @@ export default function PersonalLibraryPage({ mode }) {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
     return filteredItems.reduce((groups, item) => {
-      let label = '更早';
-      if (item.timestamp >= startOfToday) label = '今天';
-      else if (item.timestamp >= startOfYesterday) label = '昨天';
+      let label = 'earlier';
+      if (item.timestamp >= startOfToday) label = 'today';
+      else if (item.timestamp >= startOfYesterday) label = 'yesterday';
       const group = groups.find((entry) => entry.label === label);
       if (group) group.items.push(item);
       else groups.push({ label, items: [item] });
@@ -220,7 +231,7 @@ export default function PersonalLibraryPage({ mode }) {
   };
 
   const clearHistory = async () => {
-    if (!confirm('确定清空全部浏览历史吗？')) return;
+    if (!confirm(t('personalLibrary.clearHistoryConfirm'))) return;
     await api.clearHistory();
     setItems([]);
   };
@@ -236,50 +247,50 @@ export default function PersonalLibraryPage({ mode }) {
       <div className={styles.container}>
         <section className={styles.hero}>
           <div>
-            <h1>{isFavorites ? '我的收藏' : '浏览历史'}</h1>
-            <p>{isFavorites ? '集中保存你关注的公司、产品和资料，方便后续快速查阅与整理。' : '按时间线整理你查看过的公司、产品和资料，方便回到最近关注的资料。'}</p>
+            <h1>{isFavorites ? t('personalLibrary.favoritesTitle') : t('personalLibrary.historyTitle')}</h1>
+            <p>{isFavorites ? t('personalLibrary.favoritesSubtitle') : t('personalLibrary.historySubtitle')}</p>
           </div>
           <div className={styles.stats}>
-            <span><strong>{stats.all}</strong>全部</span>
-            <span><strong>{stats.file}</strong>资料</span>
-            <span><strong>{stats.product}</strong>产品</span>
+            <span><strong>{stats.all}</strong>{t('personalLibrary.all')}</span>
+            <span><strong>{stats.file}</strong>{t('personalLibrary.files')}</span>
+            <span><strong>{stats.product}</strong>{t('personalLibrary.products')}</span>
           </div>
         </section>
 
         <div className={styles.tabs}>
-          <Link className={isFavorites ? styles.active : ''} to="/favorites">我的收藏</Link>
-          <Link className={!isFavorites ? styles.active : ''} to="/history">浏览历史</Link>
+          <Link className={isFavorites ? styles.active : ''} to="/favorites">{t('personalLibrary.favoritesTitle')}</Link>
+          <Link className={!isFavorites ? styles.active : ''} to="/history">{t('personalLibrary.historyTitle')}</Link>
         </div>
 
         <section className={styles.toolbar}>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={isFavorites ? '搜索资料库：公司、产品、资料、备注' : '搜索资料库：公司、产品、资料'} />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={isFavorites ? t('personalLibrary.favoritesSearchPlaceholder') : t('personalLibrary.historySearchPlaceholder')} />
           <div className={styles.quickFilters}>
-            {typeOptions.map((item) => <button key={item.value} className={typeFilter === item.value ? styles.active : ''} onClick={() => setTypeFilter(item.value)}>{item.label}</button>)}
+            {typeOptions.map((item) => <button key={item.value} className={typeFilter === item.value ? styles.active : ''} onClick={() => setTypeFilter(item.value)}>{t(item.labelKey)}</button>)}
           </div>
           {isFavorites ? (
             <select value={fileTypeFilter} onChange={(event) => setFileTypeFilter(event.target.value)}>
-              {fileTypeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              {fileTypeOptions.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}
             </select>
           ) : (
             <select value={rangeFilter} onChange={(event) => setRangeFilter(event.target.value)}>
-              {rangeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              {rangeOptions.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}
             </select>
           )}
         </section>
 
         <div className={styles.resultBar}>
-          <span>{loading ? '正在加载...' : `${filteredItems.length} 条${isFavorites ? '收藏' : '历史'}`}</span>
+          <span>{loading ? t('personalLibrary.loading') : t(isFavorites ? 'personalLibrary.favoriteCount' : 'personalLibrary.historyCount', { count: filteredItems.length })}</span>
           <div className={styles.actions}>
-            {!isFavorites && <button className={styles.secondaryBtn} onClick={toggleHistory}>{historyEnabled ? '暂停记录' : '恢复记录'}</button>}
-            {!isFavorites && items.length > 0 && <button className={styles.dangerBtn} onClick={clearHistory}>清空历史</button>}
+            {!isFavorites && <button className={styles.secondaryBtn} onClick={toggleHistory}>{historyEnabled ? t('personalLibrary.pauseHistory') : t('personalLibrary.resumeHistory')}</button>}
+            {!isFavorites && items.length > 0 && <button className={styles.dangerBtn} onClick={clearHistory}>{t('personalLibrary.clearHistory')}</button>}
           </div>
         </div>
 
         {filteredItems.length === 0 ? (
           <div className={styles.empty}>
-            <strong>{loading ? '正在加载' : isFavorites ? '暂无收藏' : '暂无浏览历史'}</strong>
-            <p>{isFavorites ? '在公司、产品或资料详情页点击收藏后会出现在这里。' : '查看公司、产品或资料后会自动记录在这里。'}</p>
-            <Link className={styles.primaryAction} to="/search">去搜索资料</Link>
+            <strong>{loading ? t('personalLibrary.loadingShort') : isFavorites ? t('personalLibrary.emptyFavorites') : t('personalLibrary.emptyHistory')}</strong>
+            <p>{isFavorites ? t('personalLibrary.emptyFavoritesDesc') : t('personalLibrary.emptyHistoryDesc')}</p>
+            <Link className={styles.primaryAction} to="/search">{t('personalLibrary.goSearch')}</Link>
           </div>
         ) : isFavorites ? (
           <div className={styles.list}>
@@ -287,22 +298,22 @@ export default function PersonalLibraryPage({ mode }) {
               const parsed = parseNote(item.note);
               return (
                 <article key={item.id} className={styles.card}>
-                  <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{item.type === '文件' ? '资料' : item.type}</div>
+                  <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{displayType(item.type)}</div>
                   <div>
                     <button className={styles.cardTitle} onClick={() => openItem(item)}>{item.title}</button>
                     <div className={styles.meta}>
-                      <span>{item.meta || '暂无来源'}</span>
-                      {item.type === '文件' && <span>{fileTypeOptions.find((option) => option.value === item.fileType)?.label || '资料'}</span>}
-                      {parsed.group && <span>分组：{parsed.group}</span>}
-                      <span>{item.status}</span>
+                      <span>{item.meta || t('personalLibrary.noSource')}</span>
+                      {item.type === '文件' && <span>{displayFileType(item.fileType)}</span>}
+                      {parsed.group && <span>{t('personalLibrary.groupPrefix', { group: parsed.group })}</span>}
+                      <span>{displayStatus(item.status)}</span>
                     </div>
-                    {parsed.note && <div className={styles.note}>备注：{parsed.note}</div>}
-                    {item.statusReason && <div className={styles.note}>状态原因：{item.statusReason}</div>}
+                    {parsed.note && <div className={styles.note}>{t('personalLibrary.notePrefix', { note: parsed.note })}</div>}
+                    {item.statusReason && <div className={styles.note}>{t('personalLibrary.statusReasonPrefix', { reason: item.statusReason })}</div>}
                   </div>
                   <div className={styles.actions}>
-                    <button className={styles.secondaryBtn} onClick={() => openItem(item)}>查看</button>
-                    <button className={styles.secondaryBtn} onClick={() => openEditFavorite(item)}>整理</button>
-                    <button className={styles.dangerBtn} onClick={() => deleteFavorite(item)}>取消收藏</button>
+                    <button className={styles.secondaryBtn} onClick={() => openItem(item)}>{t('personalLibrary.view')}</button>
+                    <button className={styles.secondaryBtn} onClick={() => openEditFavorite(item)}>{t('personalLibrary.organize')}</button>
+                    <button className={styles.dangerBtn} onClick={() => deleteFavorite(item)}>{t('personalLibrary.cancelFavorite')}</button>
                   </div>
                 </article>
               );
@@ -312,22 +323,22 @@ export default function PersonalLibraryPage({ mode }) {
           <div className={styles.timeline}>
             {groupedHistory.map((group) => (
               <section key={group.label} className={styles.dayGroup}>
-                <div className={styles.dayLabel}>{group.label}<em>{group.items.length} 条</em></div>
+                <div className={styles.dayLabel}>{t(`personalLibrary.${group.label}`)}<em>{t('personalLibrary.itemCount', { count: group.items.length })}</em></div>
                 <div className={styles.dayItems}>
                   {group.items.map((item) => (
                     <article key={item.id} className={`${styles.card} ${styles.historyCard}`}>
-                      <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{item.type === '文件' ? '资料' : item.type}</div>
+                      <div className={`${styles.typeBadge} ${getToneClass(item.type)}`}>{displayType(item.type)}</div>
                       <div>
                         <button className={styles.cardTitle} onClick={() => openItem(item)}>{item.title}</button>
-                        <div className={styles.meta}><span>{item.company || '暂无来源'}</span></div>
+                        <div className={styles.meta}><span>{item.company || t('personalLibrary.noSource')}</span></div>
                       </div>
                       <div className={styles.timeBlock}>
-                        <strong>{new Date(item.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</strong>
+                        <strong>{new Date(item.timestamp).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}</strong>
                         <span>{item.action}</span>
                       </div>
                       <div className={styles.actions}>
-                        <button className={styles.secondaryBtn} onClick={() => openItem(item)}>继续查看</button>
-                        <button className={styles.dangerBtn} onClick={() => deleteHistory(item)}>删除</button>
+                        <button className={styles.secondaryBtn} onClick={() => openItem(item)}>{t('personalLibrary.continueView')}</button>
+                        <button className={styles.dangerBtn} onClick={() => deleteHistory(item)}>{t('personalLibrary.delete')}</button>
                       </div>
                     </article>
                   ))}
@@ -342,46 +353,46 @@ export default function PersonalLibraryPage({ mode }) {
           <div className={styles.editModal} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div>
-                <h3>整理收藏</h3>
-                <p>选择收藏分组，或新建分组；备注用于记录收藏原因和后续用途。</p>
+                <h3>{t('personalLibrary.organizeFavorite')}</h3>
+                <p>{t('personalLibrary.organizeDesc')}</p>
               </div>
               <button className={styles.modalClose} onClick={closeEditFavorite}>×</button>
             </div>
             <div className={styles.editTarget}>
-              <span className={`${styles.typeBadge} ${getToneClass(editModal.item?.type)}`}>{editModal.item?.type}</span>
+              <span className={`${styles.typeBadge} ${getToneClass(editModal.item?.type)}`}>{displayType(editModal.item?.type)}</span>
               <div>
                 <strong>{editModal.item?.title}</strong>
-                <p>{editModal.item?.meta || '暂无来源信息'}</p>
+                <p>{editModal.item?.meta || t('personalLibrary.noSourceInfo')}</p>
               </div>
             </div>
             <div className={styles.editSection}>
-              <span>收藏分组</span>
+              <span>{t('personalLibrary.favoriteGroup')}</span>
               <div className={styles.folderGrid}>
                 {favoriteGroups.map((group) => (
                   <button key={group.name} className={editModal.group === group.name ? styles.folderActive : ''} onClick={() => setEditModal((form) => ({ ...form, group: group.name, newGroup: '' }))}>
-                    <strong>{group.name}</strong>
-                    <em>{group.count} 条</em>
+                    <strong>{displayGroup(group.name)}</strong>
+                    <em>{t('personalLibrary.itemCount', { count: group.count })}</em>
                   </button>
                 ))}
                 <button className={editModal.group === '__new__' ? styles.folderActive : ''} onClick={() => setEditModal((form) => ({ ...form, group: '__new__' }))}>
-                  <strong>+ 新建分组</strong>
-                  <em>创建新的收藏夹</em>
+                  <strong>+ {t('personalLibrary.newGroup')}</strong>
+                  <em>{t('personalLibrary.newGroupDesc')}</em>
                 </button>
               </div>
             </div>
             {editModal.group === '__new__' && (
               <label className={styles.editField}>
-                <span>新分组名称</span>
-                <input value={editModal.newGroup} onChange={(event) => setEditModal((form) => ({ ...form, newGroup: event.target.value }))} placeholder="例如：客户项目 / 投标资料 / 待采购" />
+                <span>{t('personalLibrary.newGroupName')}</span>
+                <input value={editModal.newGroup} onChange={(event) => setEditModal((form) => ({ ...form, newGroup: event.target.value }))} placeholder={t('personalLibrary.newGroupPlaceholder')} />
               </label>
             )}
             <label className={styles.editField}>
-              <span>备注</span>
-              <textarea rows="4" value={editModal.note} onChange={(event) => setEditModal((form) => ({ ...form, note: event.target.value }))} placeholder="例如：客户下周要核对；投标资料可能会用到。" />
+              <span>{t('personalLibrary.note')}</span>
+              <textarea rows="4" value={editModal.note} onChange={(event) => setEditModal((form) => ({ ...form, note: event.target.value }))} placeholder={t('personalLibrary.notePlaceholder')} />
             </label>
             <div className={styles.modalActions}>
-              <button className={styles.secondaryBtn} onClick={closeEditFavorite}>取消</button>
-              <button className={styles.primaryBtn} onClick={saveEditFavorite}>保存整理</button>
+              <button className={styles.secondaryBtn} onClick={closeEditFavorite}>{t('common.cancel')}</button>
+              <button className={styles.primaryBtn} onClick={saveEditFavorite}>{t('personalLibrary.saveOrganize')}</button>
             </div>
           </div>
         </div>

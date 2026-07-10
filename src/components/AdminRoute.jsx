@@ -14,11 +14,13 @@
  */
 
 import { Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
 
 export default function AdminRoute({ children }) {
   const { admin, loading } = useAdmin();
   const location = useLocation();
+  const { t } = useTranslation();
 
   // 正在验证 token，显示加载状态
   if (loading) {
@@ -31,7 +33,7 @@ export default function AdminRoute({ children }) {
         color: 'var(--text-secondary)',
         fontFamily: 'var(--font-family)',
       }}>
-        验证登录状态...
+        {t('authFlow.checkingLogin')}
       </div>
     );
   }

@@ -4,11 +4,13 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
 import styles from './CompanySwitcher.module.css';
 
 export default function CompanySwitcher() {
   const { admin } = useAdmin();
+  const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
   const [currentCompany, setCurrentCompany] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -59,7 +61,7 @@ export default function CompanySwitcher() {
         }
       }
     } catch (err) {
-      console.error('获取企业列表失败:', err);
+      console.error(t('companySwitcher.fetchFailed'), err);
     }
   };
 
@@ -86,7 +88,7 @@ export default function CompanySwitcher() {
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
-        <span className={styles.companyName}>{currentCompany?.name || '选择企业'}</span>
+        <span className={styles.companyName}>{currentCompany?.name || t('companySwitcher.selectCompany')}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -94,7 +96,7 @@ export default function CompanySwitcher() {
 
       {isOpen && (
         <div className={styles.dropdown}>
-          <div className={styles.dropdownHeader}>切换企业</div>
+          <div className={styles.dropdownHeader}>{t('companySwitcher.switchCompany')}</div>
           {companies.map((company) => (
             <button
               key={company.id}
@@ -103,7 +105,7 @@ export default function CompanySwitcher() {
             >
               <div className={styles.itemContent}>
                 <span className={styles.itemName}>{company.name}</span>
-                <span className={styles.itemRole}>{getRoleLabel(company.member_role)}</span>
+                <span className={styles.itemRole}>{getRoleLabel(company.member_role, t)}</span>
               </div>
               {currentCompany?.id === company.id && (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -118,12 +120,12 @@ export default function CompanySwitcher() {
   );
 }
 
-function getRoleLabel(role) {
-  const labels = {
-    owner: '所有者',
-    admin: '管理员',
-    uploader: '上传者',
-    viewer: '查看者',
+function getRoleLabel(role, t) {
+  const keys = {
+    owner: 'companySwitcher.owner',
+    admin: 'companySwitcher.admin',
+    uploader: 'companySwitcher.uploader',
+    viewer: 'companySwitcher.viewer',
   };
-  return labels[role] || role;
+  return keys[role] ? t(keys[role]) : role;
 }

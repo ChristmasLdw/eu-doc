@@ -5,9 +5,11 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styles from './admin/LoginPage.module.css';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,13 +21,13 @@ export default function ForgotPasswordPage() {
     setError('');
 
     if (!email.trim()) {
-      setError('请输入邮箱');
+      setError(t('authFlow.emailRequired'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('邮箱格式不正确');
+      setError(t('authFlow.invalidEmail'));
       return;
     }
 
@@ -46,10 +48,10 @@ export default function ForgotPasswordPage() {
           setResetToken(data.resetToken);
         }
       } else {
-        setError(data.message || '发送失败');
+        setError(data.message || t('authFlow.sendFailed'));
       }
     } catch (err) {
-      setError('网络错误，请稍后重试');
+      setError(t('authFlow.networkError'));
     } finally {
       setLoading(false);
     }
@@ -66,32 +68,32 @@ export default function ForgotPasswordPage() {
                 <polyline points="22,6 12,13 2,6" />
               </svg>
             </div>
-            <h1 className={styles.title}>邮件已发送</h1>
+            <h1 className={styles.title}>{t('authFlow.emailSent')}</h1>
           </div>
           <p className={styles.subtitle}>
-            如果该邮箱已注册，您将收到密码重置邮件。请查收邮箱并点击链接重置密码。
+            {t('authFlow.emailSentDesc')}
           </p>
 
           {resetToken && (
             <div style={{ marginTop: '20px', padding: '16px', background: '#f7fafc', borderRadius: '8px' }}>
               <p style={{ fontSize: '14px', color: '#718096', marginBottom: '8px' }}>
-                <strong>开发环境提示：</strong>
+                <strong>{t('authFlow.devHint')}</strong>
               </p>
               <p style={{ fontSize: '12px', color: '#a0aec0', marginBottom: '12px' }}>
-                点击下方链接重置密码：
+                {t('authFlow.devResetHint')}
               </p>
               <Link
                 to={`/reset-password?token=${resetToken}`}
                 className={styles.link}
                 style={{ wordBreak: 'break-all' }}
               >
-                重置密码
+                {t('authFlow.resetPassword')}
               </Link>
             </div>
           )}
 
           <div className={styles.footer} style={{ marginTop: '24px' }}>
-            <Link to="/admin/login" className={styles.link}>返回登录</Link>
+            <Link to="/admin/login" className={styles.link}>{t('authFlow.backToLogin')}</Link>
           </div>
         </div>
       </div>
@@ -108,13 +110,13 @@ export default function ForgotPasswordPage() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          <h1 className={styles.title}>忘记密码</h1>
+          <h1 className={styles.title}>{t('authFlow.forgotTitle')}</h1>
         </div>
-        <p className={styles.subtitle}>输入您的注册邮箱，我们将发送密码重置链接</p>
+        <p className={styles.subtitle}>{t('authFlow.forgotSubtitle')}</p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">邮箱</label>
+            <label className={styles.label} htmlFor="email">{t('authFlow.email')}</label>
             <input
               id="email"
               type="email"
@@ -143,12 +145,12 @@ export default function ForgotPasswordPage() {
             className={styles.submitBtn}
             disabled={loading}
           >
-            {loading ? '发送中...' : '发送重置链接'}
+            {loading ? t('authFlow.sending') : t('authFlow.sendResetLink')}
           </button>
         </form>
 
         <div className={styles.footer}>
-          <Link to="/admin/login" className={styles.link}>返回登录</Link>
+          <Link to="/admin/login" className={styles.link}>{t('authFlow.backToLogin')}</Link>
         </div>
       </div>
     </div>
