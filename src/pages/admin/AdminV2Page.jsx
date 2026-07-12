@@ -608,6 +608,7 @@ export default function AdminV2Page() {
   const sidebarScrollTimer = useRef(null);
   const uploadProgressTimer = useRef(null);
   const userCode = savedUserCode || admin?.user_code || `U-${String(admin?.id || 1).padStart(6, '0')}`;
+  const hasPlatformPermission = isAdmin || admin?.platformRole === 'platform_admin' || admin?.platform_role === 'platform_admin' || admin?.role === 'admin' || admin?.role === 'platform_admin';
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -1438,13 +1439,13 @@ export default function AdminV2Page() {
   };
 
   useEffect(() => {
-    if (activeCompany && (activePage === 'bulk-import' || activePage === 'products')) refreshImportItems();
+    if (activeCompany && (activePage === 'bulk-import' || activePage === 'products' || activePage === 'company-info' || activePage === 'verification')) refreshImportItems();
   }, [activeCompany, activePage]);
 
 
   useEffect(() => {
-    if (activePage === 'company-review') refreshCompanyVerifications();
-  }, [activePage, verificationFilter]);
+    if (activePage === 'company-review' && hasPlatformPermission) refreshCompanyVerifications();
+  }, [activePage, verificationFilter, hasPlatformPermission]);
 
   const uploadImportFiles = async (files) => {
     if (!activeCompany) {
@@ -1774,13 +1775,17 @@ export default function AdminV2Page() {
         name: companyModal.name,
         code: `c-${String(newCompanyId).padStart(6, '0')}`,
         status: '待认证',
+        verificationStatus: 'pending',
+        rawStatus: 'draft',
         memberRole: 'owner',
       };
       setCompanies((items) => [newCompany, ...items]);
       setActiveCompany(newCompany.id);
       setExpandedCompanies((items) => [newCompany.id, ...items]);
+      setActiveGroup('import');
+      setActivePage('bulk-import');
       setCompanyModal({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' });
-      showAction('公司申请草稿已创建，认证通过前仅自己可见');
+      showAction('公司申请草稿已创建，可以先批量上传产品资料');
       api.getMe().catch(() => null);
     } catch (error) {
       showAction(error.message || '公司创建失败');
@@ -2186,6 +2191,40 @@ export default function AdminV2Page() {
           <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择资料批量上传</button>
           <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
           <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCompanyNextStepCard = ({ compact = false } = {}) => {
+    if (!currentCompany?.id || currentCompany.status === '已认证') return null;
+    const isUnderReview = currentCompany.status === '待平台审核' || currentCompany.rawStatus === 'pending_review' || currentCompany.rawStatus === 'submitted';
+    const hasUploadedMaterials = importItems.length > 0 || companyDocuments.length > 0;
+    const statusText = currentCompany.verificationStatus === 'rejected'
+      ? '认证申请需要补充'
+      : isUnderReview
+        ? '认证正在审核中'
+        : '企业已创建，尚未完成认证';
+    const descText = currentCompany.verificationStatus === 'rejected'
+      ? '请根据审核意见补充企业信息后重新提交。资料整理不受影响，可以继续上传和归档。'
+      : isUnderReview
+        ? '审核期间仍可继续整理产品资料。认证通过后，已公开的产品资料才会出现在前台搜索和展示页面。'
+        : '你可以先批量上传证书、DoC 声明、说明书等产品资料，再补充企业信息并提交认证。未认证企业最多上传 20 份资料，单份不超过 20MB。';
+    return (
+      <div className={`${styles.companyNextStepCard} ${compact ? styles.companyNextStepCompact : ''}`}>
+        <div>
+          <span className={styles.nextStepKicker}>{isUnderReview ? '等待平台审核' : hasUploadedMaterials ? '建议完成认证' : '下一步建议'}</span>
+          <h3>{statusText}</h3>
+          <p>{descText}</p>
+        </div>
+        <div className={styles.nextStepActions}>
+          {isUnderReview ? (
+            <button className={styles.waitingBtn} type="button" disabled>等待认证通过</button>
+          ) : (
+            <button className={styles.primaryBtn} onClick={() => openPage('company', 'verification', currentCompany.id)}>提交企业认证</button>
+          )}
+          {!hasUploadedMaterials && !isUnderReview && <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', currentCompany.id)}>批量上传产品资料</button>}
+          <button className={styles.secondaryBtn} onClick={() => openPage('company', 'company-info', currentCompany.id)}>完善公司信息</button>
         </div>
       </div>
     );
@@ -2629,6 +2668,7 @@ export default function AdminV2Page() {
       return (
         <Section title="批量导入" desc="先把资料一股脑上传到待整理资料池，再慢慢关联到产品。">
           {renderUploadPanel()}
+          {renderCompanyNextStepCard()}
 
           <div className={styles.importDropHint} onClick={() => importInputRef.current?.click()}>
             <strong>点击这里选择多份资料</strong>
@@ -2686,6 +2726,11 @@ export default function AdminV2Page() {
                   const importSecondOptions = importTopCategoryId ? getConsumerChildren(importTopCategoryId) : [];
                   const importThirdOptions = importSecondCategoryId ? getConsumerChildren(importSecondCategoryId) : [];
                   const selectedComplianceIds = (form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || []).map(String);
+                  const selectedImportComplianceId = selectedComplianceIds[0] || '';
+                  const selectedImportComplianceChain = buildCategoryChain(selectedImportComplianceId, complianceCategoryById);
+                  const importComplianceTopId = selectedImportComplianceChain[0]?.id || '';
+                  const importComplianceSecondId = selectedImportComplianceChain[1]?.id || '';
+                  const importComplianceSecondOptions = importComplianceTopId ? getComplianceChildren(importComplianceTopId) : [];
                   return (
                     <div className={styles.importModalBackdrop} onClick={() => setActiveImportGroupKey(null)}>
                       <div className={styles.importModal} onClick={(event) => event.stopPropagation()}>
@@ -2802,19 +2847,21 @@ export default function AdminV2Page() {
                                     </div>
                                     <div className={styles.categoryGroupBox}>
                                       <div className={styles.categoryGroupTitle}>审核分类</div>
-                                      <div className={styles.categoryCheckGrid}>
-                                        {topComplianceCategories.map((category) => {
-                                          const checked = selectedComplianceIds.includes(String(category.id));
-                                          return <label key={category.id} className={checked ? styles.categoryCheckActive : ''}>
-                                            <input type="checkbox" checked={checked} onChange={(event) => {
-                                              const next = event.target.checked
-                                                ? [...selectedComplianceIds, String(category.id)]
-                                                : selectedComplianceIds.filter((id) => id !== String(category.id));
-                                              setImportSelection((state) => ({ ...state, [formKey]: { ...form, complianceCategoryIds: [...new Set(next)].map(Number) } }));
-                                            }} />
-                                            <span>{category.name}</span>
-                                          </label>;
-                                        })}
+                                      <div className={styles.modalFormGrid}>
+                                        <label>
+                                          <span>一级分类</span>
+                                          <select value={importComplianceTopId} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, complianceCategoryIds: event.target.value ? [Number(event.target.value)] : [] } }))}>
+                                            <option value="">暂不选择</option>
+                                            {topComplianceCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                                          </select>
+                                        </label>
+                                        <label>
+                                          <span>二级分类</span>
+                                          <select value={importComplianceSecondId} disabled={!importComplianceTopId || !importComplianceSecondOptions.length} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, complianceCategoryIds: event.target.value ? [Number(event.target.value)] : (importComplianceTopId ? [Number(importComplianceTopId)] : []) } }))}>
+                                            <option value="">{importComplianceTopId ? '不选择二级分类' : '请先选择一级分类'}</option>
+                                            {importComplianceSecondOptions.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                                          </select>
+                                        </label>
                                       </div>
                                     </div>
                                   </div>
@@ -2894,6 +2941,7 @@ export default function AdminV2Page() {
       if (activePage === 'company-info') {
         return (
           <Section title={t('admin.companyInfo.title')} desc={t('admin.companyInfo.desc')}>
+            {renderCompanyNextStepCard({ compact: true })}
             <div className={styles.companyProfileLayout}>
               <aside className={styles.companySummaryCard}>
                 <div className={styles.companyLogoBox}>{companyLogoUrl ? <img src={companyLogoUrl} alt="公司 Logo" /> : 'LOGO'}</div>
@@ -3665,7 +3713,6 @@ export default function AdminV2Page() {
       return <Placeholder title={pageTitle} desc={`这里后续处理 ${currentCompany.name} 的 ${pageTitle}。`} />;
     }
 
-    const hasPlatformPermission = isAdmin || admin?.platformRole === 'platform_admin' || admin?.platform_role === 'platform_admin' || admin?.role === 'admin' || admin?.role === 'platform_admin';
     if (activeGroup === 'platform' && !hasPlatformPermission) {
       return (
         <Section title={pageTitle} desc="平台管理功能仅限平台管理员使用。">
