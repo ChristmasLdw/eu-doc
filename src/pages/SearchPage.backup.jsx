@@ -21,8 +21,6 @@ import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../u
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
 import LazyImage from '../components/LazyImage';
-import SearchModeRail from '../components/SearchModeRail';
-import DocumentTypeRail from '../components/DocumentTypeRail';
 import styles from './SearchPage.module.css';
 
 // 每页显示条数
@@ -41,8 +39,6 @@ export default function SearchPage() {
 
   // 从 URL 参数获取初始值
   const initialQuery = searchParams.get('q') || '';
-  const initialMode = searchParams.get('mode') || 'all';
-  const initialDocumentType = searchParams.get('documentType') || 'all';
   const initialCategory = searchParams.get('category') || '';
   const initialStatus = searchParams.get('status') || '';
   const initialIssuer = searchParams.get('issuer') || '';
@@ -53,8 +49,6 @@ export default function SearchPage() {
   // 组件内部状态
   const [query, setQuery] = useState(initialQuery);
   const [submittedQuery, setSubmittedQuery] = useState(initialQuery);
-  const [searchMode, setSearchMode] = useState(initialMode);
-  const [documentType, setDocumentType] = useState(initialDocumentType);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [activeStatus, setActiveStatus] = useState(initialStatus);
   const [activeIssuer, setActiveIssuer] = useState(initialIssuer);
@@ -64,8 +58,6 @@ export default function SearchPage() {
 
   useEffect(() => {
     const nextQuery = searchParams.get('q') || '';
-    const nextMode = searchParams.get('mode') || 'all';
-    const nextDocumentType = searchParams.get('documentType') || 'all';
     const nextCategory = searchParams.get('category') || '';
     const nextStatus = searchParams.get('status') || '';
     const nextIssuer = searchParams.get('issuer') || '';
@@ -75,8 +67,6 @@ export default function SearchPage() {
 
     setQuery(nextQuery);
     setSubmittedQuery(nextQuery);
-    setSearchMode(nextMode);
-    setDocumentType(nextDocumentType);
     setActiveCategory(nextCategory);
     setActiveStatus(nextStatus);
     setActiveIssuer(nextIssuer);
@@ -182,8 +172,7 @@ export default function SearchPage() {
   const fetchResults = useCallback(() => {
     setLoading(true);
     setError(null);
-    // 不立即清空数据，避免闪烁
-    // setMatchedCompanies([]);
+    setMatchedCompanies([]);
 
     const params = { page: currentPage, pageSize: PAGE_SIZE };
 
@@ -208,95 +197,42 @@ export default function SearchPage() {
     }
     // 否则不传排序参数，后端使用默认排序
 
-    // 根据搜索模式决定查询内容
-    let certPromise;
-    let companyPromise;
+    // 同时搜索公司（仅在第一页且有搜索关键词时）
+    const companyPromise = (submittedQuery && currentPage === 1)
+      ? getCompanies({ search: submittedQuery, pageSize: 3 }).catch(() => ({ data: [] }))
+      : Promise.resolve({ data: [] });
 
-    if (searchMode === 'company') {
-      // 企业模式：只查询企业
-      certPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
-      companyPromise = getCompanies({
-        search: submittedQuery,
-        page: currentPage,
-        pageSize: PAGE_SIZE
-      }).catch(() => ({ data: [], pagination: { total: 0, totalPages: 1 } }));
-    } else if (searchMode === 'product') {
-      // 产品模式：暂时还是查询证书（TODO: 后续需要产品 API）
-      certPromise = getCertificates(params);
-      companyPromise = Promise.resolve({ data: [] });
-    } else if (searchMode === 'document') {
-      // 资料模式：查询证书/文档
-      certPromise = getCertificates(params);
-      companyPromise = Promise.resolve({ data: [] });
-    } else {
-      // 综合模式：同时查询证书和企业
-      companyPromise = (submittedQuery && currentPage === 1)
-        ? getCompanies({ search: submittedQuery, pageSize: 3 }).catch(() => ({ data: [] }))
-        : Promise.resolve({ data: [] });
-      certPromise = getCertificates(params);
-    }
+    const certPromise = getCertificates(params);
 
     Promise.all([certPromise, companyPromise])
       .then(([certResult, companyResult]) => {
-        // 批量更新所有状态，避免中间闪烁
-        const updates = {};
-
-        // 根据模式决定使用哪个数据源的总数
-        if (searchMode === 'company') {
-          // 企业模式：使用企业 API 的总数
-          updates.results = [];
-
-          // 保存企业列表
-          if (companyResult && Array.isArray(companyResult.data)) {
-            const q = submittedQuery.toLowerCase();
-            const matched = companyResult.data.filter(
-              (c) => c.name.toLowerCase().includes(q) || (c.nameEn && c.nameEn.toLowerCase().includes(q))
-            );
-            updates.companies = matched;
-            // 使用 pagination.total，如果没有则使用数组长度
-            updates.totalResults = companyResult.pagination?.total ?? matched.length;
-            updates.totalPages = companyResult.pagination?.totalPages ?? 1;
-          } else {
-            updates.companies = [];
-            updates.totalResults = 0;
-            updates.totalPages = 1;
-          }
-        } else {
-          // 产品/资料/综合模式：使用证书 API 的总数
-          if (certResult) {
-            let data = certResult.data || [];
-            // relevance 排序：有搜索词时，匹配字段越多越靠前（前端二次排序）
-            if (sortBy === 'relevance' && submittedQuery) {
-              data = [...data].sort((a, b) => {
-                const scoreA = [a.productName, a.model, a.companyName, a.certNo]
-                  .filter((f) => f && f.toLowerCase().includes(submittedQuery.toLowerCase())).length;
-                const scoreB = [b.productName, b.model, b.companyName, b.certNo]
-                  .filter((f) => f && f.toLowerCase().includes(submittedQuery.toLowerCase())).length;
-                return scoreB - scoreA;
-              });
-            }
-            updates.results = data;
-            updates.totalResults = certResult.pagination?.total ?? 0;
-            updates.totalPages = certResult.pagination?.totalPages ?? 1;
-          }
-
-          // 综合模式需要企业数据
-          if (searchMode === 'all' && companyResult && Array.isArray(companyResult.data)) {
-            const q = submittedQuery.toLowerCase();
-            const matched = companyResult.data.filter(
-              (c) => c.name.toLowerCase().includes(q) || (c.nameEn && c.nameEn.toLowerCase().includes(q))
-            );
-            updates.companies = matched;
-          } else {
-            updates.companies = [];
-          }
+        // 处理公司结果
+        if (companyResult && Array.isArray(companyResult.data)) {
+          // 只显示名称真正匹配的公司
+          const q = submittedQuery.toLowerCase();
+          const matched = companyResult.data.filter(
+            (c) => c.name.toLowerCase().includes(q) || (c.nameEn && c.nameEn.toLowerCase().includes(q))
+          );
+          setMatchedCompanies(matched);
         }
 
-        // 一次性更新所有状态
-        if (updates.results !== undefined) setResults(updates.results);
-        if (updates.totalResults !== undefined) setTotalResults(updates.totalResults);
-        if (updates.totalPages !== undefined) setTotalPages(updates.totalPages);
-        if (updates.companies !== undefined) setMatchedCompanies(updates.companies);
+        // 处理证书结果
+        if (certResult) {
+          let data = certResult.data || [];
+          // relevance 排序：有搜索词时，匹配字段越多越靠前（前端二次排序）
+          if (sortBy === 'relevance' && submittedQuery) {
+            data = [...data].sort((a, b) => {
+              const scoreA = [a.productName, a.model, a.companyName, a.certNo]
+                .filter((f) => f && f.toLowerCase().includes(submittedQuery.toLowerCase())).length;
+              const scoreB = [b.productName, b.model, b.companyName, b.certNo]
+                .filter((f) => f && f.toLowerCase().includes(submittedQuery.toLowerCase())).length;
+              return scoreB - scoreA;
+            });
+          }
+          setResults(data);
+          setTotalResults(certResult.pagination?.total ?? 0);
+          setTotalPages(certResult.pagination?.totalPages ?? 1);
+        }
       })
       .catch((err) => {
         setError(err.message || t('common.fetchFailed'));
@@ -305,7 +241,7 @@ export default function SearchPage() {
         setTotalPages(1);
       })
       .finally(() => setLoading(false));
-  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage, searchMode]);
+  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage]);
 
   // 搜索参数变化时重新获取数据
   useEffect(() => {
@@ -315,52 +251,11 @@ export default function SearchPage() {
   // 正式搜索词变化时重置到第 1 页，输入过程不刷新结果页
   useEffect(() => { setCurrentPage(1); }, [submittedQuery]);
 
-  // 模式切换处理
-  const handleModeChange = (newMode) => {
-    setSearchMode(newMode);
-    setCurrentPage(1);
-
-    // 切换模式时，清除不适用的筛选条件
-    if (newMode !== 'document') {
-      setDocumentType('all');
-    }
-
-    const params = {};
-    if (submittedQuery) params.q = submittedQuery;
-    if (newMode !== 'all') params.mode = newMode;
-    if (newMode === 'document' && documentType !== 'all') params.documentType = documentType;
-    if (activeCategory) params.category = activeCategory;
-    if (activeStatus) params.status = activeStatus;
-    if (activeIssuer) params.issuer = activeIssuer;
-    if (activeStandard) params.standard = activeStandard;
-    if (sortBy !== 'relevance') params.sort = sortBy;
-    setSearchParams(params);
-  };
-
-  // 资料类型切换处理
-  const handleDocumentTypeChange = (newType) => {
-    setDocumentType(newType);
-    setCurrentPage(1);
-
-    const params = {};
-    if (submittedQuery) params.q = submittedQuery;
-    if (searchMode !== 'all') params.mode = searchMode;
-    if (newType !== 'all') params.documentType = newType;
-    if (activeCategory) params.category = activeCategory;
-    if (activeStatus) params.status = activeStatus;
-    if (activeIssuer) params.issuer = activeIssuer;
-    if (activeStandard) params.standard = activeStandard;
-    if (sortBy !== 'relevance') params.sort = sortBy;
-    setSearchParams(params);
-  };
-
   // 同步所有筛选条件到 URL
   // pageOverride: 当需要立即同步页码时传入（因为 setState 是异步的）
   const syncUrl = (pageOverride, queryOverride = submittedQuery) => {
     const params = {};
     if (queryOverride) params.q = queryOverride;
-    if (searchMode !== 'all') params.mode = searchMode;
-    if (searchMode === 'document' && documentType !== 'all') params.documentType = documentType;
     if (activeCategory) params.category = activeCategory;
     if (activeStatus) params.status = activeStatus;
     if (activeIssuer) params.issuer = activeIssuer;
@@ -510,7 +405,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className={styles.page} data-search-mode={searchMode}>
+    <div className={styles.page}>
       <div className={styles.container}>
         {/* 搜索栏 */}
         <div className={styles.searchBar}>
@@ -722,46 +617,29 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* 结果信息栏：数量 + 模式切换 + 排序 */}
+        {/* 结果信息栏：数量 + 排序 */}
         <div className={styles.resultInfo}>
           <div className={styles.resultLeft}>
             <span className={styles.resultCount}>
-              {error ? (
+              {loading ? (
+                <>{t('search.searching')}</>
+              ) : error ? (
                 <>{t('common.loadFailed')}</>
-              ) : searchMode === 'company' ? (
-                // 企业模式：显示企业总数（使用 totalResults 而不是数组长度）
-                <>找到 <strong>{totalResults}</strong> 家企业</>
-              ) : searchMode === 'product' ? (
-                // 产品模式：只显示产品数量
-                <>找到 <strong>{totalResults}</strong> 个产品</>
-              ) : searchMode === 'document' ? (
-                // 资料模式：只显示资料数量
-                <>找到 <strong>{totalResults}</strong> 份资料</>
               ) : matchedCompanies.length > 0 && totalResults === 0 ? (
-                // 综合模式：只有企业
                 <>{t('search.matchedCompanyResult', { count: matchedCompanies.length })}</>
-              ) : matchedCompanies.length > 0 && totalResults > 0 ? (
-                // 综合模式：企业+证书
+              ) : matchedCompanies.length > 0 ? (
                 <>{t('search.mixedResult', { total: matchedCompanies.length + totalResults })} <em>{t('search.mixedResultDetail', { companyCount: matchedCompanies.length, docCount: totalResults })}</em></>
               ) : (
-                // 综合模式：只有证书
-                <>找到 <strong>{totalResults}</strong> 条结果</>
+                <>{t('search.foundResults', { count: totalResults }).replace('<strong>', '').replace('</strong>', '')
+                  .split(totalResults.toString())
+                  .map((part, i, arr) =>
+                    i < arr.length - 1 ? (
+                      <span key={i}>{part}<strong>{totalResults}</strong></span>
+                    ) : part
+                  )}</>
               )}
             </span>
           </div>
-
-          {/* 搜索模式切换 */}
-          <SearchModeRail
-            currentMode={searchMode}
-            onModeChange={handleModeChange}
-            counts={{
-              all: totalResults + matchedCompanies.length,
-              product: searchMode === 'product' ? totalResults : undefined,
-              document: searchMode === 'document' ? totalResults : undefined,
-              company: matchedCompanies.length,
-            }}
-          />
-
           <select
             className={styles.sortSelect}
             value={sortBy}
@@ -772,13 +650,6 @@ export default function SearchPage() {
             ))}
           </select>
         </div>
-
-        {/* 资料类型轨道（仅在资料模式显示） */}
-        <DocumentTypeRail
-          currentType={documentType}
-          onTypeChange={handleDocumentTypeChange}
-          show={searchMode === 'document'}
-        />
 
         {/* 错误提示 */}
         {error && (

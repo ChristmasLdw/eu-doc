@@ -1,0 +1,80 @@
+/* 资料类型选择器容器 */
+.container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* 使用动画过渡，避免布局跳动 */
+  max-height: 0;
+  opacity: 0;
+  padding: 0;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.container.show {
+  max-height: 60px;
+  opacity: 1;
+  padding: 0 0 16px;
+}
+
+/* 类型按钮组 */
+.types {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  min-width: fit-content;
+  padding: 0 24px;
+}
+
+/* 类型按钮 */
+.typeBtn {
+  padding: 6px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.typeBtn:hover:not(.active) {
+  border-color: var(--text-muted);
+  background: var(--bg-card-hover);
+}
+
+.typeBtn.active {
+  background: #d1fae5;
+  border-color: var(--mode-document, #10b981);
+  color: var(--mode-document, #10b981);
+  font-weight: 500;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .types {
+    justify-content: flex-start;
+    padding: 0 16px;
+  }
+
+  .container {
+    padding: 0;
+  }
+
+  .container.show {
+    max-height: 50px;
+    padding: 0 0 12px;
+  }
+}
+
+/* 减少动效模式 */
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    transition: none;
+  }
+
+  .typeBtn {
+    transition: none;
+  }
+}
+

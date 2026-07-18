@@ -1,0 +1,172 @@
+/* 颜色变量定义 */
+:root {
+  --mode-all: #6b7280;
+  --mode-product: #3b82f6;
+  --mode-document: #10b981;
+  --mode-company: #f59e0b;
+}
+
+/* 搜索模式轨道容器 - 内联布局，无边框无背景 */
+.container {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding: 0 16px;
+}
+
+/* 模式轨道 */
+.rail {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  user-select: none;
+  will-change: transform;
+}
+
+/* 模式按钮 - 优化的气泡样式 */
+.modeItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+.modeItem:hover:not(.active) {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.modeItem.active {
+  font-weight: 500;
+  opacity: 1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1),
+              0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* 根据模式设置激活按钮的气泡背景和边框 - 更柔和的颜色 */
+.modeItem.active[data-mode="all"] {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.12), rgba(107, 114, 128, 0.08));
+  border-color: rgba(107, 114, 128, 0.25);
+  color: #4b5563;
+}
+
+.modeItem.active[data-mode="product"] {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(96, 165, 250, 0.08));
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #2563eb;
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.15),
+              0 1px 4px rgba(59, 130, 246, 0.08);
+}
+
+.modeItem.active[data-mode="document"] {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(52, 211, 153, 0.08));
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #059669;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.15),
+              0 1px 4px rgba(16, 185, 129, 0.08);
+}
+
+.modeItem.active[data-mode="company"] {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.08));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.15),
+              0 1px 4px rgba(245, 158, 11, 0.08);
+}
+
+/* 模式标签 */
+.modeLabel {
+  display: block;
+}
+
+/* 模式数量徽章 */
+.modeCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: currentColor;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  opacity: 0.9;
+}
+
+/* 移除指示器 */
+.indicator {
+  display: none;
+}
+
+/* 滚动进度提示 */
+.scrollHint {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(3px);
+  }
+  to {
+    opacity: 0.6;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .rail {
+    gap: 12px;
+  }
+
+  .modeItem {
+    font-size: 13px;
+    padding: 5px 12px;
+  }
+
+  .container {
+    padding: 0 8px;
+  }
+}
+
+/* 减少动效模式 */
+@media (prefers-reduced-motion: reduce) {
+  .modeItem,
+  .rail {
+    transition: none;
+  }
+
+  .scrollHint {
+    animation: none;
+  }
+}
+
+
+
+
