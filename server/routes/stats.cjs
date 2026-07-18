@@ -10,7 +10,7 @@
 
 const { Router } = require('express');
 const { db } = require('../db.cjs');
-const { authMiddleware } = require('../middleware/auth.cjs');
+const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 
 const router = Router();
 
@@ -82,17 +82,46 @@ router.get('/overview', (req, res) => {
  * GET /api/stats/recent
  * 最近操作日志（需认证）
  */
-router.get('/recent', authMiddleware, (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 20, 100);
+router.get('/recent', authMiddleware, requireAdmin, (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 500);
+  const companyId = Number(req.query.companyId) || null;
 
   const logs = db.prepare(`
-    SELECT al.*, COALESCE(u.display_name, u.email, a.username) as admin_username
-    FROM audit_logs al
-    LEFT JOIN admins a ON al.admin_id = a.id
-    LEFT JOIN users u ON al.admin_id = u.id
-    ORDER BY al.created_at DESC
+    SELECT * FROM (
+      SELECT
+        al.id,
+        al.action,
+        al.target_type,
+        al.target_id,
+        al.detail,
+        al.created_at,
+        COALESCE(u.display_name, u.email, '未知用户') AS actor_name,
+        u.email AS actor_email,
+        CASE
+          WHEN al.target_type = 'company' THEN al.target_id
+          WHEN al.target_type = 'product' THEN (SELECT company_id FROM products WHERE id = al.target_id)
+          WHEN al.target_type IN ('document', 'certificate') THEN (SELECT company_id FROM documents WHERE id = al.target_id)
+          ELSE NULL
+        END AS company_id,
+        CASE
+          WHEN al.target_type = 'company' THEN (SELECT name FROM companies WHERE id = al.target_id)
+          WHEN al.target_type = 'product' THEN (SELECT c.name FROM products p JOIN companies c ON c.id = p.company_id WHERE p.id = al.target_id)
+          WHEN al.target_type IN ('document', 'certificate') THEN (SELECT c.name FROM documents d JOIN companies c ON c.id = d.company_id WHERE d.id = al.target_id)
+          ELSE NULL
+        END AS company_name,
+        CASE
+          WHEN al.target_type = 'company' THEN (SELECT name FROM companies WHERE id = al.target_id)
+          WHEN al.target_type = 'product' THEN (SELECT name FROM products WHERE id = al.target_id)
+          WHEN al.target_type IN ('document', 'certificate') THEN (SELECT title FROM documents WHERE id = al.target_id)
+          ELSE NULL
+        END AS target_name
+      FROM audit_logs al
+      LEFT JOIN users u ON al.admin_id = u.id
+    ) scoped_logs
+    WHERE (? IS NULL OR company_id = ?)
+    ORDER BY created_at DESC, id DESC
     LIMIT ?
-  `).all(limit);
+  `).all(companyId, companyId, limit);
 
   res.json({ success: true, data: logs });
 });

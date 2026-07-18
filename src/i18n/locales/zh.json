@@ -306,6 +306,7 @@
       "logs": "操作记录",
       "companyReview": "企业审核",
       "userManagement": "用户查询",
+      "platformLogs": "全平台操作记录",
       "reports": "内容举报",
       "system": "平台设置"
     },

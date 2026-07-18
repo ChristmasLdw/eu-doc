@@ -2935,6 +2935,10 @@ tbody tr:last-child td {
   margin-bottom: 14px;
 }
 
+.platformLogToolbar {
+  grid-template-columns: minmax(240px, 1fr) 190px 150px 140px auto;
+}
+
 .logToolbar input,
 .logToolbar select {
   min-height: 40px;

@@ -546,8 +546,13 @@ export function getStats() {
 }
 
 /** 获取最近操作日志 */
-export function getRecentLogs() {
-  return request('/stats/recent');
+export function getRecentLogs(params = {}) {
+  const query = new URLSearchParams();
+  if (params.companyId) query.set('companyId', String(params.companyId));
+  query.set('limit', String(params.limit || 500));
+  return request(`/stats/recent?${query.toString()}`).then((items) => (
+    Array.isArray(items) ? items.map(keysToCamelCase) : []
+  ));
 }
 
 /** 获取用户个人统计数据（已登录用户） */

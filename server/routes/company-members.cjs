@@ -16,6 +16,10 @@ function getActiveMembership(userId, companyId) {
   `).get(userId, companyId);
 }
 
+function isPlatformAdmin(req) {
+  return ['admin', 'platform_admin'].includes(req.admin?.role);
+}
+
 function writeMemberAudit(req, action, companyId, detail) {
   db.prepare(`
     INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address)
@@ -37,7 +41,7 @@ router.get('/', authMiddleware, (req, res) => {
   // 检查用户是否有权限查看该企业成员
   const membership = getActiveMembership(req.admin.id, companyId);
 
-  if (!membership) {
+  if (!membership && !isPlatformAdmin(req)) {
     return res.status(403).json({ success: false, message: '无权查看该企业成员' });
   }
 
@@ -53,8 +57,13 @@ router.get('/', authMiddleware, (req, res) => {
   res.json({
     success: true,
     data: members,
-    operatorRole: membership.role,
-    permissions: {
+    operatorRole: membership?.role || 'platform_admin',
+    permissions: isPlatformAdmin(req) ? {
+      canInvite: false,
+      canChangeRoles: false,
+      canRemoveMembers: false,
+      readOnly: true,
+    } : {
       canInvite: ['applicant', 'owner', 'admin'].includes(membership.role),
       canChangeRoles: ['applicant', 'owner'].includes(membership.role),
       canRemoveMembers: ['applicant', 'owner', 'admin'].includes(membership.role),
@@ -75,7 +84,7 @@ router.get('/activity', authMiddleware, (req, res) => {
   }
 
   const membership = getActiveMembership(req.admin.id, companyId);
-  if (!membership) {
+  if (!membership && !isPlatformAdmin(req)) {
     return res.status(403).json({ success: false, message: '无权查看该企业操作记录' });
   }
 

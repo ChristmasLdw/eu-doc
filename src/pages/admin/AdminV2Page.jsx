@@ -27,6 +27,7 @@ const companyMenus = [
 const platformMenus = [
   { id: 'company-review', labelKey: 'admin.menu.companyReview' },
   { id: 'users', labelKey: 'admin.menu.userManagement' },
+  { id: 'platform-logs', labelKey: 'admin.menu.platformLogs' },
   { id: 'categories', labelKey: 'admin.menu.reports' },
   { id: 'reports', labelKey: 'admin.menu.reports' },
   { id: 'system', labelKey: 'admin.menu.system' },
@@ -559,6 +560,7 @@ function MenuIcon({ type }) {
     verification: <><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1" /><path d="m22 4-10 10-3-3" /></>,
     plans: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /><path d="M7 15h4" /></>,
     logs: <><path d="M4 6h16M4 12h16M4 18h10" /></>,
+    'platform-logs': <><path d="M4 6h16M4 12h16M4 18h10" /><circle cx="19" cy="18" r="3" /></>,
     'company-review': <><circle cx="12" cy="12" r="9" /><path d="m9 12 2 2 4-4" /></>,
     users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.8" /></>,
     categories: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
@@ -625,7 +627,11 @@ export default function AdminV2Page() {
   const [companyActivity, setCompanyActivity] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const [activityError, setActivityError] = useState('');
-  const [activityFilters, setActivityFilters] = useState({ query: '', type: 'all', range: '7d' });
+  const [activityFilters, setActivityFilters] = useState({ query: '', type: 'all', range: 'all' });
+  const [platformActivity, setPlatformActivity] = useState([]);
+  const [platformActivityLoading, setPlatformActivityLoading] = useState(false);
+  const [platformActivityError, setPlatformActivityError] = useState('');
+  const [platformActivityFilters, setPlatformActivityFilters] = useState({ query: '', type: 'all', company: 'all', range: 'all' });
   const [profileForm, setProfileForm] = useState({
     displayName: admin?.display_name || admin?.username || 'admin',
     realName: '',
@@ -807,6 +813,22 @@ export default function AdminV2Page() {
       members: rangedCompanyActivity.filter((log) => getActivityType(log) === 'member').length,
     };
   }, [companyActivity, rangedCompanyActivity]);
+  const filteredPlatformActivity = useMemo(() => {
+    const query = platformActivityFilters.query.trim().toLowerCase();
+    const days = platformActivityFilters.range === '30d' ? 30 : 7;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return platformActivity.filter((log) => {
+      const type = getActivityType(log);
+      if (platformActivityFilters.company !== 'all' && String(log.companyId || '') !== platformActivityFilters.company) return false;
+      if (platformActivityFilters.type !== 'all' && type !== platformActivityFilters.type) return false;
+      if (platformActivityFilters.range !== 'all') {
+        const date = parseUtcDate(log.createdAt);
+        if (!date || date.getTime() < cutoff) return false;
+      }
+      if (!query) return true;
+      return `${log.companyName || ''} ${log.actorName || ''} ${log.actorEmail || ''} ${getActivityDescription(log)} ${ACTIVITY_ACTIONS[log.action] || log.action || ''}`.toLowerCase().includes(query);
+    });
+  }, [platformActivity, platformActivityFilters]);
   const unreadNotificationCount = notificationItems.filter((item) => item.status === '未读' || item.status === '待处理').length;
   const verificationNotice = notificationItems.find((item) => item.status === '未读' && item.title?.includes('企业认证'));
 
@@ -1545,11 +1567,28 @@ export default function AdminV2Page() {
     }
   };
 
+  const refreshPlatformActivity = async () => {
+    setPlatformActivityLoading(true);
+    setPlatformActivityError('');
+    try {
+      setPlatformActivity(await api.getRecentLogs({ limit: 500 }));
+    } catch (error) {
+      setPlatformActivityError(error.message || '全平台操作记录读取失败');
+      setPlatformActivity([]);
+    } finally {
+      setPlatformActivityLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!activeCompany || activeGroup !== 'company') return;
     if (activePage === 'members') refreshCompanyMembers();
     if (activePage === 'logs') refreshCompanyActivity();
   }, [activeCompany, activeGroup, activePage]);
+
+  useEffect(() => {
+    if (activeGroup === 'platform' && activePage === 'platform-logs' && hasPlatformPermission) refreshPlatformActivity();
+  }, [activeGroup, activePage, hasPlatformPermission]);
 
   const refreshImportItems = async () => {
     if (!activeCompany) return;
@@ -3553,6 +3592,7 @@ export default function AdminV2Page() {
       }
 
       if (activePage === 'members') {
+        const isPlatformReadOnly = Boolean(memberPermissions.readOnly);
         const roleCounts = Object.keys(MEMBER_ROLES).map((role) => [
           MEMBER_ROLES[role].label,
           companyMembers.filter((member) => member.role === role).length,
@@ -3562,7 +3602,7 @@ export default function AdminV2Page() {
             <div className={styles.memberHeaderPanel}>
               <div>
                 <h3>团队成员</h3>
-                <p>成员数据来自当前公司的真实账号关系；添加成员前，对方需要先注册 EU-DOC。</p>
+                <p>{isPlatformReadOnly ? '平台管理员正在只读查看该公司的真实成员关系，不会自动成为企业成员。' : '成员数据来自当前公司的真实账号关系；添加成员前，对方需要先注册 EU-DOC。'}</p>
               </div>
               <button
                 className={styles.primaryBtn}
@@ -3590,7 +3630,7 @@ export default function AdminV2Page() {
               <div className={styles.listTitleRow}>
                 <div>
                   <h3>成员列表</h3>
-                  <p>{memberPermissions.canChangeRoles ? '你可以调整非拥有者成员的角色。' : '只有企业拥有者可以修改成员角色。'}</p>
+                  <p>{isPlatformReadOnly ? '平台监管视图仅供核查；如需干预成员权限，应走单独的平台干预流程并记录原因。' : memberPermissions.canChangeRoles ? '你可以调整非拥有者成员的角色。' : '只有企业拥有者可以修改成员角色。'}</p>
                 </div>
               </div>
               <div className={styles.productTools}>
@@ -4070,6 +4110,60 @@ export default function AdminV2Page() {
                 </article>
               );
             })}
+          </div>
+        </Section>
+      );
+    }
+
+    if (activePage === 'platform-logs') {
+      const platformCompanies = [...new Map(platformActivity.filter((log) => log.companyId).map((log) => [String(log.companyId), { id: log.companyId, name: log.companyName || `公司 #${log.companyId}` }])).values()];
+      const memberLogCount = filteredPlatformActivity.filter((log) => getActivityType(log) === 'member').length;
+      return (
+        <Section title="全平台操作记录" desc="平台管理员可跨公司只读核查操作历史；企业成员管理仍由各公司拥有者负责。">
+          <div className={styles.logSummaryGrid}>
+            {[
+              ['记录总数', filteredPlatformActivity.length, '当前筛选结果'],
+              ['涉及公司', new Set(filteredPlatformActivity.map((log) => log.companyId).filter(Boolean)).size, '按企业隔离'],
+              ['成员操作', memberLogCount, '添加 / 角色 / 移除'],
+              ['读取范围', '只读', '平台监管视图'],
+            ].map(([name, count, desc]) => (
+              <div key={name} className={styles.logSummaryCard}>
+                <strong>{count}</strong><span>{name}</span><p>{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className={`${styles.logToolbar} ${styles.platformLogToolbar}`}>
+            <input value={platformActivityFilters.query} onChange={(event) => setPlatformActivityFilters((filters) => ({ ...filters, query: event.target.value }))} placeholder="搜索公司、操作人、对象、内容" />
+            <select value={platformActivityFilters.company} onChange={(event) => setPlatformActivityFilters((filters) => ({ ...filters, company: event.target.value }))}>
+              <option value="all">全部公司</option>
+              {platformCompanies.map((company) => <option key={company.id} value={String(company.id)}>{company.name}</option>)}
+            </select>
+            <select value={platformActivityFilters.type} onChange={(event) => setPlatformActivityFilters((filters) => ({ ...filters, type: event.target.value }))}>
+              <option value="all">全部类型</option><option value="company">公司资料</option><option value="product">产品资料</option><option value="file">资料管理</option><option value="member">员工权限</option><option value="other">其他操作</option>
+            </select>
+            <select value={platformActivityFilters.range} onChange={(event) => setPlatformActivityFilters((filters) => ({ ...filters, range: event.target.value }))}>
+              <option value="7d">最近 7 天</option><option value="30d">最近 30 天</option><option value="all">全部时间</option>
+            </select>
+            <button className={styles.secondaryBtn} onClick={refreshPlatformActivity}>刷新</button>
+          </div>
+
+          <div className={styles.timelineList}>
+            {platformActivityLoading ? <div className={styles.emptyState}>正在读取全平台操作记录...</div>
+              : platformActivityError ? <div className={styles.emptyState}>{platformActivityError}</div>
+              : filteredPlatformActivity.length ? filteredPlatformActivity.map((log) => (
+                <article key={log.id} className={styles.timelineItem}>
+                  <div className={styles.timelineDot} />
+                  <div className={styles.timelineMain}>
+                    <div><h3>{ACTIVITY_ACTIONS[log.action] || log.action || '操作'}</h3><p>{getActivityDescription(log)}</p></div>
+                    <span>{getActivityTypeLabel(getActivityType(log))}</span>
+                  </div>
+                  <div className={styles.timelineMeta}>
+                    <strong>{log.companyName || '平台级操作'}</strong>
+                    <em>{log.actorName || log.actorEmail || '未知用户'} · {formatActivityTime(log.createdAt)}</em>
+                  </div>
+                </article>
+              )) : <div className={styles.emptyState}>当前筛选条件下没有操作记录。</div>}
           </div>
         </Section>
       );
