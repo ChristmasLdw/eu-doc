@@ -256,22 +256,36 @@ function requireCurrentSession(req, res, next) {
   next();
 }
 
-function seedPersonalData(userId) {
-  // 收藏和浏览记录必须反映用户真实操作，不能再自动填充演示数据。
-  db.prepare('INSERT OR IGNORE INTO user_notification_settings (user_id, history_enabled) VALUES (?, 1)').run(userId);
+function cleanupDemoNotifications(userId) {
+  // 只清理早期用于占位展示的固定测试通知，不影响真实业务产生的消息。
+  const demoItems = [
+    ['企业邀请', 'Guangzhou Safety Equipment Co., Ltd. 邀请你成为企业管理员。'],
+    ['文件更新', '你收藏的产品有新资料时会在这里提醒。'],
+    ['文件更新', '你收藏的产品 Equestrian Helmet F20 有新的 DoC 声明文件。'],
+    ['资料更新', '你收藏的产品 Equestrian Helmet F20 有新的 DoC 声明资料。'],
+    ['举报处理', '你提交的“产品型号错误”举报已被平台标记处理。'],
+    ['安全提醒', '你的账号刚刚在当前浏览器登录。'],
+    ['系统公告', '后台 v2 正在完善中，部分按钮暂未接入真实功能。'],
+  ];
+  const remove = db.prepare('DELETE FROM user_notifications WHERE user_id = ? AND title = ? AND description = ?');
+  demoItems.forEach(([title, description]) => remove.run(userId, title, description));
+  db.prepare(`
+    DELETE FROM user_notifications
+    WHERE user_id = ?
+      AND (
+        description LIKE '%Equestrian Helmet F20%'
+        OR description LIKE '%Guangzhou Safety Equipment Co., Ltd.%'
+        OR description LIKE '%后台 v2 正在完善中%'
+        OR description LIKE '%产品型号错误%'
+        OR description = '你的账号刚刚在当前浏览器登录。'
+      )
+  `).run(userId);
+}
 
-  const notificationCount = db.prepare('SELECT COUNT(*) as cnt FROM user_notifications WHERE user_id = ?').get(userId).cnt;
-  if (notificationCount === 0) {
-    const insertNotification = db.prepare(`
-      INSERT INTO user_notifications (user_id, title, description, status, tone, pinned)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    [
-      ['企业邀请', 'Guangzhou Safety Equipment Co., Ltd. 邀请你成为企业管理员。', '待处理', 'blue', 1],
-      ['文件更新', '你收藏的产品有新资料时会在这里提醒。', '已读', 'gray', 0],
-      ['安全提醒', '你的账号刚刚在当前浏览器登录。', '已读', 'green', 0],
-    ].forEach((item) => insertNotification.run(userId, ...item));
-  }
+function seedPersonalData(userId) {
+  // 收藏、浏览记录和通知都必须反映用户真实操作，不能自动填充演示数据。
+  db.prepare('INSERT OR IGNORE INTO user_notification_settings (user_id, history_enabled) VALUES (?, 1)').run(userId);
+  cleanupDemoNotifications(userId);
 }
 
 const avatarDir = path.join(__dirname, '../uploads/avatars');

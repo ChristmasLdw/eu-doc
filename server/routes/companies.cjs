@@ -35,6 +35,49 @@ function ensureCompanyColumns() {
   addColumn('public_visible', 'INTEGER DEFAULT 1');
 }
 
+
+function ensureUserNotificationTable() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT DEFAULT '未读',
+      tone TEXT DEFAULT 'blue',
+      pinned INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+}
+
+function notifyCompanyVerificationResult(companyId, companyName, action, note = '') {
+  ensureUserNotificationTable();
+  const members = db.prepare(`
+    SELECT DISTINCT user_id
+    FROM company_members
+    WHERE company_id = ?
+      AND status = 'active'
+      AND role IN ('owner', 'admin', 'applicant')
+  `).all(companyId);
+
+  if (!members.length) return;
+
+  const approved = action === 'approve';
+  const title = approved ? '企业认证已通过' : '企业认证需要补充';
+  const trimmedNote = String(note || '').trim();
+  const description = approved
+    ? `你的企业「${companyName}」已通过平台认证，相关产品资料可在前台公开展示。`
+    : `你的企业「${companyName}」认证申请未通过，请根据审核意见补充后重新提交。${trimmedNote ? `原因：${trimmedNote}` : ''}`;
+  const tone = approved ? 'green' : 'orange';
+  const insert = db.prepare(`
+    INSERT INTO user_notifications (user_id, title, description, status, tone, pinned)
+    VALUES (?, ?, ?, '未读', ?, 1)
+  `);
+  members.forEach((member) => insert.run(member.user_id, title, description, tone));
+}
+
 // 配置multer用于Logo上传
 const logoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -611,6 +654,8 @@ router.put('/:id/verification', authMiddleware, requireAdmin, (req, res) => {
         WHERE company_id = ? AND role = 'applicant' AND status = 'active'
       `).run(companyId);
     }
+
+    notifyCompanyVerificationResult(companyId, company.name, action, note);
 
     // 记录审计日志
     db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')

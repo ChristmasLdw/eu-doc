@@ -533,13 +533,7 @@ export default function AdminV2Page() {
     ['文件', 'Old User Manual', '使用说明书', '该资料可能已被替换', '需要确认是否最新版本', '需注意'],
   ]);
   const [recentlyDeletedItems, setRecentlyDeletedItems] = useState([]);
-  const [notificationItems, setNotificationItems] = useState([
-    { title: '企业邀请', desc: 'Guangzhou Safety Equipment Co., Ltd. 邀请你成为企业管理员。', status: '待处理', tone: 'blue', pinned: true },
-    { title: '资料更新', desc: '你收藏的产品 Equestrian Helmet F20 有新的 DoC 声明资料。', status: '未读', tone: 'orange', pinned: true },
-    { title: '举报处理', desc: '你提交的“产品型号错误”举报已被平台标记处理。', status: '未读', tone: 'green', pinned: false },
-    { title: '安全提醒', desc: '你的账号刚刚在当前浏览器登录。', status: '已读', tone: 'green', pinned: false },
-    { title: '系统公告', desc: '后台 v2 正在完善中，部分按钮暂未接入真实功能。', status: '已读', tone: 'gray', pinned: false },
-  ]);
+  const [notificationItems, setNotificationItems] = useState([]);
   const [loginRecords, setLoginRecords] = useState([]);
   const [profileForm, setProfileForm] = useState({
     displayName: admin?.display_name || admin?.username || 'admin',
@@ -680,6 +674,15 @@ export default function AdminV2Page() {
     () => companies.find((company) => String(company.id) === String(activeCompany)) || companies[0],
     [activeCompany, companies]
   );
+  const unreadNotificationCount = notificationItems.filter((item) => item.status === '未读' || item.status === '待处理').length;
+  const verificationNotice = notificationItems.find((item) => item.status === '未读' && item.title?.includes('企业认证'));
+
+  const markNotificationItemRead = async (id) => {
+    await api.markNotificationRead(id);
+    setNotificationItems((items) => items.map((item) => item.id === id ? { ...item, status: '已读' } : item));
+  };
+
+  const openNotificationCenter = () => openPage('personal', 'notifications');
 
   const getPublicEntityPath = (type, itemId) => {
     if (!itemId) return '';
@@ -2598,21 +2601,24 @@ export default function AdminV2Page() {
             </div>
 
             <div className={styles.toolbar}>
-              {['全部', '未读', '企业邀请', '资料更新', '举报处理', '系统公告'].map((item, index) => (
+              {['全部', '未读', '企业认证', '资料变更', '系统通知'].map((item, index) => (
                 <button key={item} className={index === 0 ? styles.primaryBtn : styles.secondaryBtn}>{item}</button>
               ))}
             </div>
 
             <div className={styles.notificationList}>
+              {notificationItems.length === 0 && (
+                <div className={styles.emptyState}>暂无消息提醒。认证结果、资料变更等真实业务消息会显示在这里。</div>
+              )}
               {notificationItems.map(({ id, title, desc, status, tone, pinned }) => (
-                <article key={title} className={`${styles.notificationItem} ${pinned ? styles.notificationPinned : ''}`}>
+                <article key={id || title} className={`${styles.notificationItem} ${pinned ? styles.notificationPinned : ''}`}>
                   <div className={`${styles.noticeDot} ${styles[tone]}`} />
                   <div>
                     <h3>{pinned ? '置顶 · ' : ''}{title}</h3>
                     <p>{desc}</p>
                   </div>
                   <span>{status}</span>
-                  <button className={styles.secondaryBtn} onClick={async () => { if (status === '待处理') { showAction('企业邀请处理流程后续在员工权限中接入'); return; } try { await api.markNotificationRead(id); setNotificationItems((items) => items.map((item) => item.id === id ? { ...item, status: '已读' } : item)); showAction('通知已标记为已读'); } catch (error) { showAction(error.message || '操作失败'); } }}>{status === '待处理' ? '处理' : '标记已读'}{status === '待处理' && <span className={styles.todoBadge}>待完善</span>}</button>
+                  <button className={styles.secondaryBtn} disabled={status === '已读'} onClick={async () => { try { await markNotificationItemRead(id); showAction('通知已标记为已读'); } catch (error) { showAction(error.message || '操作失败'); } }}>{status === '已读' ? '已读' : '标记已读'}</button>
                 </article>
               ))}
             </div>
@@ -4115,7 +4121,7 @@ export default function AdminV2Page() {
               <span>批量上传</span>
             </button>
           </div>
-          <MenuGroup title={t('admin.menu.personal')} items={personalMenus} activePage={activePage} onSelect={(id) => openPage('personal', id)} />
+          <MenuGroup title={t('admin.menu.personal')} items={personalMenus} activePage={activePage} onSelect={(id) => openPage('personal', id)} notificationCount={unreadNotificationCount} />
 
           <div className={styles.group}>
             <div className={styles.groupTitle}>{t('admin.menu.company')}</div>
@@ -4138,6 +4144,7 @@ export default function AdminV2Page() {
                       >
                         <MenuIcon type={item.id} />
                         <span>{t(item.labelKey)}</span>
+            {item.id === 'notifications' && notificationCount > 0 && <em className={styles.menuBadge}>{notificationCount > 99 ? '99+' : notificationCount}</em>}
                       </button>
                     ))}
                   </div>
@@ -4178,6 +4185,18 @@ export default function AdminV2Page() {
               </div>
               <div className={styles.uploadProgressTrack}><i style={{ width: `${uploadProgress.percent}%` }} /></div>
               <p>{uploadProgress.phase === 'processing' ? '请稍等，不要关闭页面。' : uploadProgress.phase === 'error' ? '请检查文件大小、格式或网络后重试。' : `${uploadProgress.percent}%`}</p>
+            </div>
+          )}
+          {verificationNotice && activePage !== 'notifications' && (
+            <div className={styles.verificationNoticeBanner}>
+              <div>
+                <strong>{verificationNotice.title}</strong>
+                <p>{verificationNotice.desc}</p>
+              </div>
+              <div className={styles.verificationNoticeActions}>
+                <button className={styles.primaryBtn} onClick={openNotificationCenter}>查看通知</button>
+                <button className={styles.secondaryBtn} onClick={async () => { try { await markNotificationItemRead(verificationNotice.id); showAction('通知已标记为已读'); } catch (error) { showAction(error.message || '操作失败'); } }}>知道了</button>
+              </div>
             </div>
           )}
           {renderContent()}
@@ -4607,7 +4626,7 @@ export default function AdminV2Page() {
   );
 }
 
-function MenuGroup({ title, items, activePage, onSelect }) {
+function MenuGroup({ title, items, activePage, onSelect, notificationCount = 0 }) {
   const { t } = useTranslation();
   return (
     <div className={styles.group}>
@@ -4617,6 +4636,7 @@ function MenuGroup({ title, items, activePage, onSelect }) {
           <button key={item.id} className={activePage === item.id ? styles.activeItem : ''} onClick={() => onSelect(item.id)}>
             <MenuIcon type={item.id} />
             <span>{t(item.labelKey)}</span>
+            {item.id === 'notifications' && notificationCount > 0 && <em className={styles.menuBadge}>{notificationCount > 99 ? '99+' : notificationCount}</em>}
           </button>
         ))}
       </div>
