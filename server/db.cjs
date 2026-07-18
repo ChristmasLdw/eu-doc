@@ -29,10 +29,10 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
 // 数据库文件路径: server/data/eu-doc.db
-const DB_PATH = path.join(__dirname, 'data', 'eu-doc.db');
+const DB_PATH = process.env.EU_DOC_DB_PATH || path.join(__dirname, 'data', 'eu-doc.db');
 
 // 确保 data 目录存在
-const dataDir = path.join(__dirname, 'data');
+const dataDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }

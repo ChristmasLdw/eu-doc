@@ -8,8 +8,30 @@
 const { Router } = require('express');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
+const CERTIFICATE_CREATE_ROLES = ['applicant', 'owner', 'admin'];
+const CERTIFICATE_EDITOR_ROLES = ['applicant', 'owner', 'admin', 'uploader'];
+
+function requireCertificateEditor(req, res, next) {
+  const certificate = db.prepare(`
+    SELECT d.*, cm.cert_no
+    FROM documents d
+    INNER JOIN certificate_metadata cm ON d.id = cm.document_id
+    WHERE d.id = ? AND d.document_type = 'certificate'
+  `).get(req.params.id);
+
+  if (!certificate) {
+    return res.status(404).json({ success: false, message: '证书不存在' });
+  }
+  if (!hasCompanyRole(req, certificate.company_id, CERTIFICATE_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权操作该证书' });
+  }
+
+  req.certificate = certificate;
+  next();
+}
 
 // GET /api/certificates - 获取证书列表（支持搜索、筛选、排序）
 router.get('/', (req, res) => {
@@ -341,6 +363,10 @@ router.post('/', authMiddleware, (req, res) => {
     });
   }
 
+  if (!hasCompanyRole(req, finalCompanyId, CERTIFICATE_CREATE_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权为该企业创建证书' });
+  }
+
   try {
     // v2.0: 使用事务创建 product + document + certificate_metadata
     const result = db.transaction(() => {
@@ -421,7 +447,7 @@ router.post('/', authMiddleware, (req, res) => {
 module.exports = router;
 
 // PUT /api/certificates/:id - 更新证书（需认证）
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', authMiddleware, requireCertificateEditor, (req, res) => {
   const cert = db.prepare(`
     SELECT d.*, cm.cert_no, p.id as product_id, p.name as product_name, p.model
     FROM documents d
@@ -496,7 +522,7 @@ router.put('/:id', authMiddleware, (req, res) => {
 });
 
 // DELETE /api/certificates/:id - 删除证书（需认证）
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', authMiddleware, requireCertificateEditor, (req, res) => {
   const cert = db.prepare(`
     SELECT d.*, cm.cert_no, p.name as product_name
     FROM documents d
@@ -596,18 +622,8 @@ const upload = multer({
 });
 
 // POST /api/certificates/:id/upload - 上传证书 PDF 文件（需认证）
-router.post("/:id/upload", authMiddleware, upload.single("file"), async (req, res) => {
-  const cert = db.prepare(`
-    SELECT d.*, cm.cert_no
-    FROM documents d
-    INNER JOIN certificate_metadata cm ON d.id = cm.document_id
-    WHERE d.id = ? AND d.document_type = 'certificate'
-  `).get(req.params.id);
-
-  if (!cert) {
-    if (req.file) fs.unlinkSync(req.file.path);
-    return res.status(404).json({ success: false, message: "证书不存在" });
-  }
+router.post("/:id/upload", authMiddleware, requireCertificateEditor, upload.single("file"), async (req, res) => {
+  const cert = req.certificate;
 
   if (!req.file) {
     return res.status(400).json({ success: false, message: "请选择要上传的 PDF 文件" });
@@ -665,8 +681,29 @@ router.post('/import', authMiddleware, (req, res) => {
     'INSERT OR IGNORE INTO companies (name, name_en) VALUES (?, ?)'
   );
   const getCompany = db.prepare('SELECT id FROM companies WHERE name = ?');
+  const getCompanyById = db.prepare('SELECT id FROM companies WHERE id = ?');
+  const isPlatformAdmin = ['admin', 'platform_admin'].includes(req.admin.role);
 
-  const reviewStatus = ['admin', 'platform_admin'].includes(req.admin.role) ? 'approved' : 'pending';
+  for (const cert of certList) {
+    if (!cert.cert_no || !cert.product_name) continue;
+
+    const company = cert.companyId
+      ? getCompanyById.get(cert.companyId)
+      : cert.companyName
+        ? getCompany.get(cert.companyName)
+        : null;
+
+    if (!isPlatformAdmin) {
+      if (!company) {
+        return res.status(400).json({ success: false, message: '批量导入只能使用已有企业' });
+      }
+      if (!hasCompanyRole(req, company.id, CERTIFICATE_CREATE_ROLES)) {
+        return res.status(403).json({ success: false, message: '无权向批次中的企业导入证书' });
+      }
+    }
+  }
+
+  const reviewStatus = isPlatformAdmin ? 'approved' : 'pending';
 
   // 使用事务确保批量操作的原子性
   const result = db.transaction(() => {
@@ -681,9 +718,11 @@ router.post('/import', authMiddleware, (req, res) => {
 
       try {
         // 处理企业关联
-        let companyId = null;
-        if (cert.companyName) {
-          insertCompany.run(cert.companyName, cert.companyName);
+        let companyId = cert.companyId || null;
+        if (!companyId && cert.companyName) {
+          if (isPlatformAdmin) {
+            insertCompany.run(cert.companyName, cert.companyName);
+          }
           const company = getCompany.get(cert.companyName);
           companyId = company ? company.id : null;
         }

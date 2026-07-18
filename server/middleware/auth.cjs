@@ -24,6 +24,7 @@
  */
 
 const jwt = require('jsonwebtoken');
+const { db } = require('../db.cjs');
 
 // JWT 密钥（生产环境应从环境变量读取，这里提供默认值用于开发）
 const JWT_SECRET = process.env.JWT_SECRET || 'eu-doc-secret-key-change-in-production';
@@ -61,14 +62,33 @@ function authMiddleware(req, res, next) {
     // 如果 token 过期或签名不匹配，会抛出错误（被 catch 捕获）
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    const user = db.prepare(`
+      SELECT email, display_name, platform_role, status, session_version
+      FROM users
+      WHERE id = ?
+    `).get(decoded.id);
+    if (!user || user.status !== 'active') {
+      return res.status(401).json({
+        success: false,
+        message: '账号不存在或已被禁用，请重新登录',
+      });
+    }
+
+    if ((user.session_version || 0) !== (decoded.session_version || 0)) {
+      return res.status(401).json({
+        success: false,
+        message: '登录状态已失效，请重新登录',
+      });
+    }
+
     // 将解码后的用户信息挂载到请求对象上
     req.admin = {
       id: decoded.id,
-      username: decoded.username || decoded.email,
-      email: decoded.email || decoded.username,
-      role: decoded.role || 'user',
+      username: user.email || decoded.username || decoded.email,
+      email: user.email || decoded.email || decoded.username,
+      role: user.platform_role || 'user',
       company_name: decoded.company_name || null,
-      session_version: decoded.session_version || 0,
+      session_version: user.session_version || 0,
     };
 
     // 调用 next() 将控制权传递给下一个中间件或路由处理函数

@@ -15,10 +15,25 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
-const { requireCompanyRole } = require('../middleware/companyRole.cjs');
+const { hasCompanyRole, requireCompanyRole } = require('../middleware/companyRole.cjs');
 const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
 
 const router = Router();
+const DOCUMENT_EDITOR_ROLES = ['applicant', 'owner', 'admin', 'uploader'];
+
+function requireDocumentEditor(req, res, next) {
+  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
+  if (!document) {
+    return res.status(404).json({ success: false, message: '文档不存在' });
+  }
+
+  if (!hasCompanyRole(req, document.company_id, DOCUMENT_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权操作该文档' });
+  }
+
+  req.document = document;
+  next();
+}
 
 // 配置文件上传
 const storage = multer.diskStorage({
@@ -434,15 +449,8 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
 });
 
 // PUT /api/v2/documents/:id - 更新文档
-router.put('/:id', authMiddleware, (req, res) => {
-  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
-
-  if (!document) {
-    return res.status(404).json({
-      success: false,
-      message: '文档不存在',
-    });
-  }
+router.put('/:id', authMiddleware, requireDocumentEditor, (req, res) => {
+  const document = req.document;
 
   try {
     const body = {
@@ -526,13 +534,8 @@ router.put('/:id', authMiddleware, (req, res) => {
 });
 
 // POST /api/v2/documents/:id/replace - 替换文档文件
-router.post('/:id/replace', authMiddleware, upload.single('file'), (req, res) => {
-  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
-
-  if (!document) {
-    if (req.file) fs.unlinkSync(req.file.path);
-    return res.status(404).json({ success: false, message: '文档不存在' });
-  }
+router.post('/:id/replace', authMiddleware, requireDocumentEditor, upload.single('file'), (req, res) => {
+  const document = req.document;
 
   if (!req.file) {
     return res.status(400).json({ success: false, message: '请选择要替换的文件' });
@@ -563,15 +566,8 @@ router.post('/:id/replace', authMiddleware, upload.single('file'), (req, res) =>
 });
 
 // DELETE /api/v2/documents/:id - 删除文档
-router.delete('/:id', authMiddleware, (req, res) => {
-  const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
-
-  if (!document) {
-    return res.status(404).json({
-      success: false,
-      message: '文档不存在',
-    });
-  }
+router.delete('/:id', authMiddleware, requireDocumentEditor, (req, res) => {
+  const document = req.document;
 
   // 软删除
   db.prepare('UPDATE documents SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')

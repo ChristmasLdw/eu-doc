@@ -20,6 +20,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { requireCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
 
@@ -353,7 +354,7 @@ router.post('/', authMiddleware, (req, res) => {
  * PUT /api/companies/:id
  * 更新企业（需认证）
  */
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', authMiddleware, requireCompanyRole(['applicant', 'owner', 'admin']), (req, res) => {
   ensureCompanyColumns();
   const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
 
@@ -475,7 +476,7 @@ router.delete('/:id', authMiddleware, (req, res) => {
  * POST /api/companies/:id/logo
  * 上传企业Logo（需认证）
  */
-router.post('/:id/logo', authMiddleware, logoUpload.single('logo'), (req, res) => {
+router.post('/:id/logo', authMiddleware, requireCompanyRole(['applicant', 'owner', 'admin']), logoUpload.single('logo'), (req, res) => {
   const companyId = req.params.id;
 
   // 检查企业是否存在

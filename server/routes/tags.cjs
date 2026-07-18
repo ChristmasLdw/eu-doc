@@ -16,8 +16,11 @@
 const { Router } = require('express');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
+const PRODUCT_TAG_EDITOR_ROLES = ['applicant', 'owner', 'admin'];
+const DOCUMENT_TAG_EDITOR_ROLES = ['applicant', 'owner', 'admin', 'uploader'];
 
 // GET /api/v2/tags - 获取标签列表
 router.get('/', (req, res) => {
@@ -311,6 +314,10 @@ router.post('/:id/products', authMiddleware, (req, res) => {
     });
   }
 
+  if (!hasCompanyRole(req, product.company_id, PRODUCT_TAG_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权修改该产品的标签' });
+  }
+
   // 检查是否已经打过标签
   const existing = db.prepare('SELECT * FROM product_tags WHERE product_id = ? AND tag_id = ?')
     .get(productId, tag.id);
@@ -338,6 +345,14 @@ router.post('/:id/products', authMiddleware, (req, res) => {
 
 // DELETE /api/v2/tags/:id/products/:productId - 移除产品标签
 router.delete('/:id/products/:productId', authMiddleware, (req, res) => {
+  const product = db.prepare('SELECT company_id FROM products WHERE id = ?').get(req.params.productId);
+  if (!product) {
+    return res.status(404).json({ success: false, message: '产品不存在' });
+  }
+  if (!hasCompanyRole(req, product.company_id, PRODUCT_TAG_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权修改该产品的标签' });
+  }
+
   const result = db.prepare('DELETE FROM product_tags WHERE tag_id = ? AND product_id = ?')
     .run(req.params.id, req.params.productId);
 
@@ -380,6 +395,10 @@ router.post('/:id/documents', authMiddleware, (req, res) => {
     });
   }
 
+  if (!hasCompanyRole(req, document.company_id, DOCUMENT_TAG_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权修改该文档的标签' });
+  }
+
   // 检查是否已经打过标签
   const existing = db.prepare('SELECT * FROM document_tags WHERE document_id = ? AND tag_id = ?')
     .get(documentId, tag.id);
@@ -407,6 +426,14 @@ router.post('/:id/documents', authMiddleware, (req, res) => {
 
 // DELETE /api/v2/tags/:id/documents/:documentId - 移除文档标签
 router.delete('/:id/documents/:documentId', authMiddleware, (req, res) => {
+  const document = db.prepare('SELECT company_id FROM documents WHERE id = ?').get(req.params.documentId);
+  if (!document) {
+    return res.status(404).json({ success: false, message: '文档不存在' });
+  }
+  if (!hasCompanyRole(req, document.company_id, DOCUMENT_TAG_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权修改该文档的标签' });
+  }
+
   const result = db.prepare('DELETE FROM document_tags WHERE tag_id = ? AND document_id = ?')
     .run(req.params.id, req.params.documentId);
 

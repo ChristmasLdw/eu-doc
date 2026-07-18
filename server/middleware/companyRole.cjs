@@ -5,6 +5,26 @@
 
 const { db } = require('../db.cjs');
 
+function hasCompanyRole(req, companyId, allowedRoles) {
+  if (!req.admin || !companyId) return false;
+
+  if (req.admin.role === 'platform_admin' || req.admin.role === 'admin') {
+    return true;
+  }
+
+  const membership = db.prepare(`
+    SELECT role FROM company_members
+    WHERE user_id = ? AND company_id = ? AND status = 'active'
+  `).get(req.admin.id, companyId);
+
+  if (!membership || !allowedRoles.includes(membership.role)) {
+    return false;
+  }
+
+  req.companyRole = membership.role;
+  return true;
+}
+
 /**
  * 检查用户在企业中的角色权限
  * @param {Array<string>} allowedRoles - 允许的角色列表，如 ['owner', 'admin']
@@ -21,33 +41,13 @@ function requireCompanyRole(allowedRoles) {
       });
     }
 
-    // 平台管理员拥有所有权限
-    if (req.admin.role === 'platform_admin' || req.admin.role === 'admin') {
-      return next();
-    }
-
-    // 查询用户在该企业中的角色
-    const membership = db.prepare(`
-      SELECT role FROM company_members
-      WHERE user_id = ? AND company_id = ? AND status = 'active'
-    `).get(req.admin.id, companyId);
-
-    if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: '您不是该企业的成员',
-      });
-    }
-
-    if (!allowedRoles.includes(membership.role)) {
+    if (!hasCompanyRole(req, companyId, allowedRoles)) {
       return res.status(403).json({
         success: false,
         message: '权限不足，无法执行此操作',
       });
     }
 
-    // 将用户在该企业的角色附加到请求对象上，供后续使用
-    req.companyRole = membership.role;
     next();
   };
 }
@@ -87,6 +87,7 @@ function requireCompanyMember(req, res, next) {
 }
 
 module.exports = {
+  hasCompanyRole,
   requireCompanyRole,
   requireCompanyMember,
 };

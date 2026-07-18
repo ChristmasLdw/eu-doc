@@ -16,9 +16,24 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
-const { requireCompanyRole } = require('../middleware/companyRole.cjs');
+const { hasCompanyRole, requireCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
+const PRODUCT_EDITOR_ROLES = ['applicant', 'owner', 'admin'];
+
+function requireProductEditor(req, res, next) {
+  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  if (!product) {
+    return res.status(404).json({ success: false, message: '产品不存在' });
+  }
+
+  if (!hasCompanyRole(req, product.company_id, PRODUCT_EDITOR_ROLES)) {
+    return res.status(403).json({ success: false, message: '无权操作该产品' });
+  }
+
+  req.product = product;
+  next();
+}
 
 const PRODUCT_EXTRA_FIELDS = [
   'dimensions',
@@ -590,12 +605,8 @@ router.put('/:id', authMiddleware, (req, res) => {
 });
 
 // POST /api/v2/products/:id/image - 上传产品图
-router.post('/:id/image', authMiddleware, imageUpload.single('image'), (req, res) => {
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-  if (!product) {
-    if (req.file) fs.unlinkSync(req.file.path);
-    return res.status(404).json({ success: false, message: '产品不存在' });
-  }
+router.post('/:id/image', authMiddleware, requireProductEditor, imageUpload.single('image'), (req, res) => {
+  const product = req.product;
   if (!req.file) return res.status(400).json({ success: false, message: '请选择产品图片' });
 
   const imagePath = `/uploads/products/${req.file.filename}`;

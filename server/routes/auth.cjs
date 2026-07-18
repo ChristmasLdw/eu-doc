@@ -270,11 +270,15 @@ router.post('/forgot-password', (req, res) => {
     VALUES (?, ?, ?, 'reset', ?)
   `).run(user.id, email, resetToken, expiresAt);
 
-  res.json({
+  const response = {
     success: true,
     message: '如果该邮箱已注册，您将收到重置密码邮件',
-    resetToken, // 开发环境返回，生产环境应通过邮件发送
-  });
+  };
+  if (process.env.NODE_ENV === 'development') {
+    response.resetToken = resetToken;
+  }
+
+  res.json(response);
 });
 
 /**
@@ -302,7 +306,7 @@ router.post('/reset-password', (req, res) => {
   }
 
   const hash = bcrypt.hashSync(newPassword, 10);
-  db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+  db.prepare('UPDATE users SET password_hash = ?, session_version = COALESCE(session_version, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
     .run(hash, verification.user_id);
   db.prepare('UPDATE email_verifications SET used = 1 WHERE id = ?').run(verification.id);
 
