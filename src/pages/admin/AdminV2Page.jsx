@@ -198,6 +198,7 @@ function StatusPill({ children, tone = 'blue' }) {
 }
 
 const MEMBER_ROLES = {
+  applicant: { label: '企业申请人', scope: '认证前拥有者权限' },
   owner: { label: '企业拥有者', scope: '全部权限' },
   admin: { label: '企业管理员', scope: '产品、资料和成员管理' },
   uploader: { label: '资料上传员', scope: '上传和管理资料' },
@@ -3619,8 +3620,9 @@ export default function AdminV2Page() {
                   const role = MEMBER_ROLES[member.role] || { label: member.role, scope: '按系统角色控制' };
                   const name = member.displayName || member.email?.split('@')[0] || '未命名成员';
                   const status = member.status === 'active' ? '正常' : '已停用';
-                  const canEdit = memberPermissions.canChangeRoles && member.role !== 'owner';
-                  const canRemove = memberPermissions.canRemoveMembers && member.role !== 'owner' && String(member.userId) !== String(admin?.id);
+                  const isPrimaryMember = ['applicant', 'owner'].includes(member.role);
+                  const canEdit = memberPermissions.canChangeRoles && !isPrimaryMember;
+                  const canRemove = memberPermissions.canRemoveMembers && !isPrimaryMember && String(member.userId) !== String(admin?.id);
                   return (
                     <article key={member.id} className={styles.memberCard}>
                       <div className={styles.memberAvatar}>{name.slice(0, 1).toUpperCase()}</div>

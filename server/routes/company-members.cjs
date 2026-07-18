@@ -55,9 +55,9 @@ router.get('/', authMiddleware, (req, res) => {
     data: members,
     operatorRole: membership.role,
     permissions: {
-      canInvite: ['owner', 'admin'].includes(membership.role),
-      canChangeRoles: membership.role === 'owner',
-      canRemoveMembers: ['owner', 'admin'].includes(membership.role),
+      canInvite: ['applicant', 'owner', 'admin'].includes(membership.role),
+      canChangeRoles: ['applicant', 'owner'].includes(membership.role),
+      canRemoveMembers: ['applicant', 'owner', 'admin'].includes(membership.role),
     },
   });
 });
@@ -134,7 +134,7 @@ router.post('/invite', authMiddleware, (req, res) => {
   // 检查操作者是否是该企业的 owner 或 admin
   const operatorMembership = getActiveMembership(req.admin.id, companyId);
 
-  if (!operatorMembership || !['owner', 'admin'].includes(operatorMembership.role)) {
+  if (!operatorMembership || !['applicant', 'owner', 'admin'].includes(operatorMembership.role)) {
     return res.status(403).json({ success: false, message: '只有企业所有者或管理员可以邀请成员' });
   }
 
@@ -185,10 +185,10 @@ router.put('/:id/role', authMiddleware, (req, res) => {
     return res.status(404).json({ success: false, message: '成员不存在' });
   }
 
-  // 只有 owner 可以修改角色
+  // 企业申请人在认证前承担所有者职责；认证通过后会自动转为 owner。
   const operatorMembership = getActiveMembership(req.admin.id, member.company_id);
 
-  if (!operatorMembership || operatorMembership.role !== 'owner') {
+  if (!operatorMembership || !['applicant', 'owner'].includes(operatorMembership.role)) {
     return res.status(403).json({ success: false, message: '只有企业所有者可以修改成员角色' });
   }
 
@@ -228,7 +228,7 @@ router.delete('/:id', authMiddleware, (req, res) => {
     return res.status(403).json({ success: false, message: '无权操作' });
   }
 
-  if (member.user_id !== req.admin.id && !['owner', 'admin'].includes(operatorMembership.role)) {
+  if (member.user_id !== req.admin.id && !['applicant', 'owner', 'admin'].includes(operatorMembership.role)) {
     return res.status(403).json({ success: false, message: '无权移除该成员' });
   }
 
