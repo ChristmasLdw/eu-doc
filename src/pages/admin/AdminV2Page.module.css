@@ -1749,7 +1749,7 @@ tbody tr:last-child td {
 
 .memberRoleStrip {
   display: grid;
-  grid-template-columns: 1.4fr repeat(5, minmax(110px, 1fr));
+  grid-template-columns: 1.4fr repeat(4, minmax(110px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -1811,6 +1811,17 @@ tbody tr:last-child td {
   background: var(--bg-input);
 }
 
+.memberMeta select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-weight: 700;
+}
+
 .primaryTextBtn,
 .secondaryTextBtn {
   min-height: 36px;
@@ -1831,9 +1842,25 @@ tbody tr:last-child td {
   color: var(--text-secondary);
 }
 
+.dangerTextBtn {
+  min-height: 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #dc2626;
+  font-family: var(--font-family);
+  font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+}
+
 .primaryTextBtn:hover,
 .secondaryTextBtn:hover {
   background: var(--bg-input);
+}
+
+.dangerTextBtn:hover {
+  background: rgba(220, 38, 38, 0.08);
 }
 
 @media (max-width: 1200px) {

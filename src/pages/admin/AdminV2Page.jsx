@@ -197,6 +197,85 @@ function StatusPill({ children, tone = 'blue' }) {
   return <span className={`${styles.pill} ${styles[tone]}`}>{children}</span>;
 }
 
+const MEMBER_ROLES = {
+  owner: { label: '企业拥有者', scope: '全部权限' },
+  admin: { label: '企业管理员', scope: '产品、资料和成员管理' },
+  uploader: { label: '资料上传员', scope: '上传和管理资料' },
+  viewer: { label: '只读成员', scope: '查看企业资料' },
+};
+
+const ACTIVITY_ACTIONS = {
+  create: '新建',
+  update: '更新',
+  delete: '删除',
+  delete_draft: '删除草稿公司',
+  upload_logo: '更新公司 Logo',
+  upload_product_image: '更新产品图片',
+  replace_file: '替换资料文件',
+  submit_verification: '提交企业认证',
+  approve_verification: '通过企业认证',
+  reject_verification: '驳回企业认证',
+  invite_member: '添加企业成员',
+  update_member_role: '修改成员权限',
+  remove_member: '移除企业成员',
+  create_company: '创建公司',
+};
+
+function parseActivityDetail(detail) {
+  if (!detail) return {};
+  if (typeof detail === 'object') return detail;
+  try {
+    return JSON.parse(detail);
+  } catch {
+    return { text: String(detail) };
+  }
+}
+
+function getActivityType(log) {
+  if (['invite_member', 'update_member_role', 'remove_member'].includes(log.action)) return 'member';
+  if (log.targetType === 'company') return 'company';
+  if (log.targetType === 'product') return 'product';
+  if (['document', 'certificate'].includes(log.targetType)) return 'file';
+  return 'other';
+}
+
+function getActivityTypeLabel(type) {
+  return ({ company: '公司资料', product: '产品资料', file: '资料管理', member: '员工权限', other: '其他操作' })[type] || '其他操作';
+}
+
+function getActivityDescription(log) {
+  const detail = parseActivityDetail(log.detail);
+  const target = log.targetName || detail.name || detail.title || `#${log.targetId || '-'}`;
+  if (log.action === 'invite_member') return `添加 ${detail.email || '新成员'}，角色为 ${MEMBER_ROLES[detail.role]?.label || detail.role || '成员'}`;
+  if (log.action === 'update_member_role') return `将 ${detail.displayName || detail.email || '成员'} 从 ${MEMBER_ROLES[detail.oldRole]?.label || detail.oldRole || '-'} 调整为 ${MEMBER_ROLES[detail.newRole]?.label || detail.newRole || '-'}`;
+  if (log.action === 'remove_member') return `移除成员 ${detail.displayName || detail.email || ''}`.trim();
+  if (log.action === 'create' && log.targetType === 'product') return `新建产品「${target}」`;
+  if (log.action === 'update' && log.targetType === 'product') return `更新产品「${target}」`;
+  if (log.action === 'delete' && log.targetType === 'product') return `删除产品「${target}」`;
+  if (log.action === 'create' && ['document', 'certificate'].includes(log.targetType)) return `上传资料「${target}」`;
+  if (log.action === 'update' && ['document', 'certificate'].includes(log.targetType)) return `更新资料「${target}」`;
+  if (log.action === 'delete' && ['document', 'certificate'].includes(log.targetType)) return `删除资料「${target}」`;
+  if (log.action === 'replace_file') return `替换资料「${target}」的文件版本`;
+  if (log.action === 'update' && log.targetType === 'company') return `更新公司「${target}」的资料`;
+  if (log.action === 'upload_logo') return `更新公司「${target}」的 Logo`;
+  if (log.action === 'submit_verification') return `提交公司「${target}」的企业认证`;
+  if (log.action === 'approve_verification') return `通过公司「${target}」的企业认证`;
+  if (log.action === 'reject_verification') return `驳回公司「${target}」的企业认证`;
+  return detail.text || `${ACTIVITY_ACTIONS[log.action] || log.action || '操作'} ${target}`;
+}
+
+function parseUtcDate(value) {
+  if (!value) return null;
+  const normalized = String(value).includes('T') ? String(value) : `${String(value).replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatActivityTime(value) {
+  const date = parseUtcDate(value);
+  return date ? date.toLocaleString('zh-CN', { hour12: false }) : value || '-';
+}
+
 
 function getImportGroupKey(item) {
   const model = (item.guessedModels || item.guessedModel || '').trim() || item.originalName.replace(/[_\-. ](en|de|fr|zh|es|it|nl|pl|pt|cs|sv|da|fi)(\.[a-z0-9]+)?$/i, '');
@@ -535,6 +614,17 @@ export default function AdminV2Page() {
   const [recentlyDeletedItems, setRecentlyDeletedItems] = useState([]);
   const [notificationItems, setNotificationItems] = useState([]);
   const [loginRecords, setLoginRecords] = useState([]);
+  const [companyMembers, setCompanyMembers] = useState([]);
+  const [memberPermissions, setMemberPermissions] = useState({});
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [memberError, setMemberError] = useState('');
+  const [memberFilters, setMemberFilters] = useState({ query: '', role: 'all', status: 'all' });
+  const [memberInviteModal, setMemberInviteModal] = useState({ open: false, email: '', role: 'viewer' });
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [companyActivity, setCompanyActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityError, setActivityError] = useState('');
+  const [activityFilters, setActivityFilters] = useState({ query: '', type: 'all', range: '7d' });
   const [profileForm, setProfileForm] = useState({
     displayName: admin?.display_name || admin?.username || 'admin',
     realName: '',
@@ -674,6 +764,48 @@ export default function AdminV2Page() {
     () => companies.find((company) => String(company.id) === String(activeCompany)) || companies[0],
     [activeCompany, companies]
   );
+  const filteredCompanyMembers = useMemo(() => {
+    const query = memberFilters.query.trim().toLowerCase();
+    return companyMembers.filter((member) => {
+      const searchText = `${member.displayName || ''} ${member.email || ''} U-${String(member.userId || '').padStart(6, '0')}`.toLowerCase();
+      if (query && !searchText.includes(query)) return false;
+      if (memberFilters.role !== 'all' && member.role !== memberFilters.role) return false;
+      if (memberFilters.status !== 'all' && member.status !== memberFilters.status) return false;
+      return true;
+    });
+  }, [companyMembers, memberFilters]);
+  const rangedCompanyActivity = useMemo(() => {
+    if (activityFilters.range === 'all') return companyActivity;
+    const days = activityFilters.range === '30d' ? 30 : 7;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return companyActivity.filter((log) => {
+      const date = parseUtcDate(log.createdAt);
+      return date && date.getTime() >= cutoff;
+    });
+  }, [activityFilters.range, companyActivity]);
+  const filteredCompanyActivity = useMemo(() => {
+    const query = activityFilters.query.trim().toLowerCase();
+    return rangedCompanyActivity.filter((log) => {
+      const type = getActivityType(log);
+      if (activityFilters.type !== 'all' && type !== activityFilters.type) return false;
+      if (!query) return true;
+      const searchText = `${log.actorName || ''} ${log.actorEmail || ''} ${ACTIVITY_ACTIONS[log.action] || log.action || ''} ${getActivityDescription(log)} ${log.targetName || ''}`.toLowerCase();
+      return searchText.includes(query);
+    });
+  }, [activityFilters.query, activityFilters.type, rangedCompanyActivity]);
+  const activitySummary = useMemo(() => {
+    const today = new Date();
+    const isToday = (value) => {
+      const date = parseUtcDate(value);
+      return date && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
+    };
+    return {
+      today: companyActivity.filter((log) => isToday(log.createdAt)).length,
+      company: rangedCompanyActivity.filter((log) => getActivityType(log) === 'company').length,
+      files: rangedCompanyActivity.filter((log) => getActivityType(log) === 'file').length,
+      members: rangedCompanyActivity.filter((log) => getActivityType(log) === 'member').length,
+    };
+  }, [companyActivity, rangedCompanyActivity]);
   const unreadNotificationCount = notificationItems.filter((item) => item.status === '未读' || item.status === '待处理').length;
   const verificationNotice = notificationItems.find((item) => item.status === '未读' && item.title?.includes('企业认证'));
 
@@ -1380,6 +1512,44 @@ export default function AdminV2Page() {
     return () => { cancelled = true; };
   }, [activeCompany]);
 
+  const refreshCompanyMembers = async () => {
+    if (!activeCompany) return;
+    setMemberLoading(true);
+    setMemberError('');
+    try {
+      const response = await api.getCompanyMembers(activeCompany);
+      setCompanyMembers(response.members);
+      setMemberPermissions(response.permissions);
+      setCompanies((items) => items.map((item) => String(item.id) === String(activeCompany) ? { ...item, memberRole: response.operatorRole } : item));
+    } catch (error) {
+      setMemberError(error.message || '成员数据读取失败');
+      setCompanyMembers([]);
+      setMemberPermissions({});
+    } finally {
+      setMemberLoading(false);
+    }
+  };
+
+  const refreshCompanyActivity = async () => {
+    if (!activeCompany) return;
+    setActivityLoading(true);
+    setActivityError('');
+    try {
+      setCompanyActivity(await api.getCompanyActivity(activeCompany));
+    } catch (error) {
+      setActivityError(error.message || '操作记录读取失败');
+      setCompanyActivity([]);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeCompany || activeGroup !== 'company') return;
+    if (activePage === 'members') refreshCompanyMembers();
+    if (activePage === 'logs') refreshCompanyActivity();
+  }, [activeCompany, activeGroup, activePage]);
+
   const refreshImportItems = async () => {
     if (!activeCompany) return;
     try {
@@ -1662,6 +1832,79 @@ export default function AdminV2Page() {
   const showAction = (message) => {
     setActionMessage(message);
     setTimeout(() => setActionMessage(''), 1800);
+  };
+
+  const inviteMember = async () => {
+    const email = memberInviteModal.email.trim();
+    if (!email) {
+      showAction('请输入已注册用户的邮箱');
+      return;
+    }
+    try {
+      await api.inviteCompanyMember(activeCompany, email, memberInviteModal.role);
+      setMemberInviteModal({ open: false, email: '', role: 'viewer' });
+      showAction('成员已添加');
+      await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
+    } catch (error) {
+      showAction(error.message || '添加成员失败');
+    }
+  };
+
+  const updateMemberRole = async (member, role) => {
+    if (role === member.role) {
+      setEditingMemberId(null);
+      return;
+    }
+    try {
+      await api.updateCompanyMemberRole(member.id, role);
+      setEditingMemberId(null);
+      showAction('成员权限已更新');
+      await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
+    } catch (error) {
+      showAction(error.message || '权限更新失败');
+    }
+  };
+
+  const removeMember = async (member) => {
+    const name = member.displayName || member.email || '该成员';
+    if (!window.confirm(`确认将 ${name} 从当前公司移除？`)) return;
+    try {
+      await api.removeCompanyMember(member.id);
+      showAction('成员已移除');
+      await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
+    } catch (error) {
+      showAction(error.message || '移除成员失败');
+    }
+  };
+
+  const showMemberActivity = (member) => {
+    setActivityFilters((filters) => ({ ...filters, query: member.email || member.displayName || '' }));
+    setActivePage('logs');
+  };
+
+  const exportCompanyActivity = () => {
+    if (!filteredCompanyActivity.length) {
+      showAction('当前筛选条件下没有可导出的记录');
+      return;
+    }
+    const escapeCsv = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const rows = [
+      ['时间', '操作人', '操作', '类型', '内容'],
+      ...filteredCompanyActivity.map((log) => [
+        formatActivityTime(log.createdAt),
+        log.actorName || log.actorEmail || '未知用户',
+        ACTIVITY_ACTIONS[log.action] || log.action || '操作',
+        getActivityTypeLabel(getActivityType(log)),
+        getActivityDescription(log),
+      ]),
+    ];
+    const blob = new Blob([`\uFEFF${rows.map((row) => row.map(escapeCsv).join(',')).join('\n')}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${currentCompany?.name || 'company'}-操作记录.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const copyUserCode = async () => {
@@ -3309,28 +3552,32 @@ export default function AdminV2Page() {
       }
 
       if (activePage === 'members') {
+        const roleCounts = Object.keys(MEMBER_ROLES).map((role) => [
+          MEMBER_ROLES[role].label,
+          companyMembers.filter((member) => member.role === role).length,
+        ]);
         return (
           <Section title={t('admin.members.title')} desc={t('admin.members.desc')}>
             <div className={styles.memberHeaderPanel}>
               <div>
                 <h3>团队成员</h3>
-                <p>企业拥有者可以邀请员工，并控制他们能操作哪些内容。</p>
+                <p>成员数据来自当前公司的真实账号关系；添加成员前，对方需要先注册 EU-DOC。</p>
               </div>
-              <button className={styles.primaryBtn}>邀请员工</button>
+              <button
+                className={styles.primaryBtn}
+                disabled={!memberPermissions.canInvite}
+                onClick={() => setMemberInviteModal({ open: true, email: '', role: 'viewer' })}
+              >
+                添加员工
+              </button>
             </div>
 
             <div className={styles.memberRoleStrip}>
               <div className={styles.memberRoleIntro}>
                 <h3>角色概览</h3>
-                <p>不同角色决定员工能操作哪些内容。</p>
+                <p>共 {companyMembers.length} 位真实成员。</p>
               </div>
-              {[
-                ['企业拥有者', '1'],
-                ['企业管理员', '0'],
-                ['产品编辑', '1'],
-                ['资料上传员', '1'],
-                ['只读成员', '0'],
-              ].map(([role, count]) => (
+              {roleCounts.map(([role, count]) => (
                 <div key={role} className={styles.memberRolePill}>
                   <strong>{count}</strong>
                   <span>{role}</span>
@@ -3342,52 +3589,68 @@ export default function AdminV2Page() {
               <div className={styles.listTitleRow}>
                 <div>
                   <h3>成员列表</h3>
-                  <p>查看成员身份，调整角色或停用权限。</p>
+                  <p>{memberPermissions.canChangeRoles ? '你可以调整非拥有者成员的角色。' : '只有企业拥有者可以修改成员角色。'}</p>
                 </div>
               </div>
               <div className={styles.productTools}>
-                <input placeholder="搜索姓名、邮箱、用户编号" />
-                <select defaultValue="all">
+                <input
+                  value={memberFilters.query}
+                  onChange={(event) => setMemberFilters((filters) => ({ ...filters, query: event.target.value }))}
+                  placeholder="搜索姓名、邮箱、用户编号"
+                />
+                <select value={memberFilters.role} onChange={(event) => setMemberFilters((filters) => ({ ...filters, role: event.target.value }))}>
                   <option value="all">全部角色</option>
-                  <option value="owner">企业拥有者</option>
-                  <option value="admin">企业管理员</option>
-                  <option value="editor">产品编辑</option>
-                  <option value="uploader">资料上传员</option>
-                  <option value="viewer">只读成员</option>
+                  {Object.entries(MEMBER_ROLES).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}
                 </select>
-                <select defaultValue="all">
+                <select value={memberFilters.status} onChange={(event) => setMemberFilters((filters) => ({ ...filters, status: event.target.value }))}>
                   <option value="all">全部状态</option>
                   <option value="active">正常</option>
-                  <option value="pending">待接受邀请</option>
                   <option value="disabled">已停用</option>
                 </select>
-                <button className={styles.secondaryBtn}>权限模板</button>
+                <button className={styles.secondaryBtn} onClick={refreshCompanyMembers}>刷新</button>
               </div>
 
               <div className={styles.memberCards}>
-                {[
-                  ['admin', 'U-000001', 'admin@legacy.local', '企业拥有者', '正常', '全部权限'],
-                  ['质量部成员', 'U-000128', 'quality@example.com', '产品编辑', '正常', '产品管理'],
-                  ['资料上传员', 'U-000256', 'upload@example.com', '资料上传员', '待接受邀请', '资料上传'],
-                ].map(([name, code, email, role, status, scope]) => (
-                  <article key={code} className={styles.memberCard}>
-                    <div className={styles.memberAvatar}>{name.slice(0, 1).toUpperCase()}</div>
-                    <div className={styles.memberInfo}>
-                      <h3>{name}</h3>
-                      <p>{email}</p>
-                      <small>{code}</small>
-                    </div>
-                    <div className={styles.memberMeta}>
-                      <span><strong>角色</strong><em>{role}</em></span>
-                      <span><strong>权限范围</strong><em>{scope}</em></span>
-                      <span><strong>状态</strong><em className={status === '正常' ? styles.statusOk : status === '待接受邀请' ? styles.statusPending : styles.statusMuted}>{status}</em></span>
-                    </div>
-                    <div className={styles.memberActions}>
-                      <button className={styles.primaryTextBtn}>修改权限</button>
-                      <button className={styles.secondaryTextBtn}>查看记录</button>
-                    </div>
-                  </article>
-                ))}
+                {memberLoading ? (
+                  <div className={styles.emptyState}>正在读取成员数据...</div>
+                ) : memberError ? (
+                  <div className={styles.emptyState}>{memberError}</div>
+                ) : filteredCompanyMembers.length ? filteredCompanyMembers.map((member) => {
+                  const role = MEMBER_ROLES[member.role] || { label: member.role, scope: '按系统角色控制' };
+                  const name = member.displayName || member.email?.split('@')[0] || '未命名成员';
+                  const status = member.status === 'active' ? '正常' : '已停用';
+                  const canEdit = memberPermissions.canChangeRoles && member.role !== 'owner';
+                  const canRemove = memberPermissions.canRemoveMembers && member.role !== 'owner' && String(member.userId) !== String(admin?.id);
+                  return (
+                    <article key={member.id} className={styles.memberCard}>
+                      <div className={styles.memberAvatar}>{name.slice(0, 1).toUpperCase()}</div>
+                      <div className={styles.memberInfo}>
+                        <h3>{name}</h3>
+                        <p>{member.email}</p>
+                        <small>U-{String(member.userId).padStart(6, '0')}</small>
+                      </div>
+                      <div className={styles.memberMeta}>
+                        <span>
+                          <strong>角色</strong>
+                          {editingMemberId === member.id ? (
+                            <select value={member.role} autoFocus onChange={(event) => updateMemberRole(member, event.target.value)} onBlur={() => setEditingMemberId(null)}>
+                              <option value="admin">企业管理员</option>
+                              <option value="uploader">资料上传员</option>
+                              <option value="viewer">只读成员</option>
+                            </select>
+                          ) : <em>{role.label}</em>}
+                        </span>
+                        <span><strong>权限范围</strong><em>{role.scope}</em></span>
+                        <span><strong>状态</strong><em className={status === '正常' ? styles.statusOk : styles.statusMuted}>{status}</em></span>
+                      </div>
+                      <div className={styles.memberActions}>
+                        {canEdit && <button className={styles.primaryTextBtn} onClick={() => setEditingMemberId(member.id)}>修改权限</button>}
+                        <button className={styles.secondaryTextBtn} onClick={() => showMemberActivity(member)}>查看记录</button>
+                        {canRemove && <button className={styles.dangerTextBtn} onClick={() => removeMember(member)}>移除成员</button>}
+                      </div>
+                    </article>
+                  );
+                }) : <div className={styles.emptyState}>没有符合筛选条件的成员。</div>}
               </div>
             </div>
           </Section>
@@ -3656,13 +3919,13 @@ export default function AdminV2Page() {
 
       if (activePage === 'logs') {
         return (
-          <Section title={t('admin.logs.title')} desc={t('admin.logs.desc')}>
+          <Section title={t('admin.logs.title')} desc={`记录 ${currentCompany.name} 的真实公司、产品、资料和成员操作。`}>
             <div className={styles.logSummaryGrid}>
               {[
-                ['今日操作', '12', '最近活跃'],
-                ['资料修改', '4', '公司 / 产品'],
-                ['资料操作', '6', '上传 / 替换'],
-                ['权限变更', '2', '成员 / 角色'],
+                ['今日操作', activitySummary.today, '按当前本地日期统计'],
+                ['公司资料', activitySummary.company, activityFilters.range === 'all' ? '全部时间' : `最近 ${activityFilters.range === '30d' ? 30 : 7} 天`],
+                ['资料操作', activitySummary.files, '上传 / 更新 / 替换'],
+                ['权限变更', activitySummary.members, '添加 / 角色 / 移除'],
               ].map(([name, count, desc]) => (
                 <div key={name} className={styles.logSummaryCard}>
                   <strong>{count}</strong>
@@ -3673,44 +3936,50 @@ export default function AdminV2Page() {
             </div>
 
             <div className={styles.logToolbar}>
-              <input placeholder="搜索操作人、对象、内容" />
-              <select defaultValue="all">
+              <input
+                value={activityFilters.query}
+                onChange={(event) => setActivityFilters((filters) => ({ ...filters, query: event.target.value }))}
+                placeholder="搜索操作人、对象、内容"
+              />
+              <select value={activityFilters.type} onChange={(event) => setActivityFilters((filters) => ({ ...filters, type: event.target.value }))}>
                 <option value="all">全部类型</option>
                 <option value="company">公司资料</option>
                 <option value="product">产品资料</option>
                 <option value="file">资料管理</option>
                 <option value="member">员工权限</option>
               </select>
-              <select defaultValue="7d">
+              <select value={activityFilters.range} onChange={(event) => setActivityFilters((filters) => ({ ...filters, range: event.target.value }))}>
                 <option value="7d">最近 7 天</option>
                 <option value="30d">最近 30 天</option>
                 <option value="all">全部时间</option>
               </select>
-              <button className={styles.secondaryBtn}>导出记录</button>
+              <button className={styles.secondaryBtn} onClick={exportCompanyActivity}>导出记录</button>
             </div>
 
             <div className={styles.timelineList}>
-              {[
-                ['今天 15:42', 'admin', '上传资料', '为 Equestrian Helmet F20 上传 DoC 声明资料', '资料管理'],
-                ['今天 14:18', '质量部成员', '编辑产品', '修改产品 F20-201AL 的适用型号', '产品资料'],
-                ['昨天 20:05', 'admin', '修改权限', '将 quality@example.com 设置为产品编辑', '员工权限'],
-                ['昨天 18:30', '资料上传员', '替换资料', '替换 CE Certificate - F20 资料版本', '资料管理'],
-              ].map(([time, user, action, content, type]) => (
-                <article key={`${time}-${action}`} className={styles.timelineItem}>
-                  <div className={styles.timelineDot} />
-                  <div className={styles.timelineMain}>
-                    <div>
-                      <h3>{action}</h3>
-                      <p>{content}</p>
+              {activityLoading ? (
+                <div className={styles.emptyState}>正在读取真实操作记录...</div>
+              ) : activityError ? (
+                <div className={styles.emptyState}>{activityError}</div>
+              ) : filteredCompanyActivity.length ? filteredCompanyActivity.map((log) => {
+                const type = getActivityType(log);
+                return (
+                  <article key={log.id} className={styles.timelineItem}>
+                    <div className={styles.timelineDot} />
+                    <div className={styles.timelineMain}>
+                      <div>
+                        <h3>{ACTIVITY_ACTIONS[log.action] || log.action || '操作'}</h3>
+                        <p>{getActivityDescription(log)}</p>
+                      </div>
+                      <span>{getActivityTypeLabel(type)}</span>
                     </div>
-                    <span>{type}</span>
-                  </div>
-                  <div className={styles.timelineMeta}>
-                    <strong>{user}</strong>
-                    <em>{time}</em>
-                  </div>
-                </article>
-              ))}
+                    <div className={styles.timelineMeta}>
+                      <strong>{log.actorName || log.actorEmail || '未知用户'}</strong>
+                      <em>{formatActivityTime(log.createdAt)}</em>
+                    </div>
+                  </article>
+                );
+              }) : <div className={styles.emptyState}>当前筛选条件下没有操作记录。</div>}
             </div>
           </Section>
         );
@@ -4295,6 +4564,39 @@ export default function AdminV2Page() {
                 <div className={styles.modalActions}>
                   <button className={styles.secondaryBtn} onClick={() => setCompanyModal({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>取消</button>
                   <button className={styles.primaryBtn} onClick={submitCompanyModal}>{companyModal.mode === 'create' ? '创建申请草稿' : '提交认领申请'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {memberInviteModal.open && (
+            <div className={styles.modalBackdrop} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>
+              <div className={styles.adminModal} onClick={(event) => event.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                  <div>
+                    <h3>添加企业成员</h3>
+                    <p>输入已注册 EU-DOC 的邮箱。添加成功后，该账号会立即获得当前公司的对应权限。</p>
+                  </div>
+                  <button className={styles.iconCloseBtn} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>×</button>
+                </div>
+                <div className={styles.modalFormGrid}>
+                  <label className={styles.fullField}>
+                    <span>成员邮箱</span>
+                    <input type="email" value={memberInviteModal.email} onChange={(event) => setMemberInviteModal((form) => ({ ...form, email: event.target.value }))} placeholder="member@example.com" />
+                  </label>
+                  <label className={styles.fullField}>
+                    <span>初始角色</span>
+                    <select value={memberInviteModal.role} onChange={(event) => setMemberInviteModal((form) => ({ ...form, role: event.target.value }))}>
+                      <option value="admin">企业管理员 - 管理产品、资料和成员</option>
+                      <option value="uploader">资料上传员 - 上传和管理资料</option>
+                      <option value="viewer">只读成员 - 仅查看企业资料</option>
+                    </select>
+                  </label>
+                </div>
+                <div className={styles.profileNote}>当前版本只支持添加已注册账号，不会向未注册邮箱发送虚假的邀请邮件。</div>
+                <div className={styles.modalActions}>
+                  <button className={styles.secondaryBtn} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>取消</button>
+                  <button className={styles.primaryBtn} onClick={inviteMember}>确认添加</button>
                 </div>
               </div>
             </div>

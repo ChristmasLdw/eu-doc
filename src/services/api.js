@@ -491,6 +491,45 @@ export function uploadCompanyLogo(id, file) {
   });
 }
 
+/** 获取企业成员和当前用户的管理权限 */
+export function getCompanyMembers(companyId) {
+  const query = new URLSearchParams({ companyId: String(companyId) });
+  return request(`/v2/company-members?${query.toString()}`, { raw: true }).then((response) => ({
+    members: Array.isArray(response.data) ? response.data.map(keysToCamelCase) : [],
+    operatorRole: response.operatorRole || 'viewer',
+    permissions: response.permissions || {},
+  }));
+}
+
+/** 添加已注册用户为企业成员 */
+export function inviteCompanyMember(companyId, email, role) {
+  return request('/v2/company-members/invite', {
+    method: 'POST',
+    body: JSON.stringify({ companyId, email, role }),
+  });
+}
+
+/** 修改企业成员角色 */
+export function updateCompanyMemberRole(memberId, role) {
+  return request(`/v2/company-members/${memberId}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  });
+}
+
+/** 移除企业成员 */
+export function removeCompanyMember(memberId) {
+  return request(`/v2/company-members/${memberId}`, { method: 'DELETE' });
+}
+
+/** 获取当前企业的真实操作记录 */
+export function getCompanyActivity(companyId, limit = 200) {
+  const query = new URLSearchParams({ companyId: String(companyId), limit: String(limit) });
+  return request(`/v2/company-members/activity?${query.toString()}`).then((items) => (
+    Array.isArray(items) ? items.map(keysToCamelCase) : []
+  ));
+}
+
 // ===== 搜索相关 API =====
 
 /** 获取统一搜索建议 */
