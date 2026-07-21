@@ -11198,3 +11198,174 @@ button.documentPreviewCard:hover {
     width: 100%;
   }
 }
+
+.documentReviewSection {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent-blue) 28%, var(--border-color));
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-blue) 8%, var(--bg-card)), var(--bg-card) 58%);
+}
+
+.documentReviewHeader,
+.documentReviewCompany summary,
+.documentReviewFile,
+.documentReviewFileActions {
+  display: flex;
+  align-items: center;
+}
+
+.documentReviewHeader {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.documentReviewHeader h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.documentReviewHeader p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.documentReviewHeader > strong {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 18px;
+}
+
+.documentReviewCompanies,
+.documentReviewFiles {
+  display: grid;
+  gap: 10px;
+}
+
+.documentReviewCompany {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.documentReviewCompany summary {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 15px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.documentReviewCompany summary::-webkit-details-marker {
+  display: none;
+}
+
+.documentReviewCompany summary span {
+  display: grid;
+  gap: 3px;
+}
+
+.documentReviewCompany summary em,
+.documentReviewFile em {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.documentReviewCompany summary b {
+  color: var(--accent-blue);
+  font-size: 13px;
+}
+
+.documentReviewFiles {
+  padding: 0 12px 12px;
+}
+
+.documentReviewFile {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.documentReviewFile > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.documentReviewFile > div:first-child strong,
+.documentReviewFile > div:first-child span {
+  overflow-wrap: anywhere;
+}
+
+.documentReviewFile > div:first-child span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.documentReviewFileActions {
+  flex-shrink: 0;
+  gap: 7px;
+}
+
+.documentReviewFileActions button {
+  width: auto;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .documentReviewFile {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .documentReviewFileActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+.verificationMaterialList {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.verificationMaterialList > span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.verificationMaterialList button {
+  width: auto;
+}
+
+.categoryChildren button {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.categoryChildren button:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}

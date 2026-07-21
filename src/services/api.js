@@ -228,8 +228,20 @@ export async function getMe() {
 }
 
 /** 获取用户列表（仅管理员） */
-export function getUsers() {
-  return request('/auth/users');
+export function getUsers(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '' && value !== 'all') query.set(key, value);
+  });
+  return request(`/auth/users${query.toString() ? `?${query}` : ''}`, { raw: true }).then(keysToCamelCase);
+}
+
+export function getUser(id) {
+  return request(`/auth/users/${id}`).then(keysToCamelCase);
+}
+
+export function updateUserAccess(id, data) {
+  return request(`/auth/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
 /** 修改密码 */
@@ -426,6 +438,18 @@ export function submitCompanyVerification(companyId, payload = {}) {
 }
 
 /** 获取企业认证审核列表 */
+export function getCompanyVerificationDocuments(companyId) {
+  return request(`/v2/company-verifications/${companyId}/documents`).then(keysToCamelCase);
+}
+
+export async function getCompanyVerificationFile(documentId) {
+  const headers = createHeaders();
+  delete headers['Content-Type'];
+  const response = await fetch(`${BASE_URL}/v2/company-verifications/documents/${documentId}/file`, { headers });
+  if (!response.ok) throw new Error('认证材料读取失败');
+  return response.blob();
+}
+
 export function getCompanyVerifications(status = '') {
   const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
   return request(`/v2/company-verifications${query}`).then((data) => {
@@ -589,6 +613,8 @@ export function getReports(params = {}) {
   const query = new URLSearchParams();
   if (params.status) query.set('status', params.status);
   if (params.certId) query.set('certId', params.certId);
+  if (params.search) query.set('search', params.search);
+  if (params.reportType) query.set('reportType', params.reportType);
   if (params.page) query.set('page', params.page);
   if (params.pageSize) query.set('pageSize', params.pageSize);
   const qs = query.toString();
@@ -782,6 +808,53 @@ export function getCategories(taxonomyType = 'consumer', options = {}) {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
     return response;
   });
+}
+
+export function createCategory(data) {
+  return request('/v2/categories', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function updateCategory(id, data) {
+  return request(`/v2/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export function getPlatformSettings() {
+  return request('/v2/platform-settings').then(keysToCamelCase);
+}
+
+export function updatePlatformSettings(data) {
+  return request('/v2/platform-settings', { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export function getPendingDocumentReviews() {
+  return request('/v2/documents?status=all&reviewStatus=pending&pageSize=500', { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
+    return response;
+  });
+}
+
+export function reviewDocument(id, status, note = '') {
+  return request(`/v2/documents/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ status, note }),
+  });
+}
+
+export async function getDocumentReviewFile(id) {
+  const headers = createHeaders();
+  delete headers['Content-Type'];
+  const response = await fetch(`${BASE_URL}/v2/documents/${id}/file`, { headers });
+  if (!response.ok) {
+    let message = '文件读取失败';
+    try {
+      const payload = await response.json();
+      message = payload.message || message;
+    } catch {
+      // Non-JSON file errors keep the default message.
+    }
+    throw new Error(message);
+  }
+  return response.blob();
 }
 
 export function getCompanyDocuments(companyId, options = {}) {

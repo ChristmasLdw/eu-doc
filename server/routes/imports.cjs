@@ -55,6 +55,10 @@ function ensureImportTables() {
   if (!columns.includes('extracted_text_status')) db.prepare("ALTER TABLE import_items ADD COLUMN extracted_text_status TEXT DEFAULT 'filename_only'").run();
 }
 
+function importReviewStatus(req) {
+  return ['admin', 'platform_admin'].includes(req.admin?.role) ? 'approved' : 'pending';
+}
+
 function canManageCompany(user, companyId) {
   if (user.role === 'platform_admin' || user.role === 'admin') return true;
   const membership = db.prepare(`
@@ -391,7 +395,7 @@ router.post('/organize-group', authMiddleware, (req, res) => {
     const created = [];
     const insertDocument = db.prepare(`
       INSERT INTO documents (company_id, product_id, document_type, title, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 'approved', ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
     `);
     const insertMeta = db.prepare(`INSERT INTO certificate_metadata (document_id, cert_no, standard, issuer) VALUES (?, ?, ?, ?)`);
     const markDone = db.prepare(`UPDATE import_items SET status = 'organized', product_id = ?, document_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
@@ -399,7 +403,7 @@ router.post('/organize-group', authMiddleware, (req, res) => {
     for (const item of items) {
       const languageOverride = languages_by_id && languages_by_id[String(item.id)];
       const itemDocType = (document_types_by_id && document_types_by_id[String(item.id)]) || docType;
-      const docResult = insertDocument.run(companyId, productId, itemDocType, item.original_name, languageOverride || item.guessed_language || 'en', item.file_path, item.file_size, item.mime_type, req.admin.id);
+      const docResult = insertDocument.run(companyId, productId, itemDocType, item.original_name, languageOverride || item.guessed_language || 'en', item.file_path, item.file_size, item.mime_type, importReviewStatus(req), req.admin.id);
       const documentId = docResult.lastInsertRowid;
       if (itemDocType === 'certificate') {
         insertMeta.run(documentId, cert_no || fallbackCertNo(item), standard || item.guessed_standard || null, issuer || item.guessed_issuer || null);
@@ -481,8 +485,8 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
     const docLang = language || item.guessed_language || 'en';
     const docResult = db.prepare(`
       INSERT INTO documents (company_id, product_id, document_type, title, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 'approved', ?, CURRENT_TIMESTAMP)
-    `).run(item.company_id, productId, docType, docTitle, docLang, item.file_path, item.file_size, item.mime_type, req.admin.id);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
+    `).run(item.company_id, productId, docType, docTitle, docLang, item.file_path, item.file_size, item.mime_type, importReviewStatus(req), req.admin.id);
     const documentId = docResult.lastInsertRowid;
 
     if (docType === 'certificate') {

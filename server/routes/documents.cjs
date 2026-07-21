@@ -355,6 +355,49 @@ router.get('/:id/file', optionalAuth, (req, res) => {
   return res.sendFile(fullPath);
 });
 
+// POST /api/v2/documents/:id/review - 平台管理员审核资料
+router.post('/:id/review', authMiddleware, requireAdmin, (req, res) => {
+  const status = req.body.status;
+  const note = String(req.body.note || '').trim();
+  if (!['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ success: false, message: '审核状态无效' });
+  }
+
+  const document = db.prepare(`
+    SELECT d.id, d.title, d.document_type, d.review_status, d.company_id, c.name AS company_name
+    FROM documents d
+    LEFT JOIN companies c ON c.id = d.company_id
+    WHERE d.id = ?
+  `).get(req.params.id);
+  if (!document) return res.status(404).json({ success: false, message: '文档不存在' });
+
+  db.prepare(`
+    UPDATE documents
+    SET review_status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(status, note || null, req.admin.id, document.id);
+
+  db.prepare(
+    'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(
+    req.admin.id, `review_${status}`, 'document', document.id,
+    JSON.stringify({
+      old_status: document.review_status,
+      status,
+      note: note || null,
+      title: document.title,
+      company_id: document.company_id,
+      company_name: document.company_name,
+    }),
+    req.ip
+  );
+
+  return res.json({
+    success: true,
+    message: status === 'approved' ? '资料已审核通过并公开' : '资料已拒绝',
+  });
+});
+
 // POST /api/v2/documents - 创建文档（支持文件上传）
 router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   const product_id = req.body.productId;

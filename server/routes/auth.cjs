@@ -356,12 +356,106 @@ router.put('/password', authMiddleware, (req, res) => {
  * 获取用户列表（仅管理员）
  */
 router.get('/users', authMiddleware, requireAdmin, (req, res) => {
-  const users = db.prepare(`
-    SELECT id, email, display_name, platform_role, email_verified, status, created_at
-    FROM users ORDER BY created_at DESC
-  `).all();
+  const { search = '', role = 'all', status = 'all', page = 1, pageSize = 50 } = req.query;
+  const conditions = [];
+  const params = [];
 
-  res.json({ success: true, data: users });
+  if (search.trim()) {
+    const keyword = `%${search.trim()}%`;
+    conditions.push('(u.email LIKE ? OR u.display_name LIKE ? OR u.phone LIKE ? OR u.user_code LIKE ?)');
+    params.push(keyword, keyword, keyword, keyword);
+  }
+  if (status !== 'all') {
+    conditions.push('u.status = ?');
+    params.push(status);
+  }
+  if (role === 'platform_admin') {
+    conditions.push("u.platform_role IN ('admin', 'platform_admin')");
+  } else if (role === 'company_member') {
+    conditions.push("EXISTS (SELECT 1 FROM company_members cm WHERE cm.user_id = u.id AND cm.status = 'active')");
+  } else if (role === 'user') {
+    conditions.push("u.platform_role = 'user' AND NOT EXISTS (SELECT 1 FROM company_members cm WHERE cm.user_id = u.id AND cm.status = 'active')");
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const safePage = Math.max(1, Number(page) || 1);
+  const safePageSize = Math.min(200, Math.max(1, Number(pageSize) || 50));
+  const offset = (safePage - 1) * safePageSize;
+  const { total } = db.prepare(`SELECT COUNT(*) AS total FROM users u ${where}`).get(...params);
+  const users = db.prepare(`
+    SELECT u.id, u.email, u.phone, u.display_name, u.user_code, u.platform_role, u.email_verified,
+           u.status, u.created_at, u.updated_at,
+           COUNT(DISTINCT CASE WHEN cm.status = 'active' THEN cm.company_id END) AS company_count,
+           GROUP_CONCAT(DISTINCT CASE WHEN cm.status = 'active' THEN c.name END) AS company_names
+    FROM users u
+    LEFT JOIN company_members cm ON cm.user_id = u.id
+    LEFT JOIN companies c ON c.id = cm.company_id
+    ${where}
+    GROUP BY u.id
+    ORDER BY u.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, safePageSize, offset);
+
+  const summary = db.prepare(`
+    SELECT
+      COUNT(*) AS total,
+      SUM(CASE WHEN platform_role IN ('admin', 'platform_admin') THEN 1 ELSE 0 END) AS platform_admins,
+      SUM(CASE WHEN EXISTS (SELECT 1 FROM company_members cm WHERE cm.user_id = users.id AND cm.status = 'active') THEN 1 ELSE 0 END) AS company_users,
+      SUM(CASE WHEN platform_role = 'user' AND NOT EXISTS (SELECT 1 FROM company_members cm WHERE cm.user_id = users.id AND cm.status = 'active') THEN 1 ELSE 0 END) AS regular_users,
+      SUM(CASE WHEN status != 'active' THEN 1 ELSE 0 END) AS disabled_users
+    FROM users
+  `).get();
+
+  res.json({
+    success: true,
+    data: users,
+    summary,
+    pagination: { page: safePage, pageSize: safePageSize, total, totalPages: Math.ceil(total / safePageSize) },
+  });
+});
+
+router.get('/users/:id', authMiddleware, requireAdmin, (req, res) => {
+  const user = db.prepare(`
+    SELECT id, email, phone, display_name, real_name, position, department, user_code,
+           platform_role, email_verified, phone_verified, status, created_at, updated_at
+    FROM users WHERE id = ?
+  `).get(req.params.id);
+  if (!user) return res.status(404).json({ success: false, message: '用户不存在' });
+  user.companies = db.prepare(`
+    SELECT cm.company_id, c.name AS company_name, cm.role, cm.status, cm.joined_at
+    FROM company_members cm JOIN companies c ON c.id = cm.company_id
+    WHERE cm.user_id = ? ORDER BY cm.joined_at DESC
+  `).all(user.id);
+  return res.json({ success: true, data: user });
+});
+
+router.put('/users/:id', authMiddleware, requireAdmin, (req, res) => {
+  const target = db.prepare('SELECT id, platform_role, status FROM users WHERE id = ?').get(req.params.id);
+  if (!target) return res.status(404).json({ success: false, message: '用户不存在' });
+
+  const fields = [];
+  const values = [];
+  const changes = {};
+  if (req.body.status !== undefined) {
+    if (!['active', 'disabled'].includes(req.body.status)) return res.status(400).json({ success: false, message: '账号状态无效' });
+    if (target.id === req.admin.id && req.body.status !== 'active') return res.status(400).json({ success: false, message: '不能禁用当前登录账号' });
+    fields.push('status = ?');
+    values.push(req.body.status);
+    changes.status = { old: target.status, new: req.body.status };
+  }
+  if (req.body.platformRole !== undefined) {
+    if (!['user', 'platform_admin'].includes(req.body.platformRole)) return res.status(400).json({ success: false, message: '平台角色无效' });
+    if (target.id === req.admin.id && req.body.platformRole !== 'platform_admin') return res.status(400).json({ success: false, message: '不能移除当前账号的平台管理员权限' });
+    fields.push('platform_role = ?');
+    values.push(req.body.platformRole);
+    changes.platform_role = { old: target.platform_role, new: req.body.platformRole };
+  }
+  if (!fields.length) return res.status(400).json({ success: false, message: '没有需要更新的字段' });
+  fields.push('session_version = COALESCE(session_version, 0) + 1', 'updated_at = CURRENT_TIMESTAMP');
+  db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values, target.id);
+  db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(req.admin.id, 'update_user_access', 'user', target.id, JSON.stringify(changes), req.ip);
+  return res.json({ success: true, message: '用户权限已更新' });
 });
 
 module.exports = router;

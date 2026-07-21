@@ -74,7 +74,7 @@ router.post('/', (req, res) => {
  */
 router.get('/', authMiddleware, requireAdmin, (req, res) => {
   try {
-    const { status, certId, page = 1, pageSize = 20 } = req.query;
+    const { status, certId, search = '', reportType = '', page = 1, pageSize = 20 } = req.query;
     const offset = (page - 1) * pageSize;
 
     const conditions = [];
@@ -90,11 +90,26 @@ router.get('/', authMiddleware, requireAdmin, (req, res) => {
       params.push(certId);
     }
 
+    if (reportType) {
+      conditions.push('r.report_type = ?');
+      params.push(reportType);
+    }
+
+    if (search.trim()) {
+      const keyword = `%${search.trim()}%`;
+      conditions.push('(cm.cert_no LIKE ? OR p.name LIKE ? OR comp.name LIKE ? OR r.description LIKE ? OR r.reporter_email LIKE ?)');
+      params.push(keyword, keyword, keyword, keyword, keyword);
+    }
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { total } = db.prepare(`
       SELECT COUNT(*) as total
       FROM certificate_reports r
+      LEFT JOIN documents d ON r.cert_id = d.id
+      LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
+      LEFT JOIN products p ON d.product_id = p.id
+      LEFT JOIN companies comp ON d.company_id = comp.id
       ${whereClause}
     `).get(...params);
 
@@ -199,7 +214,7 @@ router.put('/:id/status', authMiddleware, requireAdmin, (req, res) => {
       });
     }
 
-    const report = db.prepare('SELECT id FROM certificate_reports WHERE id = ?').get(id);
+    const report = db.prepare('SELECT id, status, admin_response FROM certificate_reports WHERE id = ?').get(id);
     if (!report) {
       return res.status(404).json({
         success: false,
@@ -212,6 +227,9 @@ router.put('/:id/status', authMiddleware, requireAdmin, (req, res) => {
       SET status = ?, admin_response = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(status, adminResponse || null, id);
+
+    db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(req.admin.id, 'update_report_status', 'report', id, JSON.stringify({ oldStatus: report.status, status, adminResponse: adminResponse || null }), req.ip);
 
     res.json({
       success: true,

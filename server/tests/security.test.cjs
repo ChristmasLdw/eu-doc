@@ -19,10 +19,17 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT,
     display_name TEXT,
+    phone TEXT,
+    real_name TEXT,
+    position TEXT,
+    department TEXT,
+    user_code TEXT,
+    phone_verified INTEGER DEFAULT 0,
     platform_role TEXT DEFAULT 'user',
     status TEXT DEFAULT 'active',
     email_verified INTEGER DEFAULT 1,
     session_version INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE companies (
@@ -83,6 +90,28 @@ db.exec(`
     remark TEXT
   );
   CREATE TABLE certificates_legacy (id INTEGER PRIMARY KEY, thumbnail_path TEXT);
+  CREATE TABLE company_verification_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    document_type TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INTEGER,
+    uploaded_by INTEGER NOT NULL,
+    review_status TEXT DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE certificate_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cert_id INTEGER NOT NULL,
+    report_type TEXT NOT NULL,
+    description TEXT,
+    reporter_email TEXT,
+    reporter_name TEXT,
+    status TEXT DEFAULT 'pending',
+    admin_response TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
   CREATE TABLE categories (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -149,6 +178,9 @@ app.use('/api/v2/documents', require('../routes/documents.cjs'));
 app.use('/api/v2/products', require('../routes/products.cjs'));
 app.use('/api/v2/tags', require('../routes/tags.cjs'));
 app.use('/api/v2/imports', require('../routes/imports.cjs'));
+app.use('/api/v2/company-verifications', require('../routes/company-verifications.cjs'));
+app.use('/api/v2/platform-settings', require('../routes/platform-settings.cjs'));
+app.use('/api/reports', require('../routes/reports.cjs'));
 app.use('/api/certificates', require('../routes/certificates.cjs'));
 
 let server;
@@ -401,4 +433,96 @@ test('model-list product names require confirmation and organizing writes an aud
   assert.equal(audit.target_type, 'product');
   assert.equal(detail.productCreated, true);
   assert.equal(detail.count, 1);
+
+  const organizedDocument = db.prepare('SELECT review_status FROM documents WHERE id = ?').get(detail.documentIds[0]);
+  assert.equal(organizedDocument.review_status, 'pending');
+});
+
+test('platform admins can review pending documents and company members cannot', async () => {
+  const inserted = db.prepare(`
+    INSERT INTO documents (company_id, product_id, document_type, title, status, review_status, uploaded_by)
+    VALUES (1, 1, 'manual', 'Review Queue Manual', 'active', 'pending', 4)
+  `).run();
+  const documentId = Number(inserted.lastInsertRowid);
+
+  const denied = await request(`/api/v2/documents/${documentId}/review`, {
+    method: 'POST',
+    token: uploaderToken,
+    body: { status: 'approved' },
+  });
+  assert.equal(denied.status, 403);
+
+  const approved = await request(`/api/v2/documents/${documentId}/review`, {
+    method: 'POST',
+    token: adminToken,
+    body: { status: 'approved' },
+  });
+  assert.equal(approved.status, 200);
+
+  const document = db.prepare('SELECT review_status, reviewed_by, reviewed_at FROM documents WHERE id = ?').get(documentId);
+  assert.equal(document.review_status, 'approved');
+  assert.equal(document.reviewed_by, 3);
+  assert.ok(document.reviewed_at);
+
+  const audit = db.prepare("SELECT action, target_type FROM audit_logs WHERE target_id = ? ORDER BY id DESC LIMIT 1").get(documentId);
+  assert.equal(audit.action, 'review_approved');
+  assert.equal(audit.target_type, 'document');
+});
+
+test('platform management APIs use real data and enforce admin access', async () => {
+  const deniedUsers = await request('/api/auth/users', { token: uploaderToken });
+  assert.equal(deniedUsers.status, 403);
+
+  const users = await request('/api/auth/users?search=uploader&pageSize=20', { token: adminToken });
+  assert.equal(users.status, 200);
+  assert.equal(users.body.data.length, 1);
+  assert.equal(users.body.data[0].id, 4);
+  assert.equal(Number(users.body.data[0].company_count), 1);
+
+  const disabled = await request('/api/auth/users/4', {
+    method: 'PUT',
+    token: adminToken,
+    body: { status: 'disabled' },
+  });
+  assert.equal(disabled.status, 200);
+  assert.equal(db.prepare('SELECT status FROM users WHERE id = 4').get().status, 'disabled');
+  db.prepare("UPDATE users SET status = 'active' WHERE id = 4").run();
+
+  const deniedSettings = await request('/api/v2/platform-settings', { token: outsiderToken });
+  assert.equal(deniedSettings.status, 403);
+  const savedSettings = await request('/api/v2/platform-settings', {
+    method: 'PUT',
+    token: adminToken,
+    body: { announcement: 'Maintenance notice', contactEmail: 'admin@example.com' },
+  });
+  assert.equal(savedSettings.status, 200);
+  const settings = await request('/api/v2/platform-settings', { token: adminToken });
+  assert.equal(settings.body.data.announcement, 'Maintenance notice');
+});
+
+test('platform admins can inspect verification materials and process real reports', async () => {
+  db.prepare(`
+    INSERT INTO company_verification_documents (company_id, document_type, file_path, file_size, uploaded_by)
+    VALUES (1, 'business_license', '/logos/test-license.png', 123, 1)
+  `).run();
+  const verification = await request('/api/v2/company-verifications/1/documents', { token: adminToken });
+  assert.equal(verification.status, 200);
+  assert.equal(verification.body.data.documents.length, 1);
+
+  const reportResult = db.prepare(`
+    INSERT INTO certificate_reports (cert_id, report_type, description, reporter_email)
+    VALUES (2, 'wrong_info', 'Certificate number mismatch', 'reporter@example.com')
+  `).run();
+  const reportId = Number(reportResult.lastInsertRowid);
+  const reports = await request('/api/reports?status=pending', { token: adminToken });
+  assert.equal(reports.status, 200);
+  assert.ok(reports.body.data.some((item) => item.id === reportId));
+
+  const updated = await request(`/api/reports/${reportId}/status`, {
+    method: 'PUT',
+    token: adminToken,
+    body: { status: 'resolved', adminResponse: 'Checked and corrected' },
+  });
+  assert.equal(updated.status, 200);
+  assert.equal(db.prepare('SELECT status FROM certificate_reports WHERE id = ?').get(reportId).status, 'resolved');
 });

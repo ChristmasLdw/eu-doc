@@ -99,6 +99,7 @@ app.use('/api/v2/company-members', require('./routes/company-members.cjs'));
 app.use('/api/v2/company-verifications', require('./routes/company-verifications.cjs'));
 app.use('/api/v2/upload-confirmations', require('./routes/upload-confirmations.cjs'));
 app.use('/api/v2/imports', require('./routes/imports.cjs'));
+app.use('/api/v2/platform-settings', require('./routes/platform-settings.cjs'));
 app.use('/api/v2/dev-tools', require('./routes/dev-tools.cjs'));
 
 /**

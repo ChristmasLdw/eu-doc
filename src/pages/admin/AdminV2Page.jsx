@@ -28,7 +28,7 @@ const platformMenus = [
   { id: 'company-review', labelKey: 'admin.menu.companyReview' },
   { id: 'users', labelKey: 'admin.menu.userManagement' },
   { id: 'platform-logs', labelKey: 'admin.menu.platformLogs' },
-  { id: 'categories', labelKey: 'admin.menu.reports' },
+  { id: 'categories', labelKey: 'admin.menu.categories' },
   { id: 'reports', labelKey: 'admin.menu.reports' },
   { id: 'system', labelKey: 'admin.menu.system' },
 ];
@@ -700,7 +700,19 @@ export default function AdminV2Page() {
   const [companyModal, setCompanyModal] = useState({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' });
   const [verificationForm, setVerificationForm] = useState({ businessLicenseNo: '', contactPerson: '', contactEmail: '' });
   const [verificationItems, setVerificationItems] = useState([]);
+  const [pendingReviewDocuments, setPendingReviewDocuments] = useState([]);
   const [verificationFilter, setVerificationFilter] = useState('pending');
+  const [verificationSearch, setVerificationSearch] = useState('');
+  const [verificationMaterials, setVerificationMaterials] = useState({});
+  const [expandedVerificationCompany, setExpandedVerificationCompany] = useState(null);
+  const [platformUsers, setPlatformUsers] = useState([]);
+  const [platformUserSummary, setPlatformUserSummary] = useState({});
+  const [platformUserFilters, setPlatformUserFilters] = useState({ search: '', role: 'all', status: 'all' });
+  const [platformReports, setPlatformReports] = useState([]);
+  const [platformReportFilters, setPlatformReportFilters] = useState({ search: '', status: 'pending', reportType: 'all' });
+  const [categorySearch, setCategorySearch] = useState('');
+  const [platformSettings, setPlatformSettings] = useState({ announcement: '', contactEmail: '', helpUrl: '', onboardingContact: '', maintenanceMessage: '', termsUrl: '', privacyUrl: '', disclaimerUrl: '', enterpriseAgreementUrl: '', contactUrl: '' });
+  const [savedPlatformSettings, setSavedPlatformSettings] = useState(null);
   const [importItems, setImportItems] = useState([]);
   const [importSelection, setImportSelection] = useState({});
   const [splitImportGroups, setSplitImportGroups] = useState({});
@@ -1616,10 +1628,201 @@ export default function AdminV2Page() {
 
   const refreshCompanyVerifications = async () => {
     try {
-      const items = await api.getCompanyVerifications(verificationFilter);
+      const [items, documentResponse] = await Promise.all([
+        api.getCompanyVerifications('all'),
+        api.getPendingDocumentReviews(),
+      ]);
       setVerificationItems(items);
+      setPendingReviewDocuments(documentResponse.data || []);
     } catch (error) {
       showAction(error.message || '企业审核列表读取失败');
+    }
+  };
+
+  const reviewPendingDocument = async (document, status) => {
+    let note = '';
+    if (status === 'rejected') {
+      const entered = window.prompt('请输入拒绝原因，企业成员可据此修正文件', '文件内容或归属信息不正确，请核对后重新上传');
+      if (entered === null) return;
+      note = entered.trim();
+      if (!note) {
+        showAction('拒绝文件时需要填写原因');
+        return;
+      }
+    } else if (!window.confirm(`确认通过「${document.title || '该资料'}」并立即公开吗？`)) {
+      return;
+    }
+
+    try {
+      await api.reviewDocument(document.id, status, note);
+      showAction(status === 'approved' ? '资料已通过并公开' : '资料已拒绝');
+      await refreshCompanyVerifications();
+    } catch (error) {
+      showAction(error.message || '资料审核失败');
+    }
+  };
+
+  const previewPendingDocument = async (document) => {
+    try {
+      const blob = await api.getDocumentReviewFile(document.id);
+      const objectUrl = URL.createObjectURL(blob);
+      setDocumentPreview({ open: true, url: objectUrl, title: document.title || '待审核资料', objectUrl });
+    } catch (error) {
+      showAction(error.message || '资料预览失败');
+    }
+  };
+
+  const loadVerificationMaterials = async (companyId) => {
+    if (expandedVerificationCompany === companyId) {
+      setExpandedVerificationCompany(null);
+      return;
+    }
+    setExpandedVerificationCompany(companyId);
+    if (verificationMaterials[companyId]) return;
+    try {
+      const result = await api.getCompanyVerificationDocuments(companyId);
+      setVerificationMaterials((items) => ({ ...items, [companyId]: result.documents || [] }));
+    } catch (error) {
+      showAction(error.message || '认证材料读取失败');
+    }
+  };
+
+  const previewVerificationMaterial = async (material) => {
+    try {
+      const blob = await api.getCompanyVerificationFile(material.id);
+      const objectUrl = URL.createObjectURL(blob);
+      setDocumentPreview({ open: true, url: objectUrl, title: material.documentType === 'business_license' ? '营业执照' : '授权书', objectUrl });
+    } catch (error) {
+      showAction(error.message || '认证材料预览失败');
+    }
+  };
+
+  const refreshPlatformUsers = async () => {
+    try {
+      const response = await api.getUsers({ ...platformUserFilters, pageSize: 200 });
+      setPlatformUsers(response.data || []);
+      setPlatformUserSummary(response.summary || {});
+    } catch (error) {
+      showAction(error.message || '用户列表读取失败');
+    }
+  };
+
+  const viewPlatformUser = async (userId) => {
+    try {
+      const user = await api.getUser(userId);
+      const companiesText = (user.companies || []).map((item) => `${item.companyName}（${item.role}）`).join('\n') || '无关联公司';
+      window.alert(`用户：${user.displayName || '-'}\n邮箱：${user.email || '-'}\n手机：${user.phone || '-'}\n用户编号：${user.userCode || `U-${String(user.id).padStart(6, '0')}`}\n平台角色：${user.platformRole}\n账号状态：${user.status}\n\n关联公司：\n${companiesText}`);
+    } catch (error) {
+      showAction(error.message || '用户详情读取失败');
+    }
+  };
+
+  const changePlatformUserRole = async (user) => {
+    const current = ['admin', 'platform_admin'].includes(user.platformRole) ? 'platform_admin' : 'user';
+    const role = window.prompt('输入平台角色：user 或 platform_admin\n企业 owner/admin 权限应在企业成员管理中调整。', current);
+    if (role === null || role === current) return;
+    if (!['user', 'platform_admin'].includes(role)) return showAction('平台角色只能是 user 或 platform_admin');
+    if (role === 'platform_admin' && !window.confirm(`确认授予「${user.displayName || user.email}」平台最高管理权限吗？`)) return;
+    try {
+      await api.updateUserAccess(user.id, { platformRole: role });
+      showAction('用户平台权限已更新');
+      await refreshPlatformUsers();
+    } catch (error) {
+      showAction(error.message || '权限更新失败');
+    }
+  };
+
+  const togglePlatformUserStatus = async (user) => {
+    const status = user.status === 'active' ? 'disabled' : 'active';
+    if (!window.confirm(`确认${status === 'disabled' ? '禁用' : '恢复'}账号「${user.displayName || user.email}」吗？`)) return;
+    try {
+      await api.updateUserAccess(user.id, { status });
+      showAction(status === 'disabled' ? '账号已禁用' : '账号已恢复');
+      await refreshPlatformUsers();
+    } catch (error) {
+      showAction(error.message || '账号状态更新失败');
+    }
+  };
+
+  const refreshPlatformReports = async () => {
+    try {
+      const response = await api.getReports({ pageSize: 500 });
+      setPlatformReports(response.data || []);
+    } catch (error) {
+      showAction(error.message || '举报列表读取失败');
+    }
+  };
+
+  const updatePlatformReport = async (report, status) => {
+    const defaultResponse = status === 'processing' ? '平台已受理，正在核查相关资料。' : '平台已完成核查并处理。';
+    const response = window.prompt('请输入给举报人的处理说明', report.adminResponse || defaultResponse);
+    if (response === null) return;
+    try {
+      await api.updateReportStatus(report.id, status, response);
+      showAction('举报状态已更新');
+      await refreshPlatformReports();
+    } catch (error) {
+      showAction(error.message || '举报处理失败');
+    }
+  };
+
+  const viewPlatformReport = async (reportId) => {
+    try {
+      const report = await api.getReport(reportId);
+      window.alert(`举报对象：${report.certNo || `证书 #${report.certId}`}\n企业：${report.companyName || '-'}\n产品：${report.productName || '-'}\n举报类型：${report.reportType}\n举报说明：${report.description || '-'}\n举报人：${report.reporterName || '-'} ${report.reporterEmail || ''}\n处理状态：${report.status}\n平台回复：${report.adminResponse || '-'}`);
+    } catch (error) {
+      showAction(error.message || '举报详情读取失败');
+    }
+  };
+
+  const refreshPlatformSettings = async () => {
+    try {
+      const settings = await api.getPlatformSettings();
+      setPlatformSettings(settings);
+      setSavedPlatformSettings(settings);
+    } catch (error) {
+      showAction(error.message || '平台设置读取失败');
+    }
+  };
+
+  const savePlatformSettings = async () => {
+    try {
+      await api.updatePlatformSettings(platformSettings);
+      setSavedPlatformSettings({ ...platformSettings });
+      showAction('平台设置已保存');
+    } catch (error) {
+      showAction(error.message || '平台设置保存失败');
+    }
+  };
+
+  const refreshCategoryData = async () => {
+    const [consumerResponse, complianceResponse] = await Promise.all([api.getCategories('consumer'), api.getCategories('compliance')]);
+    setConsumerCategories(consumerResponse.data || []);
+    setComplianceCategories(complianceResponse.data || []);
+  };
+
+  const createPlatformCategory = async (parent = null) => {
+    const name = window.prompt(parent ? `在「${parent.name}」下新增子分类` : '请输入新分类名称');
+    if (!name?.trim()) return;
+    const nameEn = window.prompt('英文名称（可留空）', '') || '';
+    try {
+      await api.createCategory({ name: name.trim(), nameEn: nameEn.trim(), parentId: parent?.id || null, level: parent ? Number(parent.level || 1) + 1 : 1, taxonomyType: categoryMode });
+      showAction('分类已创建');
+      await refreshCategoryData();
+    } catch (error) {
+      showAction(error.message || '分类创建失败');
+    }
+  };
+
+  const editPlatformCategory = async (category) => {
+    const name = window.prompt('修改分类名称', category.name);
+    if (!name?.trim() || name.trim() === category.name) return;
+    try {
+      await api.updateCategory(category.id, { name: name.trim() });
+      showAction('分类已更新');
+      await refreshCategoryData();
+    } catch (error) {
+      showAction(error.message || '分类更新失败');
     }
   };
 
@@ -1671,7 +1874,14 @@ export default function AdminV2Page() {
 
   useEffect(() => {
     if (activePage === 'company-review' && hasPlatformPermission) refreshCompanyVerifications();
-  }, [activePage, verificationFilter, hasPlatformPermission]);
+  }, [activePage, hasPlatformPermission]);
+
+  useEffect(() => {
+    if (!hasPlatformPermission || activeGroup !== 'platform') return;
+    if (activePage === 'users') refreshPlatformUsers();
+    if (activePage === 'reports') refreshPlatformReports();
+    if (activePage === 'system') refreshPlatformSettings();
+  }, [activeGroup, activePage, hasPlatformPermission]);
 
   const uploadImportFiles = async (files) => {
     if (!activeCompany) {
@@ -4071,20 +4281,38 @@ export default function AdminV2Page() {
     }
 
     if (activePage === 'company-review') {
-      const counts = verificationItems.reduce((acc, item) => {
+      const reviewableVerificationItems = verificationItems.filter((item) => !(item.verificationStatus === 'pending' && item.status === 'draft'));
+      const counts = reviewableVerificationItems.reduce((acc, item) => {
         const status = item.verificationStatus || 'pending';
         acc[status] = (acc[status] || 0) + 1;
         return acc;
       }, {});
       const statusLabel = (status) => status === 'verified' ? '已通过' : status === 'rejected' ? '已拒绝' : '待审核';
+      const normalizedVerificationSearch = verificationSearch.trim().toLowerCase();
+      const filteredVerificationItems = reviewableVerificationItems.filter((item) => {
+        if (verificationFilter !== 'all' && item.verificationStatus !== verificationFilter) return false;
+        if (!normalizedVerificationSearch) return true;
+        return [item.companyName, item.name, item.contactPerson, item.businessLicenseNo, item.companyId]
+          .some((value) => String(value || '').toLowerCase().includes(normalizedVerificationSearch));
+      });
+      const pendingDocumentsByCompany = Object.values(pendingReviewDocuments.reduce((groups, document) => {
+        const key = String(document.companyId);
+        if (!groups[key]) groups[key] = {
+          companyId: document.companyId,
+          companyName: document.companyName || `公司 #${document.companyId}`,
+          documents: [],
+        };
+        groups[key].documents.push(document);
+        return groups;
+      }, {}));
       return (
         <Section title={t('admin.companyReview.title')} desc={t('admin.companyReview.desc')}>
           <div className={styles.reviewSummaryGrid}>
             {[
-              ['待审核', String(counts.pending || 0), '需要平台处理'],
-              ['已通过', String(counts.verified || 0), '认证成功企业'],
-              ['已拒绝', String(counts.rejected || 0), '资料不完整或不通过'],
-              ['当前筛选', verificationFilter === 'all' ? '全部' : statusLabel(verificationFilter), '可切换审核状态'],
+              ['待审核企业', String(counts.pending || 0), '企业认证申请'],
+              ['待审核文件', String(pendingReviewDocuments.length), `来自 ${pendingDocumentsByCompany.length} 家企业`],
+              ['已通过企业', String(counts.verified || 0), '认证成功企业'],
+              ['已拒绝企业', String(counts.rejected || 0), '资料不完整或不通过'],
             ].map(([name, count, desc]) => (
               <div key={name} className={styles.reviewSummaryCard}>
                 <strong>{count}</strong>
@@ -4094,8 +4322,42 @@ export default function AdminV2Page() {
             ))}
           </div>
 
+          <div className={styles.documentReviewSection}>
+            <div className={styles.documentReviewHeader}>
+              <div><h3>待审核文件</h3><p>按企业汇总，展开后逐个预览、通过或拒绝。</p></div>
+              <strong>{pendingReviewDocuments.length}</strong>
+            </div>
+            <div className={styles.documentReviewCompanies}>
+              {pendingDocumentsByCompany.length === 0 && <div className={styles.emptyState}>当前没有待审核文件。</div>}
+              {pendingDocumentsByCompany.map((company) => (
+                <details key={company.companyId} className={styles.documentReviewCompany}>
+                  <summary>
+                    <span><strong>{company.companyName}</strong><em>c-{String(company.companyId).padStart(6, '0')}</em></span>
+                    <b>{company.documents.length} 份待审核</b>
+                  </summary>
+                  <div className={styles.documentReviewFiles}>
+                    {company.documents.map((document) => (
+                      <article key={document.id} className={styles.documentReviewFile}>
+                        <div>
+                          <strong>{document.title || `资料 #${document.id}`}</strong>
+                          <span>{document.productName || '未关联产品'} · {importTypeLabel(document.documentType)} · {document.uploadedByName || '企业成员'}</span>
+                          <em>{formatActivityTime(document.createdAt)}</em>
+                        </div>
+                        <div className={styles.documentReviewFileActions}>
+                          <button className={styles.primaryBtn} onClick={() => previewPendingDocument(document)}>预览</button>
+                          <button className={styles.secondaryBtn} onClick={() => reviewPendingDocument(document, 'approved')}>通过并公开</button>
+                          <button className={styles.reviewRejectBtn} onClick={() => reviewPendingDocument(document, 'rejected')}>拒绝</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+
           <div className={styles.reviewToolbar}>
-            <input placeholder="搜索公司名称、申请人、公司编号" />
+            <input value={verificationSearch} onChange={(event) => setVerificationSearch(event.target.value)} placeholder="搜索公司名称、申请人、公司编号" />
             <select value={verificationFilter} onChange={(event) => setVerificationFilter(event.target.value)}>
               <option value="pending">待审核</option>
               <option value="verified">已通过</option>
@@ -4106,8 +4368,8 @@ export default function AdminV2Page() {
           </div>
 
           <div className={styles.reviewList}>
-            {verificationItems.length === 0 && <div className={styles.emptyState}>当前没有需要显示的企业认证申请。</div>}
-            {verificationItems.map((item) => {
+            {filteredVerificationItems.length === 0 && <div className={styles.emptyState}>当前没有符合条件的企业认证申请。</div>}
+            {filteredVerificationItems.map((item) => {
               const status = statusLabel(item.verificationStatus);
               const companyId = item.companyId || item.id;
               const code = `c-${String(companyId).padStart(6, '0')}`;
@@ -4124,10 +4386,21 @@ export default function AdminV2Page() {
                     <span><strong>审核状态</strong><em className={status === '待审核' ? styles.reviewStatusPending : status === '已通过' ? styles.reviewStatusPass : status === '已拒绝' ? styles.reviewStatusReject : styles.statusMuted}>{status}</em></span>
                   </div>
                   <div className={styles.reviewActions}>
-                    <button className={styles.primaryBtn} onClick={() => showAction('查看材料功能待完善')}>查看材料</button>
+                    <button className={styles.primaryBtn} onClick={() => loadVerificationMaterials(companyId)}>{expandedVerificationCompany === companyId ? '收起材料' : `查看材料${item.verificationDocumentCount ? ` (${item.verificationDocumentCount})` : ''}`}</button>
                     {item.verificationStatus === 'pending' && <button className={styles.secondaryBtn} onClick={() => reviewCompany(companyId, 'approve')}>通过</button>}
                     {item.verificationStatus === 'pending' && <button className={styles.reviewRejectBtn} onClick={() => reviewCompany(companyId, 'reject')}>拒绝/要求补充</button>}
                   </div>
+                  {expandedVerificationCompany === companyId && (
+                    <div className={styles.verificationMaterialList}>
+                      {!verificationMaterials[companyId] && <span>正在读取认证材料...</span>}
+                      {verificationMaterials[companyId]?.length === 0 && <span>该企业没有上传认证材料。</span>}
+                      {verificationMaterials[companyId]?.map((material) => (
+                        <button key={material.id} className={styles.secondaryBtn} onClick={() => previewVerificationMaterial(material)}>
+                          {material.documentType === 'business_license' ? '营业执照' : '授权书'} · {formatActivityTime(material.createdAt)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </article>
               );
             })}
@@ -4191,236 +4464,95 @@ export default function AdminV2Page() {
     }
 
     if (activePage === 'users') {
+      const companyUsers = Number(platformUserSummary.companyUsers || 0);
+      const totalUsers = Number(platformUserSummary.total || 0);
       return (
-        <Section title={t('admin.userManagement.title')} desc={t('admin.userManagement.desc')}>
+        <Section title={t('admin.userManagement.title')} desc="查询真实平台注册账号；企业内部角色仍由企业拥有者在员工权限中管理。">
           <div className={styles.userSummaryGrid}>
             {[
-              ['全部用户', '128', '平台注册账号'],
-              ['企业用户', '36', '已加入或拥有公司'],
-              ['普通用户', '89', '收藏和浏览资料'],
-              ['风险账号', '3', '需要关注'],
-            ].map(([name, count, desc]) => (
-              <div key={name} className={styles.userSummaryCard}>
-                <strong>{count}</strong>
-                <span>{name}</span>
-                <p>{desc}</p>
-              </div>
-            ))}
+              ['全部用户', totalUsers, '平台注册账号'],
+              ['企业用户', companyUsers, '已加入或拥有公司'],
+              ['普通用户', Number(platformUserSummary.regularUsers || 0), '未关联企业账号'],
+              ['已禁用', Number(platformUserSummary.disabledUsers || 0), '无法继续登录'],
+            ].map(([name, count, desc]) => <div key={name} className={styles.userSummaryCard}><strong>{count}</strong><span>{name}</span><p>{desc}</p></div>)}
           </div>
-
           <div className={styles.userToolbar}>
-            <input placeholder="搜索用户名、邮箱、手机号、用户编号" />
-            <select defaultValue="all">
-              <option value="all">全部角色</option>
-              <option value="platform_admin">平台管理员</option>
-              <option value="company_owner">企业拥有者</option>
-              <option value="user">普通用户</option>
-            </select>
-            <select defaultValue="all">
-              <option value="all">全部状态</option>
-              <option value="active">正常</option>
-              <option value="disabled">已禁用</option>
-              <option value="risk">风险账号</option>
-              <option value="manual">特殊权限处理</option>
-            </select>
+            <input value={platformUserFilters.search} onChange={(event) => setPlatformUserFilters((value) => ({ ...value, search: event.target.value }))} placeholder="搜索用户名、邮箱、手机号、用户编号" />
+            <select value={platformUserFilters.role} onChange={(event) => setPlatformUserFilters((value) => ({ ...value, role: event.target.value }))}><option value="all">全部角色</option><option value="platform_admin">平台管理员</option><option value="company_member">企业成员</option><option value="user">普通用户</option></select>
+            <select value={platformUserFilters.status} onChange={(event) => setPlatformUserFilters((value) => ({ ...value, status: event.target.value }))}><option value="all">全部状态</option><option value="active">正常</option><option value="disabled">已禁用</option></select>
+            <button className={styles.secondaryBtn} onClick={refreshPlatformUsers}>查询</button>
           </div>
-
-          <div className={styles.riskNoticePanel}>
-            <strong>权限原则</strong>
-            <p>企业拥有者应通过企业认证自然产生；企业管理员和员工应由企业邀请或批准加入。平台只在申诉、误操作、账号异常等特殊情况下进行人工权限处理。</p>
-          </div>
-
+          <div className={styles.riskNoticePanel}><strong>权限原则</strong><p>企业 owner/admin/uploader 权限不在这里直接修改；这里仅处理平台管理员权限和账号禁用等特殊情况。</p></div>
           <div className={styles.userList}>
-            {[
-              ['admin', 'U-000001', 'admin@legacy.local', '平台管理员', '2 家公司', '正常'],
-              ['quality-user', 'U-000128', 'quality@example.com', '企业成员', '1 家公司', '正常'],
-              ['visitor', 'U-000389', 'visitor@example.com', '普通用户', '无公司', '正常'],
-              ['risk-account', 'U-000512', 'risk@example.com', '普通用户', '无公司', '风险账号'],
-            ].map(([name, code, email, role, companyCount, status]) => (
-              <article key={code} className={styles.userCard}>
-                <div className={styles.memberAvatar}>{name.slice(0, 1).toUpperCase()}</div>
-                <div className={styles.userMainInfo}>
-                  <h3>{name}</h3>
-                  <p>{email}</p>
-                  <small>{code}</small>
-                </div>
-                <div className={styles.userInfoGrid}>
-                  <span><strong>账号角色</strong><em>{role}</em></span>
-                  <span><strong>关联公司</strong><em>{companyCount}</em></span>
-                  <span><strong>账号状态</strong><em className={status === '正常' ? styles.statusOk : styles.reviewStatusReject}>{status}</em></span>
-                </div>
-                <div className={styles.userActions}>
-                  <button className={styles.primaryTextBtn}>查看用户</button>
-                  <button className={styles.secondaryTextBtn}>特殊权限处理</button>
-                  <button className={status === '正常' ? styles.reviewRejectBtn : styles.secondaryTextBtn}>{status === '正常' ? '禁用' : '恢复'}</button>
-                </div>
-              </article>
-            ))}
+            {platformUsers.length === 0 && <div className={styles.emptyState}>当前没有符合条件的用户。</div>}
+            {platformUsers.map((user) => {
+              const isPlatformAdmin = ['admin', 'platform_admin'].includes(user.platformRole);
+              const status = user.status === 'active' ? '正常' : '已禁用';
+              return <article key={user.id} className={styles.userCard}>
+                <div className={styles.memberAvatar}>{(user.displayName || user.email || 'U').slice(0, 1).toUpperCase()}</div>
+                <div className={styles.userMainInfo}><h3>{user.displayName || '未设置姓名'}</h3><p>{user.email}</p><small>{user.userCode || `U-${String(user.id).padStart(6, '0')}`}</small></div>
+                <div className={styles.userInfoGrid}><span><strong>账号角色</strong><em>{isPlatformAdmin ? '平台管理员' : user.companyCount ? '企业成员' : '普通用户'}</em></span><span><strong>关联公司</strong><em>{user.companyCount || 0} 家</em></span><span><strong>账号状态</strong><em className={status === '正常' ? styles.statusOk : styles.reviewStatusReject}>{status}</em></span></div>
+                <div className={styles.userActions}><button className={styles.primaryTextBtn} onClick={() => viewPlatformUser(user.id)}>查看用户</button><button className={styles.secondaryTextBtn} onClick={() => changePlatformUserRole(user)}>平台权限</button><button className={status === '正常' ? styles.reviewRejectBtn : styles.secondaryTextBtn} onClick={() => togglePlatformUserStatus(user)}>{status === '正常' ? '禁用' : '恢复'}</button></div>
+              </article>;
+            })}
           </div>
         </Section>
       );
     }
 
     if (activePage === 'reports') {
+      const reportTypeLabels = { wrong_info: '信息错误', outdated_info: '资料过期', duplicate_entry: '重复条目', other: '其他问题' };
+      const reportStatusLabels = { pending: '待处理', processing: '处理中', resolved: '已处理', rejected: '不成立' };
+      const keyword = platformReportFilters.search.trim().toLowerCase();
+      const filteredReports = platformReports.filter((report) => {
+        if (platformReportFilters.status !== 'all' && report.status !== platformReportFilters.status) return false;
+        if (platformReportFilters.reportType !== 'all' && report.reportType !== platformReportFilters.reportType) return false;
+        return !keyword || [report.certNo, report.productName, report.companyName, report.description, report.reporterEmail].some((value) => String(value || '').toLowerCase().includes(keyword));
+      });
+      const reportCount = (status) => platformReports.filter((item) => item.status === status).length;
       return (
-        <Section title="举报处理" desc="处理用户提交的错误、虚假资料、侵权和过期资料举报。">
-          <div className={styles.reportSummaryGrid}>
-            {[
-              ['待处理', '8', '需要平台确认'],
-              ['处理中', '3', '等待企业回应'],
-              ['已处理', '21', '已完成关闭'],
-              ['高风险', '2', '疑似虚假或侵权'],
-            ].map(([name, count, desc]) => (
-              <div key={name} className={styles.reportSummaryCard}>
-                <strong>{count}</strong>
-                <span>{name}</span>
-                <p>{desc}</p>
-              </div>
-            ))}
-          </div>
-
+        <Section title="举报处理" desc="处理用户针对证书资料提交的信息错误、过期和重复举报。">
+          <div className={styles.reportSummaryGrid}>{[
+            ['待处理', reportCount('pending'), '需要平台确认'], ['处理中', reportCount('processing'), '正在核查'], ['已处理', reportCount('resolved'), '已完成关闭'], ['不成立', reportCount('rejected'), '已驳回举报'],
+          ].map(([name, count, desc]) => <div key={name} className={styles.reportSummaryCard}><strong>{count}</strong><span>{name}</span><p>{desc}</p></div>)}</div>
           <div className={styles.reportToolbar}>
-            <input placeholder="搜索举报对象、公司、产品、资料" />
-            <select defaultValue="pending">
-              <option value="pending">待处理</option>
-              <option value="processing">处理中</option>
-              <option value="resolved">已处理</option>
-              <option value="all">全部状态</option>
-            </select>
-            <select defaultValue="all">
-              <option value="all">全部类型</option>
-              <option value="wrong_info">信息错误</option>
-              <option value="fake">疑似虚假</option>
-              <option value="expired">资料过期</option>
-              <option value="copyright">侵权</option>
-            </select>
+            <input value={platformReportFilters.search} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, search: event.target.value }))} placeholder="搜索证书、公司、产品或举报说明" />
+            <select value={platformReportFilters.status} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, status: event.target.value }))}><option value="pending">待处理</option><option value="processing">处理中</option><option value="resolved">已处理</option><option value="rejected">不成立</option><option value="all">全部状态</option></select>
+            <select value={platformReportFilters.reportType} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, reportType: event.target.value }))}><option value="all">全部类型</option><option value="wrong_info">信息错误</option><option value="outdated_info">资料过期</option><option value="duplicate_entry">重复条目</option><option value="other">其他问题</option></select>
+            <button className={styles.secondaryBtn} onClick={refreshPlatformReports}>刷新</button>
           </div>
-
           <div className={styles.reportList}>
-            {[
-              ['疑似虚假证书', 'CE Certificate - F20', '高风险', '用户反馈证书编号与资料内容不一致', '待处理'],
-              ['资料过期', 'Declaration of Conformity', '普通', 'DoC 资料可能不是最新版本', '处理中'],
-              ['产品型号错误', 'Equestrian Helmet F20', '普通', '适用型号显示不完整', '待处理'],
-              ['侵权投诉', 'User Manual', '高风险', '举报说明书疑似未经授权上传', '待处理'],
-            ].map(([type, target, risk, desc, status]) => (
-              <article key={`${type}-${target}`} className={styles.reportCard}>
-                <div className={risk === '高风险' ? styles.reportAccentHigh : styles.reportAccentNormal} />
-                <div className={styles.reportMain}>
-                  <div className={styles.reportTitleRow}>
-                    <div>
-                      <span className={risk === '高风险' ? styles.reportRiskHigh : styles.reportRiskNormal}>{risk}</span>
-                      <h3>{type}</h3>
-                    </div>
-                    <em className={status === '待处理' ? styles.reviewStatusPending : styles.reviewStatusMore}>{status}</em>
-                  </div>
-                  <p>{desc}</p>
-                  <div className={styles.reportObject}>举报对象：{target}</div>
-                </div>
-                <div className={styles.reportActions}>
-                  <button className={styles.primaryBtn}>查看详情</button>
-                  <button className={styles.secondaryBtn}>联系企业</button>
-                  <button className={styles.secondaryBtn}>标记处理</button>
-                </div>
-              </article>
-            ))}
+            {filteredReports.length === 0 && <div className={styles.emptyState}>当前没有符合条件的举报。</div>}
+            {filteredReports.map((report) => <article key={report.id} className={styles.reportCard}>
+              <div className={report.reportType === 'wrong_info' ? styles.reportAccentHigh : styles.reportAccentNormal} />
+              <div className={styles.reportMain}><div className={styles.reportTitleRow}><div><span className={report.reportType === 'wrong_info' ? styles.reportRiskHigh : styles.reportRiskNormal}>{reportTypeLabels[report.reportType] || report.reportType}</span><h3>{report.certNo || `证书 #${report.certId}`}</h3></div><em className={report.status === 'pending' ? styles.reviewStatusPending : styles.reviewStatusMore}>{reportStatusLabels[report.status] || report.status}</em></div><p>{report.description || '未填写详细说明'}</p><div className={styles.reportObject}>{report.companyName || '未知企业'} · {report.productName || '未知产品'} · {formatActivityTime(report.createdAt)}</div></div>
+              <div className={styles.reportActions}><button className={styles.primaryBtn} onClick={() => viewPlatformReport(report.id)}>查看详情</button>{report.status === 'pending' && <button className={styles.secondaryBtn} onClick={() => updatePlatformReport(report, 'processing')}>开始处理</button>}{!['resolved', 'rejected'].includes(report.status) && <button className={styles.secondaryBtn} onClick={() => updatePlatformReport(report, 'resolved')}>处理完成</button>}{report.status === 'pending' && <button className={styles.reviewRejectBtn} onClick={() => updatePlatformReport(report, 'rejected')}>举报不成立</button>}</div>
+            </article>)}
           </div>
         </Section>
       );
     }
 
     if (activePage === 'system') {
+      const updateSetting = (key, value) => setPlatformSettings((settings) => ({ ...settings, [key]: value }));
       return (
-        <Section title="平台设置" desc="管理员只修改低风险运营信息；底层规则由平台技术配置维护。">
-          <div className={styles.platformSettingNotice}>
-            <strong>设置原则</strong>
-            <p>平台公告、联系方式、帮助入口等可以由管理员维护；资料限制、备份、安全策略等属于基础规则，只展示给管理员查看，不能在后台随意修改。</p>
-          </div>
-
+        <Section title="平台设置" desc="维护低风险运营信息和页面入口；底层安全规则保持只读。">
+          <div className={styles.platformSettingNotice}><strong>设置原则</strong><p>这里保存的平台公告、联系方式和法律入口会进入平台配置库；上传限制、备份与审核规则仍由代码和服务器配置维护。</p></div>
           <div className={styles.systemGrid}>
-            <div className={styles.systemCard}>
-              <h3>可编辑：运营信息</h3>
-              <div className={styles.editGrid}>
-                <label>
-                  <span>平台公告</span>
-                  <textarea rows="3" placeholder="例如：系统维护通知、重要更新提醒。" />
-                </label>
-                <label>
-                  <span>平台联系邮箱</span>
-                  <input placeholder="327114305@qq.com" />
-                </label>
-                <label>
-                  <span>帮助中心链接</span>
-                  <input placeholder="https://..." />
-                </label>
-                <label>
-                  <span>入驻咨询联系方式</span>
-                  <input placeholder="327114305@qq.com / 18069839326" />
-                </label>
-                <label className={styles.fullField}>
-                  <span>维护提醒文案</span>
-                  <textarea rows="3" placeholder="当网站维护或部分功能不可用时展示。" />
-                </label>
-              </div>
-            </div>
-
-            <div className={styles.systemCard}>
-              <h3>可编辑：页面与法律入口</h3>
-              <div className={styles.settingRows}>
-                {[
-                  ['服务条款链接', '/terms'],
-                  ['隐私政策链接', '/privacy'],
-                  ['免责声明链接', '/disclaimer'],
-                  ['企业入驻协议', '/enterprise-agreement'],
-                  ['联系我们页面', '/contact'],
-                ].map(([name, value]) => (
-                  <div key={name} className={styles.settingRow}>
-                    <span>{name}</span>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.systemCardReadonly}>
-              <h3>只读：资料与存储规则</h3>
-              <div className={styles.settingRows}>
-                {[
-                  ['单文件大小限制', '未认证企业 20MB / 个'],
-                  ['允许文件类型', 'PDF / JPG / PNG / WebP / Word'],
-                  ['资料备份策略', '服务器 / 对象存储 / 定时备份'],
-                  ['资料安全扫描', '后续接入'],
-                ].map(([name, value]) => (
-                  <div key={name} className={styles.settingRowReadonly}>
-                    <span>{name}</span>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.systemCardReadonly}>
-              <h3>只读：安全与审核规则</h3>
-              <div className={styles.settingRows}>
-                {[
-                  ['上传责任确认', '强制'],
-                  ['企业认证审核', '人工审核'],
-                  ['操作日志', '重要操作必须记录'],
-                  ['权限干预', '仅超级管理员特殊处理'],
-                  ['登录安全策略', '由系统配置决定'],
-                ].map(([name, value]) => (
-                  <div key={name} className={styles.settingRowReadonly}>
-                    <span>{name}</span>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <div className={styles.systemCard}><h3>可编辑：运营信息</h3><div className={styles.editGrid}>
+              <label><span>平台公告</span><textarea rows="3" value={platformSettings.announcement || ''} onChange={(e) => updateSetting('announcement', e.target.value)} /></label>
+              <label><span>平台联系邮箱</span><input value={platformSettings.contactEmail || ''} onChange={(e) => updateSetting('contactEmail', e.target.value)} /></label>
+              <label><span>帮助中心链接</span><input value={platformSettings.helpUrl || ''} onChange={(e) => updateSetting('helpUrl', e.target.value)} /></label>
+              <label><span>入驻咨询联系方式</span><input value={platformSettings.onboardingContact || ''} onChange={(e) => updateSetting('onboardingContact', e.target.value)} /></label>
+              <label className={styles.fullField}><span>维护提醒文案</span><textarea rows="3" value={platformSettings.maintenanceMessage || ''} onChange={(e) => updateSetting('maintenanceMessage', e.target.value)} /></label>
+            </div></div>
+            <div className={styles.systemCard}><h3>可编辑：页面与法律入口</h3><div className={styles.editGrid}>{[
+              ['termsUrl', '服务条款链接'], ['privacyUrl', '隐私政策链接'], ['disclaimerUrl', '免责声明链接'], ['enterpriseAgreementUrl', '企业入驻协议'], ['contactUrl', '联系我们页面'],
+            ].map(([key, label]) => <label key={key}><span>{label}</span><input value={platformSettings[key] || ''} onChange={(e) => updateSetting(key, e.target.value)} /></label>)}</div></div>
+            <div className={styles.systemCardReadonly}><h3>只读：资料与存储规则</h3><div className={styles.settingRows}>{[['未认证企业上传限制', '单文件 20MB'], ['允许文件类型', 'PDF / JPG / PNG / WebP / Word'], ['资料备份策略', '服务器备份'], ['资料安全扫描', '尚未接入']].map(([name, value]) => <div key={name} className={styles.settingRowReadonly}><span>{name}</span><strong>{value}</strong></div>)}</div></div>
+            <div className={styles.systemCardReadonly}><h3>只读：安全与审核规则</h3><div className={styles.settingRows}>{[['上传责任确认', '强制'], ['企业认证审核', '人工审核'], ['企业资料公开', '平台管理员逐份审核'], ['操作日志', '重要操作记录'], ['权限干预', '仅平台管理员']].map(([name, value]) => <div key={name} className={styles.settingRowReadonly}><span>{name}</span><strong>{value}</strong></div>)}</div></div>
           </div>
-
-          <div className={styles.formActions}>
-            <button className={styles.secondaryBtn}>取消</button>
-            <button className={styles.primaryBtn}>保存可编辑设置</button>
-          </div>
+          <div className={styles.formActions}><button className={styles.secondaryBtn} onClick={() => savedPlatformSettings && setPlatformSettings({ ...savedPlatformSettings })}>取消修改</button><button className={styles.primaryBtn} onClick={savePlatformSettings}>保存可编辑设置</button></div>
         </Section>
       );
     }
@@ -4438,7 +4570,9 @@ export default function AdminV2Page() {
           desc: '用于审核机构按法规、认证路径、标准号快速定位 DoC、证书、测试报告。',
           hint: '一个产品可关联多个合规分类，资料类型仍由 documentType 单独管理。',
         };
-      const topCategories = currentCategories.filter((item) => !item.parentId);
+      const normalizedCategorySearch = categorySearch.trim().toLowerCase();
+      const visibleCategories = normalizedCategorySearch ? currentCategories.filter((item) => [item.name, item.nameEn, item.description].some((value) => String(value || '').toLowerCase().includes(normalizedCategorySearch))) : currentCategories;
+      const topCategories = visibleCategories.filter((item) => !item.parentId || (normalizedCategorySearch && !visibleCategories.some((candidate) => String(candidate.id) === String(item.parentId))));
       return (
         <Section title="分类管理" desc="分类现在拆为 C端产品分类和审核/合规分类；资料类型不混入分类树。">
           <div className={styles.categoryHeaderPanel}>
@@ -4446,20 +4580,20 @@ export default function AdminV2Page() {
               <h3>{categoryCopy.title}</h3>
               <p>{categoryCopy.desc}</p>
             </div>
-            <button className={styles.primaryBtn}>新增分类</button>
+            <button className={styles.primaryBtn} onClick={() => createPlatformCategory()}>新增分类</button>
           </div>
 
           <div className={styles.categoryTools}>
             <button className={categoryMode === 'consumer' ? styles.primaryBtn : styles.secondaryBtn} onClick={() => setCategoryMode('consumer')}>C端产品分类</button>
             <button className={categoryMode === 'compliance' ? styles.primaryBtn : styles.secondaryBtn} onClick={() => setCategoryMode('compliance')}>审核/合规分类</button>
-            <input placeholder="搜索分类名称" />
+            <input value={categorySearch} onChange={(event) => setCategorySearch(event.target.value)} placeholder="搜索分类名称" />
           </div>
 
           <div className={styles.profileNote}>{categoryCopy.hint}</div>
 
           <div className={styles.categoryTreeList}>
             {topCategories.map((parent) => {
-              const children = currentCategories.filter((item) => String(item.parentId || '') === String(parent.id));
+              const children = visibleCategories.filter((item) => String(item.parentId || '') === String(parent.id));
               return (
               <article key={parent.id} className={styles.categoryTreeCard}>
                 <div className={styles.categoryParentRow}>
@@ -4468,13 +4602,13 @@ export default function AdminV2Page() {
                     <p>{parent.productCount || 0} 个产品 · {parent.status === 'active' ? '启用' : parent.status}</p>
                   </div>
                   <div className={styles.categoryActions}>
-                    <button className={styles.secondaryBtn}>新增子类</button>
-                    <button className={styles.secondaryBtn}>编辑</button>
+                    <button className={styles.secondaryBtn} onClick={() => createPlatformCategory(parent)}>新增子类</button>
+                    <button className={styles.secondaryBtn} onClick={() => editPlatformCategory(parent)}>编辑</button>
                   </div>
                 </div>
                 <div className={styles.categoryChildren}>
                   {children.length ? children.map((child) => (
-                    <span key={child.id}>{child.name}</span>
+                    <button key={child.id} type="button" onClick={() => editPlatformCategory(child)}>{child.name}</button>
                   )) : (
                     <span>暂无子分类</span>
                   )}
