@@ -464,9 +464,29 @@ test('platform admins can review pending documents and company members cannot', 
   assert.equal(document.reviewed_by, 3);
   assert.ok(document.reviewed_at);
 
+  const notifications = db.prepare('SELECT user_id, title, description FROM user_notifications WHERE title = ? ORDER BY user_id').all('资料审核已通过');
+  assert.deepEqual(notifications.map((item) => item.user_id), [1, 4]);
+  notifications.forEach((item) => assert.match(item.description, /Review Queue Manual/));
+
   const audit = db.prepare("SELECT action, target_type FROM audit_logs WHERE target_id = ? ORDER BY id DESC LIMIT 1").get(documentId);
   assert.equal(audit.action, 'review_approved');
   assert.equal(audit.target_type, 'document');
+});
+
+test('rejected document reviews notify the uploader and company owner with the reason', async () => {
+  const inserted = db.prepare(`
+    INSERT INTO documents (company_id, product_id, document_type, title, status, review_status, uploaded_by)
+    VALUES (1, 1, 'manual', 'Incorrect Manual', 'active', 'pending', 4)
+  `).run();
+  const documentId = Number(inserted.lastInsertRowid);
+  const rejected = await request(`/api/v2/documents/${documentId}/review`, {
+    method: 'POST', token: adminToken, body: { status: 'rejected', note: 'Wrong company name' },
+  });
+  assert.equal(rejected.status, 200);
+  const notifications = db.prepare('SELECT user_id, description FROM user_notifications WHERE title = ? AND description LIKE ? ORDER BY user_id')
+    .all('资料审核未通过', '%Incorrect Manual%');
+  assert.deepEqual(notifications.map((item) => item.user_id), [1, 4]);
+  notifications.forEach((item) => assert.match(item.description, /Wrong company name/));
 });
 
 test('platform management APIs use real data and enforce admin access', async () => {

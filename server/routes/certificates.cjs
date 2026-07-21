@@ -432,7 +432,7 @@ router.post('/', authMiddleware, (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: reviewStatus === 'pending' ? '证书已提交，等待管理员审核' : '证书创建成功',
+      message: reviewStatus === 'pending' ? '证书已提交，待平台审核，请联系管理员' : '证书创建成功',
       id: result.documentId,
     });
   } catch (error) {

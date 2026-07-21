@@ -11369,3 +11369,38 @@ button.documentPreviewCard:hover {
   border-color: var(--accent-blue);
   color: var(--accent-blue);
 }
+
+.fileReviewStatus {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.fileReviewStatus small {
+  max-width: 220px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.pendingTag,
+.rejectedTag {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pendingTag {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.rejectedTag {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}

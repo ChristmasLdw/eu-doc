@@ -1551,6 +1551,9 @@ export default function AdminV2Page() {
           certNo: item.certNo || '',
           standard: item.standard || '',
           issuer: item.issuer || '',
+          reviewStatus: item.reviewStatus || 'pending',
+          reviewNote: item.reviewNote || '',
+          reviewedAt: item.reviewedAt || '',
         })));
       })
       .catch(() => {
@@ -3734,14 +3737,16 @@ export default function AdminV2Page() {
           ['unbound', '未绑定产品'],
         ];
         const getDocHealth = (doc) => {
-          if (!doc.productId) return { label: '未绑定产品', tone: 'warn' };
-          if (!doc.language || doc.lang === '未设置' || doc.documentType === 'other') return { label: '待完善', tone: 'warn' };
-          return { label: '正常', tone: 'safe' };
+          if (doc.reviewStatus === 'pending') return { label: '待平台审核，请联系管理员', filter: '待审核', tone: 'pending' };
+          if (doc.reviewStatus === 'rejected') return { label: '审核未通过，请联系管理员', filter: '审核未通过', tone: 'rejected' };
+          if (!doc.productId) return { label: '未绑定产品', filter: '未绑定产品', tone: 'warn' };
+          if (!doc.language || doc.lang === '未设置' || doc.documentType === 'other') return { label: '待完善', filter: '待完善', tone: 'warn' };
+          return { label: '已审核公开', filter: '已公开', tone: 'safe' };
         };
         const uniqueLanguages = [...new Set(companyDocuments.map((doc) => doc.lang).filter(Boolean))];
         const filteredDocuments = companyDocuments.filter((doc) => {
           const query = fileFilters.query.trim().toLowerCase();
-          const health = getDocHealth(doc).label;
+          const health = getDocHealth(doc).filter;
           const matchesQuery = !query || [doc.name, doc.product, doc.lang, doc.certNo, doc.standard, doc.issuer].some((value) => String(value || '').toLowerCase().includes(query));
           const matchesType = fileFilters.type === 'all' || (fileFilters.type === 'unbound' ? !doc.productId : doc.documentType === fileFilters.type);
           const matchesProduct = fileFilters.product === 'all' || String(doc.productId || '') === String(fileFilters.product);
@@ -3759,9 +3764,10 @@ export default function AdminV2Page() {
                 ['DoC声明资料', companyDocuments.filter((doc) => doc.documentType === 'declaration_of_conformity').length, '供审核机构查看合规声明'],
                 ['使用说明书', companyDocuments.filter((doc) => doc.documentType === 'manual').length, '帮助用户了解产品使用方式'],
                 ['未绑定产品', companyDocuments.filter((doc) => !doc.productId).length, '这些资料前台产品页可能看不到'],
-                ['待完善', companyDocuments.filter((doc) => getDocHealth(doc).label === '待完善').length, '类型或语言等信息需要补齐'],
+                ['待审核', companyDocuments.filter((doc) => doc.reviewStatus === 'pending').length, '待平台审核，请联系管理员'],
+                ['审核未通过', companyDocuments.filter((doc) => doc.reviewStatus === 'rejected').length, '请根据审核意见修改后重新提交'],
               ].map(([name, count, desc]) => (
-                <button key={name} className={styles.fileOverviewCard} onClick={() => setFileFilters((form) => ({ ...form, type: name === '未绑定产品' ? 'unbound' : form.type, status: name === '待完善' ? '待完善' : form.status }))}>
+                <button key={name} className={styles.fileOverviewCard} onClick={() => setFileFilters((form) => ({ ...form, type: name === '未绑定产品' ? 'unbound' : form.type, status: ['待审核', '审核未通过'].includes(name) ? name : form.status }))}>
                   <strong>{count}</strong><span>{name}</span><p>{desc}</p>
                 </button>
               ))}
@@ -3781,7 +3787,7 @@ export default function AdminV2Page() {
               <input value={fileFilters.query} onChange={(event) => setFileFilters((form) => ({ ...form, query: event.target.value }))} placeholder="搜索资料名、产品、证书编号、标准" />
               <select value={fileFilters.product} onChange={(event) => setFileFilters((form) => ({ ...form, product: event.target.value }))}><option value="all">全部产品</option>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select>
               <select value={fileFilters.language} onChange={(event) => setFileFilters((form) => ({ ...form, language: event.target.value }))}><option value="all">全部语言</option>{uniqueLanguages.map((lang) => <option key={lang} value={lang}>{lang}</option>)}</select>
-              <select value={fileFilters.status} onChange={(event) => setFileFilters((form) => ({ ...form, status: event.target.value }))}><option value="all">全部状态</option><option value="正常">正常</option><option value="待完善">待完善</option><option value="未绑定产品">未绑定产品</option></select>
+              <select value={fileFilters.status} onChange={(event) => setFileFilters((form) => ({ ...form, status: event.target.value }))}><option value="all">全部状态</option><option value="已公开">已审核公开</option><option value="待审核">待平台审核</option><option value="审核未通过">审核未通过</option><option value="待完善">待完善</option><option value="未绑定产品">未绑定产品</option></select>
             </div>
 
             <div className={styles.fileTableHeader}>
@@ -3808,7 +3814,10 @@ export default function AdminV2Page() {
                       {doc.issuer && <span>{doc.issuer}</span>}
                       {!doc.certNo && !doc.standard && !doc.issuer && <span>暂无证书信息</span>}
                     </div>
-                    <span className={health.tone === 'safe' ? styles.safeTag : styles.warnTag}>{health.label}</span>
+                    <div className={styles.fileReviewStatus}>
+                      <span className={health.tone === 'safe' ? styles.safeTag : health.tone === 'rejected' ? styles.rejectedTag : health.tone === 'pending' ? styles.pendingTag : styles.warnTag}>{health.label}</span>
+                      {doc.reviewStatus === 'rejected' && doc.reviewNote && <small>审核意见：{doc.reviewNote}</small>}
+                    </div>
                     <div className={styles.fileActions}>
                       <button className={styles.secondaryBtn} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : showAction('该资料暂无可预览地址')}>预览</button>
                       <button className={styles.secondaryBtn} onClick={() => selectDocumentInSlotModal(doc)}>编辑</button>

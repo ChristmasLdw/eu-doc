@@ -20,6 +20,48 @@ const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_CO
 
 const router = Router();
 
+function ensureUserNotificationTable() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT DEFAULT '未读',
+      tone TEXT DEFAULT 'blue',
+      pinned INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+}
+
+function notifyDocumentReviewResult(document, status, note = '') {
+  ensureUserNotificationTable();
+  const recipients = db.prepare(`
+    SELECT ? AS user_id
+    UNION
+    SELECT cm.user_id
+    FROM company_members cm
+    WHERE cm.company_id = ? AND cm.status = 'active' AND cm.role IN ('owner', 'admin', 'applicant')
+  `).all(document.uploaded_by || null, document.company_id)
+    .map((row) => row.user_id)
+    .filter(Boolean);
+  if (!recipients.length) return;
+
+  const approved = status === 'approved';
+  const title = approved ? '资料审核已通过' : '资料审核未通过';
+  const reason = String(note || '').trim();
+  const description = approved
+    ? `你所在企业「${document.company_name}」的资料「${document.title}」已通过平台审核并公开。`
+    : `你所在企业「${document.company_name}」的资料「${document.title}」未通过平台审核，请联系管理员并根据审核意见修改后重新提交。${reason ? `审核意见：${reason}` : ''}`;
+  const insert = db.prepare(`
+    INSERT INTO user_notifications (user_id, title, description, status, tone, pinned)
+    VALUES (?, ?, ?, '未读', ?, ?)
+  `);
+  recipients.forEach((userId) => insert.run(userId, title, description, approved ? 'green' : 'orange', approved ? 0 : 1));
+}
+
 function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) return authMiddleware(req, res, next);
@@ -364,12 +406,15 @@ router.post('/:id/review', authMiddleware, requireAdmin, (req, res) => {
   }
 
   const document = db.prepare(`
-    SELECT d.id, d.title, d.document_type, d.review_status, d.company_id, c.name AS company_name
+    SELECT d.id, d.title, d.document_type, d.review_status, d.company_id, d.uploaded_by, c.name AS company_name
     FROM documents d
     LEFT JOIN companies c ON c.id = d.company_id
     WHERE d.id = ?
   `).get(req.params.id);
   if (!document) return res.status(404).json({ success: false, message: '文档不存在' });
+  if (document.review_status !== 'pending') {
+    return res.status(400).json({ success: false, message: '该资料已完成审核，请刷新列表' });
+  }
 
   db.prepare(`
     UPDATE documents
@@ -391,6 +436,8 @@ router.post('/:id/review', authMiddleware, requireAdmin, (req, res) => {
     }),
     req.ip
   );
+
+  notifyDocumentReviewResult(document, status, note);
 
   return res.json({
     success: true,
@@ -551,7 +598,7 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: reviewStatus === 'pending' ? '文档已提交，等待管理员审核' : '文档创建成功',
+      message: reviewStatus === 'pending' ? '文档已提交，待平台审核，请联系管理员' : '文档创建成功',
       id: documentId,
       data: {
         id: documentId,
@@ -673,19 +720,21 @@ router.post('/:id/replace', authMiddleware, requireDocumentEditor, upload.single
   }
 
   const filePath = `/documents/${req.file.filename}`;
+  const reviewStatus = ['admin', 'platform_admin'].includes(req.admin.role) ? 'approved' : 'pending';
   db.prepare(`
     UPDATE documents
-    SET file_path = ?, file_size = ?, mime_type = ?, updated_at = CURRENT_TIMESTAMP
+    SET file_path = ?, file_size = ?, mime_type = ?, review_status = ?, review_note = NULL,
+        reviewed_by = NULL, reviewed_at = NULL, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(filePath, req.file.size, req.file.mimetype, document.id);
+  `).run(filePath, req.file.size, req.file.mimetype, reviewStatus, document.id);
 
   db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(req.admin.id, 'replace_file', 'document', document.id, JSON.stringify({ old: document.file_path, new: filePath }), req.ip);
+    .run(req.admin.id, 'replace_file', 'document', document.id, JSON.stringify({ old: document.file_path, new: filePath, review_status: reviewStatus }), req.ip);
 
   res.json({
     success: true,
-    message: '文件已替换',
-    data: { file_path: filePath, file_size: req.file.size, mime_type: req.file.mimetype },
+    message: reviewStatus === 'pending' ? '文件已替换，待平台重新审核，请联系管理员' : '文件已替换',
+    data: { file_path: filePath, file_size: req.file.size, mime_type: req.file.mimetype, review_status: reviewStatus },
   });
 });
 
