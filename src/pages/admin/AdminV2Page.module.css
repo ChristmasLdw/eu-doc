@@ -8446,6 +8446,7 @@ tbody tr:last-child td {
 
 .workspaceProductGrid .stackProductCard {
   min-height: auto !important;
+  min-width: 0;
 }
 
 @media (max-width: 760px) {
@@ -8854,7 +8855,10 @@ tbody tr:last-child td {
 }
 
 .workspaceProductGrid .stackProductHead > div {
+  flex: 1 1 auto;
+  width: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 /* Smart product titles: keep product category/name on line one and model-like suffix on line two. */
@@ -8869,6 +8873,7 @@ tbody tr:last-child td {
 
 .smartTitleLine {
   display: block;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;

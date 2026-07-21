@@ -63,6 +63,28 @@ function canManageCompany(user, companyId) {
   return membership && ['owner', 'admin', 'uploader', 'applicant'].includes(membership.role);
 }
 
+function recordImportAudit({ adminId, action, targetType, targetId, detail, ipAddress }) {
+  db.prepare(`
+    INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(adminId, action, targetType, targetId, JSON.stringify(detail), ipAddress);
+}
+
+function normalizeModelList(value) {
+  return String(value || '')
+    .split(/[,，、;；\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function isModelListProductName(name, modelText) {
+  const nameModels = normalizeModelList(name);
+  const normalizedName = nameModels.join('|').toUpperCase();
+  const normalizedModels = normalizeModelList(modelText).join('|').toUpperCase();
+  const modelLikeCount = nameModels.filter((item) => /\d/.test(item) && /^[A-Z0-9._/+-]+$/i.test(item)).length;
+  return nameModels.length >= 2 && (normalizedName === normalizedModels || modelLikeCount === nameModels.length);
+}
+
 
 function cleanExtractedText(text) {
   return String(text || '')
@@ -275,6 +297,19 @@ router.post('/upload', authMiddleware, upload.array('files', 80), (req, res) => 
     const row = { id: result.lastInsertRowid, original_name: file.originalname, file_path: filePath, ...guess };
     return { ...row, suggested_classification: buildClassificationSuggestion(row) };
   });
+  recordImportAudit({
+    adminId: req.admin.id,
+    action: 'batch_upload',
+    targetType: 'company',
+    targetId: companyId,
+    detail: {
+      source: 'batch_import',
+      count: items.length,
+      importItemIds: items.map((item) => item.id),
+      fileNames: items.map((item) => item.original_name),
+    },
+    ipAddress: req.ip,
+  });
   res.status(201).json({ success: true, data: items, message: `已导入 ${items.length} 个文件，等待整理` });
 });
 
@@ -327,6 +362,15 @@ router.post('/organize-group', authMiddleware, (req, res) => {
   const category_primary_id = req.body.categoryPrimaryId || null;
   const compliance_category_ids = Array.isArray(req.body.complianceCategoryIds) ? req.body.complianceCategoryIds.map(Number).filter(Boolean) : [];
   let productId = product_id ? Number(product_id) : null;
+  const createdProduct = !productId;
+
+  if (createdProduct && isModelListProductName(new_product_name, new_product_model) && req.body.confirmModelListName !== true) {
+    return res.status(400).json({
+      success: false,
+      code: 'MODEL_LIST_PRODUCT_NAME_CONFIRMATION_REQUIRED',
+      message: '产品/系列名称看起来与适用型号相同，请确认名称后再继续',
+    });
+  }
 
   const tx = db.transaction(() => {
     if (!productId) {
@@ -363,6 +407,24 @@ router.post('/organize-group', authMiddleware, (req, res) => {
       markDone.run(productId, documentId, item.id);
       created.push({ itemId: item.id, documentId });
     }
+    const product = db.prepare('SELECT name, model FROM products WHERE id = ?').get(productId);
+    recordImportAudit({
+      adminId: req.admin.id,
+      action: 'organize_import',
+      targetType: 'product',
+      targetId: productId,
+      detail: {
+        source: 'batch_import',
+        productCreated: createdProduct,
+        productName: product?.name || new_product_name || '',
+        productModel: product?.model || new_product_model || '',
+        count: created.length,
+        importItemIds: created.map((item) => item.itemId),
+        documentIds: created.map((item) => item.documentId),
+        fileNames: items.map((item) => item.original_name),
+      },
+      ipAddress: req.ip,
+    });
     return { productId, documents: created };
   });
 
@@ -389,6 +451,15 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
   const category_primary_id = req.body.categoryPrimaryId || null;
   const compliance_category_ids = Array.isArray(req.body.complianceCategoryIds) ? req.body.complianceCategoryIds.map(Number).filter(Boolean) : [];
   let productId = product_id ? Number(product_id) : null;
+  const createdProduct = !productId;
+
+  if (createdProduct && isModelListProductName(new_product_name, new_product_model) && req.body.confirmModelListName !== true) {
+    return res.status(400).json({
+      success: false,
+      code: 'MODEL_LIST_PRODUCT_NAME_CONFIRMATION_REQUIRED',
+      message: '产品/系列名称看起来与适用型号相同，请确认名称后再继续',
+    });
+  }
 
   const tx = db.transaction(() => {
     if (!productId) {
@@ -424,6 +495,24 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
     db.prepare(`
       UPDATE import_items SET status = 'organized', product_id = ?, document_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
     `).run(productId, documentId, item.id);
+    const product = db.prepare('SELECT name, model FROM products WHERE id = ?').get(productId);
+    recordImportAudit({
+      adminId: req.admin.id,
+      action: 'organize_import',
+      targetType: 'product',
+      targetId: productId,
+      detail: {
+        source: 'batch_import',
+        productCreated: createdProduct,
+        productName: product?.name || new_product_name || '',
+        productModel: product?.model || new_product_model || '',
+        count: 1,
+        importItemIds: [item.id],
+        documentIds: [documentId],
+        fileNames: [item.original_name],
+      },
+      ipAddress: req.ip,
+    });
     return { productId, documentId };
   });
 

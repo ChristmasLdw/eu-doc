@@ -31,6 +31,7 @@ db.exec(`
     name_en TEXT,
     status TEXT DEFAULT 'active',
     verification_status TEXT DEFAULT 'verified',
+    public_visible INTEGER DEFAULT 1,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE company_members (
@@ -46,7 +47,10 @@ db.exec(`
     name TEXT NOT NULL,
     model TEXT,
     image_path TEXT,
+    category_primary_id INTEGER,
     status TEXT DEFAULT 'active',
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE documents (
@@ -61,6 +65,11 @@ db.exec(`
     mime_type TEXT,
     status TEXT DEFAULT 'active',
     review_status TEXT DEFAULT 'pending',
+    review_note TEXT,
+    reviewed_by INTEGER,
+    reviewed_at DATETIME,
+    uploaded_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE certificate_metadata (
@@ -72,6 +81,16 @@ db.exec(`
     issue_date TEXT,
     expiry_date TEXT,
     remark TEXT
+  );
+  CREATE TABLE certificates_legacy (id INTEGER PRIMARY KEY, thumbnail_path TEXT);
+  CREATE TABLE categories (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_en TEXT,
+    slug TEXT,
+    parent_id INTEGER,
+    status TEXT DEFAULT 'active',
+    sort_order INTEGER DEFAULT 0
   );
   CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
   CREATE TABLE product_tags (product_id INTEGER, tag_id INTEGER, created_at DATETIME);
@@ -109,9 +128,10 @@ insertUser.run(4, 'uploader@example.com', 'unused', 'Uploader', 'user');
 db.prepare('INSERT INTO companies (id, name) VALUES (1, ?)').run('Company One');
 db.prepare("INSERT INTO company_members (id, user_id, company_id, role) VALUES (1, 1, 1, 'owner')").run();
 db.prepare("INSERT INTO company_members (id, user_id, company_id, role) VALUES (2, 4, 1, 'uploader')").run();
-db.prepare("INSERT INTO products (id, company_id, name) VALUES (1, 1, 'Product One')").run();
-db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title) VALUES (1, 1, 1, 'manual', 'Manual')").run();
-db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title) VALUES (2, 1, 1, 'certificate', 'Certificate')").run();
+db.prepare("INSERT INTO products (id, company_id, name, created_by) VALUES (1, 1, 'Product One', 1)").run();
+db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (1, 1, 1, 'manual', 'Manual', 'active', 'approved', 4, '/documents/manual.pdf', 'application/pdf')").run();
+db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (2, 1, 1, 'certificate', 'Certificate', 'active', 'approved', 4, '/documents/certificate.pdf', 'application/pdf')").run();
+db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (3, 1, 1, 'manual', 'Pending Manual', 'active', 'pending', 4, '/documents/pending.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO certificate_metadata (id, document_id, cert_no) VALUES (1, 2, 'CERT-1')").run();
 db.prepare("INSERT INTO tags (id, name) VALUES (1, 'Featured')").run();
 
@@ -128,6 +148,7 @@ app.use('/api/companies', require('../routes/companies.cjs'));
 app.use('/api/v2/documents', require('../routes/documents.cjs'));
 app.use('/api/v2/products', require('../routes/products.cjs'));
 app.use('/api/v2/tags', require('../routes/tags.cjs'));
+app.use('/api/v2/imports', require('../routes/imports.cjs'));
 app.use('/api/certificates', require('../routes/certificates.cjs'));
 
 let server;
@@ -279,4 +300,105 @@ test('certificate import cannot target another company', async () => {
     },
   });
   assert.equal(result.status, 403);
+});
+
+test('public product APIs hide actor fields and pending documents', async () => {
+  const publicFilePath = path.join(__dirname, '..', 'uploads', 'documents', 'manual.pdf');
+  fs.mkdirSync(path.dirname(publicFilePath), { recursive: true });
+  fs.writeFileSync(publicFilePath, 'public manual');
+
+  const list = await request('/api/v2/products?companyId=1&pageSize=20');
+  assert.equal(list.status, 200);
+  assert.equal(Object.hasOwn(list.body.data[0], 'created_by'), false);
+  assert.equal(list.body.data[0].document_count, 2);
+
+  const detail = await request('/api/v2/products/1');
+  assert.equal(detail.status, 200);
+  assert.equal(Object.hasOwn(detail.body.data, 'created_by'), false);
+  assert.equal(Object.hasOwn(detail.body.data, 'created_by_name'), false);
+
+  const documents = await request('/api/v2/products/1/documents');
+  assert.equal(documents.status, 200);
+  assert.deepEqual(documents.body.data.map((item) => item.id).sort(), [1, 2]);
+  documents.body.data.forEach((item) => {
+    assert.equal(Object.hasOwn(item, 'file_path'), false);
+    assert.equal(Object.hasOwn(item, 'uploaded_by'), false);
+    assert.match(item.file_url, new RegExp(`/api/v2/documents/${item.id}/file$`));
+  });
+
+  const pending = await request('/api/v2/documents/3');
+  assert.equal(pending.status, 404);
+
+  const publicFile = await fetch(`${baseUrl}/api/v2/documents/1/file`);
+  assert.equal(publicFile.status, 200);
+  assert.equal(await publicFile.text(), 'public manual');
+
+  const pendingFile = await fetch(`${baseUrl}/api/v2/documents/3/file`);
+  assert.equal(pendingFile.status, 404);
+  fs.rmSync(publicFilePath, { force: true });
+});
+
+test('batch upload records an audit entry', async () => {
+  const form = new FormData();
+  form.append('companyId', '1');
+  form.append('files', new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }), 'F90-TEST_manual_en.pdf');
+  const response = await fetch(`${baseUrl}/api/v2/imports/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${uploaderToken}` },
+    body: form,
+  });
+  const payload = await response.json();
+  assert.equal(response.status, 201);
+  assert.equal(payload.data.length, 1);
+
+  const audit = db.prepare("SELECT * FROM audit_logs WHERE action = 'batch_upload' ORDER BY id DESC LIMIT 1").get();
+  assert.equal(audit.admin_id, 4);
+  assert.equal(audit.target_type, 'company');
+  assert.equal(audit.target_id, 1);
+  assert.equal(JSON.parse(audit.detail).count, 1);
+
+  const imported = db.prepare('SELECT file_path FROM import_items WHERE id = ?').get(payload.data[0].id);
+  if (imported?.file_path) {
+    const fullPath = path.join(__dirname, '..', imported.file_path.replace(/^\/uploads\//, 'uploads/'));
+    fs.rmSync(fullPath, { force: true });
+  }
+});
+
+test('model-list product names require confirmation and organizing writes an audit entry', async () => {
+  const insert = db.prepare(`
+    INSERT INTO import_items (
+      company_id, original_name, file_path, file_size, mime_type, guessed_type,
+      guessed_language, guessed_model, guessed_models, uploaded_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const item = insert.run(1, 'certificate.pdf', '/uploads/imports/certificate.pdf', 100, 'application/pdf', 'certificate', 'en', 'F20-1, F20-2', 'F20-1, F20-2', 4);
+  const body = {
+    ids: [Number(item.lastInsertRowid)],
+    productId: '',
+    newProductName: 'F20-1, F20-2',
+    newProductModel: 'F20-1, F20-2',
+    documentType: 'certificate',
+  };
+
+  const blocked = await request('/api/v2/imports/organize-group', {
+    method: 'POST',
+    token: uploaderToken,
+    body,
+  });
+  assert.equal(blocked.status, 400);
+  assert.equal(blocked.body.code, 'MODEL_LIST_PRODUCT_NAME_CONFIRMATION_REQUIRED');
+
+  const confirmed = await request('/api/v2/imports/organize-group', {
+    method: 'POST',
+    token: uploaderToken,
+    body: { ...body, confirmModelListName: true },
+  });
+  assert.equal(confirmed.status, 200);
+
+  const audit = db.prepare("SELECT * FROM audit_logs WHERE action = 'organize_import' ORDER BY id DESC LIMIT 1").get();
+  const detail = JSON.parse(audit.detail);
+  assert.equal(audit.admin_id, 4);
+  assert.equal(audit.target_type, 'product');
+  assert.equal(detail.productCreated, true);
+  assert.equal(detail.count, 1);
 });

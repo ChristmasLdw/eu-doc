@@ -28,7 +28,7 @@ function normalizeDocType(doc) {
 }
 
 function docFilePath(doc) {
-  return doc.file_path || doc.filePath || '';
+  return doc.file_url || doc.fileUrl || doc.file_path || doc.filePath || '';
 }
 
 function docThumbPath(doc) {
@@ -60,7 +60,8 @@ function compactDate(dateStr, language) {
   return formatPublicDate(dateStr, language);
 }
 
-function isImageFile(filePath) {
+function isImageFile(filePath, mimeType = '') {
+  if (String(mimeType).startsWith('image/')) return true;
   const ext = String(filePath || '').split('.').pop()?.toLowerCase();
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
 }
@@ -333,7 +334,7 @@ export default function ProductDetailPage() {
                             return (
                               <button key={doc.id} className={styles.documentRowV3} onClick={() => openDocument(doc)}>
                                 <div className={styles.documentThumbV3}>
-                                  {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : isImageFile(filePath) ? <img src={toAssetUrl(filePath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : <span>{group.shortLabel}</span>}
+                                  {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : isImageFile(filePath, doc.mime_type || doc.mimeType) ? <img src={toAssetUrl(filePath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : <span>{group.shortLabel}</span>}
                                 </div>
                                 <div>
                                   <h3>{localizedField(doc, 'title', i18n.language) || doc.cert_no || `${isEn ? 'Document' : '资料'} ${doc.id}`}</h3>

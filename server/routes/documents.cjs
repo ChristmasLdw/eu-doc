@@ -19,6 +19,58 @@ const { hasCompanyRole, requireCompanyRole } = require('../middleware/companyRol
 const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
 
 const router = Router();
+
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) return authMiddleware(req, res, next);
+  return next();
+}
+
+function canViewPrivateCompany(user, companyId) {
+  if (!user) return false;
+  if (user.role === 'platform_admin' || user.role === 'admin') return true;
+  return Boolean(db.prepare(`
+    SELECT id FROM company_members
+    WHERE user_id = ? AND company_id = ? AND status = 'active'
+  `).get(user.id, Number(companyId)));
+}
+
+function sanitizePublicDocument(document) {
+  const sanitized = { ...document };
+  sanitized.file_url = `/eu-doc/api/v2/documents/${document.id}/file`;
+  if (sanitized.certificate_metadata) {
+    sanitized.certificate_metadata = { ...sanitized.certificate_metadata };
+    delete sanitized.certificate_metadata.remark;
+  }
+  delete sanitized.file_path;
+  delete sanitized.uploaded_by;
+  delete sanitized.uploaded_by_name;
+  delete sanitized.reviewed_by;
+  delete sanitized.reviewed_by_name;
+  delete sanitized.review_note;
+  delete sanitized.reviewed_at;
+  delete sanitized.legacy_thumbnail_path;
+  delete sanitized.thumbnail_path;
+  delete sanitized.verification_status;
+  delete sanitized.public_visible;
+  return sanitized;
+}
+
+function publicDocumentAvailable(document) {
+  return document.status === 'active'
+    && document.review_status === 'approved'
+    && document.verification_status === 'verified'
+    && Number(document.public_visible ?? 1) === 1;
+}
+
+function resolveStoredFilePath(storedPath) {
+  const uploadsRoot = path.resolve(__dirname, '../uploads');
+  const normalized = String(storedPath || '').replace(/^\/+/, '');
+  const relative = normalized.startsWith('uploads/') ? normalized.slice('uploads/'.length) : normalized;
+  const fullPath = path.resolve(uploadsRoot, relative);
+  if (fullPath !== uploadsRoot && !fullPath.startsWith(`${uploadsRoot}${path.sep}`)) return null;
+  return fullPath;
+}
 const DOCUMENT_EDITOR_ROLES = ['applicant', 'owner', 'admin', 'uploader'];
 
 function requireDocumentEditor(req, res, next) {
@@ -198,7 +250,7 @@ function listDocuments(req, res) {
 
     res.json({
       success: true,
-      data: documents,
+      data: req.admin ? documents : documents.map(sanitizePublicDocument),
       pagination: {
         page: Number(page),
         pageSize: Number(pageSize),
@@ -216,7 +268,7 @@ function listDocuments(req, res) {
 }
 
 // GET /api/v2/documents/:id - 获取文档详情
-router.get('/:id', (req, res) => {
+router.get('/:id', optionalAuth, (req, res) => {
   try {
     const document = db.prepare(`
       SELECT
@@ -226,6 +278,8 @@ router.get('/:id', (req, res) => {
         p.model as product_model,
         c.name as company_name,
         c.name_en as company_name_en,
+        c.verification_status,
+        c.public_visible,
         u.display_name as uploaded_by_name,
         reviewer.display_name as reviewed_by_name
       FROM documents d
@@ -242,6 +296,11 @@ router.get('/:id', (req, res) => {
         success: false,
         message: '文档不存在',
       });
+    }
+
+    const privateAccess = canViewPrivateCompany(req.admin, document.company_id);
+    if (!privateAccess && !publicDocumentAvailable(document)) {
+      return res.status(404).json({ success: false, message: '文档不存在' });
     }
 
     if (!document.thumbnail_path && document.legacy_thumbnail_path) {
@@ -264,7 +323,7 @@ router.get('/:id', (req, res) => {
 
     document.tags = tags;
 
-    res.json({ success: true, data: document });
+    res.json({ success: true, data: privateAccess ? document : sanitizePublicDocument(document) });
   } catch (error) {
     console.error('[错误] GET /api/v2/documents/:id:', error);
     res.status(500).json({
@@ -272,6 +331,28 @@ router.get('/:id', (req, res) => {
       message: '查询文档详情失败: ' + error.message,
     });
   }
+});
+
+router.get('/:id/file', optionalAuth, (req, res) => {
+  const document = db.prepare(`
+    SELECT d.*, c.verification_status, c.public_visible
+    FROM documents d
+    JOIN companies c ON c.id = d.company_id
+    WHERE d.id = ?
+  `).get(req.params.id);
+  if (!document) return res.status(404).json({ success: false, message: '文件不存在' });
+
+  const privateAccess = canViewPrivateCompany(req.admin, document.company_id);
+  if (!privateAccess && !publicDocumentAvailable(document)) {
+    return res.status(404).json({ success: false, message: '文件不存在' });
+  }
+
+  const fullPath = resolveStoredFilePath(document.file_path);
+  if (!fullPath || !fs.existsSync(fullPath)) {
+    return res.status(404).json({ success: false, message: '文件不存在' });
+  }
+  res.type(document.mime_type || path.extname(fullPath));
+  return res.sendFile(fullPath);
 });
 
 // POST /api/v2/documents - 创建文档（支持文件上传）

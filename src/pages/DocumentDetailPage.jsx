@@ -15,7 +15,7 @@ function normalizeDocType(doc = {}) {
 
 function getFileUrl(doc = {}) {
   const item = doc || {};
-  const path = item.file_path || item.filePath || '';
+  const path = item.file_url || item.fileUrl || item.file_path || item.filePath || '';
   if (!path) return '';
   if (/^(https?:|blob:|data:)/i.test(path)) return path;
   if (path.startsWith('/eu-doc/')) return path;
@@ -33,12 +33,14 @@ function getThumbUrl(doc = {}) {
   return `/eu-doc${path}`;
 }
 
-function isImage(url = '') {
+function isImage(url = '', mimeType = '') {
+  if (String(mimeType).startsWith('image/')) return true;
   const clean = String(url).split('?')[0].toLowerCase();
   return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].some((ext) => clean.endsWith(ext));
 }
 
-function isPdf(url = '') {
+function isPdf(url = '', mimeType = '') {
+  if (String(mimeType).toLowerCase() === 'application/pdf') return true;
   return String(url).split('?')[0].toLowerCase().endsWith('.pdf');
 }
 
@@ -300,8 +302,8 @@ export default function DocumentDetailPage() {
 
           <div className={styles.previewPanel}>
             {fileUrl ? (
-              isImage(fileUrl) ? <img src={fileUrl} alt={title} />
-                : isPdf(fileUrl) ? <iframe src={fileUrl} title={title} />
+              isImage(fileUrl, documentData.mime_type || documentData.mimeType) ? <img src={fileUrl} alt={title} />
+                : isPdf(fileUrl, documentData.mime_type || documentData.mimeType) ? <iframe src={fileUrl} title={title} />
                   : thumbUrl ? <img src={thumbUrl} alt={title} />
                     : <div className={styles.previewFallback}><strong>{ui.preview}</strong><p>{ui.previewFallback}</p></div>
             ) : (

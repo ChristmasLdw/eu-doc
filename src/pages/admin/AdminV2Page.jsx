@@ -221,6 +221,8 @@ const ACTIVITY_ACTIONS = {
   update_member_role: '修改成员权限',
   remove_member: '移除企业成员',
   create_company: '创建公司',
+  batch_upload: '批量上传',
+  organize_import: '整理上传资料',
 };
 
 function parseActivityDetail(detail) {
@@ -248,6 +250,8 @@ function getActivityTypeLabel(type) {
 function getActivityDescription(log) {
   const detail = parseActivityDetail(log.detail);
   const target = log.targetName || detail.name || detail.title || `#${log.targetId || '-'}`;
+  if (log.action === 'batch_upload') return `批量上传 ${detail.count || 0} 份文件到待整理区`;
+  if (log.action === 'organize_import') return `${detail.productCreated ? '创建产品并整理' : '关联产品并整理'} ${detail.count || 0} 份资料到「${detail.productName || target}」`;
   if (log.action === 'invite_member') return `添加 ${detail.email || '新成员'}，角色为 ${MEMBER_ROLES[detail.role]?.label || detail.role || '成员'}`;
   if (log.action === 'update_member_role') return `将 ${detail.displayName || detail.email || '成员'} 从 ${MEMBER_ROLES[detail.oldRole]?.label || detail.oldRole || '-'} 调整为 ${MEMBER_ROLES[detail.newRole]?.label || detail.newRole || '-'}`;
   if (log.action === 'remove_member') return `移除成员 ${detail.displayName || detail.email || ''}`.trim();
@@ -264,6 +268,15 @@ function getActivityDescription(log) {
   if (log.action === 'approve_verification') return `通过公司「${target}」的企业认证`;
   if (log.action === 'reject_verification') return `驳回公司「${target}」的企业认证`;
   return detail.text || `${ACTIVITY_ACTIONS[log.action] || log.action || '操作'} ${target}`;
+}
+
+function isModelListProductName(name, modelText) {
+  const split = (value) => String(value || '').split(/[,，、;；\n]+/).map((item) => item.trim()).filter(Boolean);
+  const nameModels = split(name);
+  const normalizedName = nameModels.join('|').toUpperCase();
+  const normalizedModels = split(modelText).join('|').toUpperCase();
+  const modelLikeCount = nameModels.filter((item) => /\d/.test(item) && /^[A-Z0-9._/+-]+$/i.test(item)).length;
+  return nameModels.length >= 2 && (normalizedName === normalizedModels || modelLikeCount === nameModels.length);
 }
 
 function parseUtcDate(value) {
@@ -1821,12 +1834,20 @@ export default function AdminV2Page() {
     if (!itemsToOrganize.length) { showAction('这组只有重复资料，请先删除重复或拆分处理'); return; }
     const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : findMatchingProductId(group, companyProducts);
     const suggestedClassification = getImportSuggestedClassification(group) || {};
+    const newProductName = form.newProductName || group.suggestedName || '';
+    const newProductModel = [...splitImportModels(group.model).map((model, index) => form[`model_${index}`] || model), ...(form.extraModels || [])].map((model) => String(model || '').trim()).filter(Boolean).join(', ') || form.newProductModel || group.model || '';
+    const needsModelNameConfirmation = !matchedProductId && isModelListProductName(newProductName, newProductModel);
+    if (needsModelNameConfirmation) {
+      const confirmed = window.confirm('当前“产品/系列名称”看起来是一整串型号。建议填写系列名称，并把型号保留在“适用型号”中。确认仍使用当前名称创建产品吗？');
+      if (!confirmed) return;
+    }
     try {
       await api.organizeImportGroup({
         ids: itemsToOrganize.map((item) => item.id),
         productId: matchedProductId || '',
-        newProductName: form.newProductName || group.suggestedName || '',
-        newProductModel: [...splitImportModels(group.model).map((model, index) => form[`model_${index}`] || model), ...(form.extraModels || [])].map((model) => String(model || '').trim()).filter(Boolean).join(', ') || form.newProductModel || group.model || '',
+        newProductName,
+        newProductModel,
+        confirmModelListName: needsModelNameConfirmation,
         documentType: form.documentType || inferImportType(group.items[0], group.type),
         languagesById: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`language_${item.id}`] || item.guessedLanguage || 'en'])),
         documentTypesById: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)])),

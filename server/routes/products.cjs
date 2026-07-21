@@ -21,6 +21,42 @@ const { hasCompanyRole, requireCompanyRole } = require('../middleware/companyRol
 const router = Router();
 const PRODUCT_EDITOR_ROLES = ['applicant', 'owner', 'admin'];
 
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) return authMiddleware(req, res, next);
+  return next();
+}
+
+function canViewPrivateCompany(user, companyId) {
+  if (!user) return false;
+  if (user.role === 'platform_admin' || user.role === 'admin') return true;
+  return Boolean(db.prepare(`
+    SELECT id FROM company_members
+    WHERE user_id = ? AND company_id = ? AND status = 'active'
+  `).get(user.id, Number(companyId)));
+}
+
+function sanitizePublicProduct(product) {
+  const sanitized = { ...product };
+  delete sanitized.created_by;
+  delete sanitized.created_by_name;
+  return sanitized;
+}
+
+function sanitizePublicDocument(document) {
+  const sanitized = { ...document };
+  sanitized.file_url = `/eu-doc/api/v2/documents/${document.id}/file`;
+  delete sanitized.file_path;
+  delete sanitized.uploaded_by;
+  delete sanitized.reviewed_by;
+  delete sanitized.review_note;
+  delete sanitized.reviewed_at;
+  delete sanitized.legacy_thumbnail_path;
+  delete sanitized.thumbnail_path;
+  delete sanitized.review_status;
+  return sanitized;
+}
+
 function requireProductEditor(req, res, next) {
   const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
   if (!product) {
@@ -166,6 +202,7 @@ function listProducts(req, res) {
     const hasToken = authHeader && authHeader.startsWith('Bearer ');
     const mineOnly = req.query.mine === '1';
     const privateStatusRequested = status === 'all';
+    const documentVisibilitySql = req.admin ? '' : "AND status = 'active' AND review_status = 'approved'";
 
     if (mineOnly) {
       if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
@@ -239,8 +276,8 @@ function listProducts(req, res) {
           WHEN parent_cat.name IS NOT NULL THEN parent_cat.name || ' / ' || cat.name
           ELSE cat.name
         END as category_path,
-        (SELECT COUNT(*) FROM documents WHERE product_id = p.id) as document_count,
-        (SELECT COUNT(*) FROM documents WHERE product_id = p.id AND document_type = 'certificate') as certificate_count
+        (SELECT COUNT(*) FROM documents WHERE product_id = p.id ${documentVisibilitySql}) as document_count,
+        (SELECT COUNT(*) FROM documents WHERE product_id = p.id AND document_type = 'certificate' ${documentVisibilitySql}) as certificate_count
       FROM products p
       LEFT JOIN companies c ON p.company_id = c.id
       LEFT JOIN categories cat ON p.category_primary_id = cat.id
@@ -258,7 +295,7 @@ function listProducts(req, res) {
 
     res.json({
       success: true,
-      data: products,
+      data: req.admin ? products : products.map(sanitizePublicProduct),
       pagination: {
         page: Number(page),
         pageSize: Number(pageSize),
@@ -278,7 +315,14 @@ function listProducts(req, res) {
 // GET /api/v2/products/:id/related - 获取同公司相关产品
 router.get('/:id/related', (req, res) => {
   try {
-    const product = db.prepare('SELECT id, company_id, category_primary_id FROM products WHERE id = ?').get(req.params.id);
+    const product = db.prepare(`
+      SELECT p.id, p.company_id, p.category_primary_id
+      FROM products p
+      JOIN companies c ON c.id = p.company_id
+      WHERE p.id = ? AND p.status = 'active'
+        AND c.verification_status = 'verified'
+        AND COALESCE(c.public_visible, 1) = 1
+    `).get(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: '产品不存在' });
     }
@@ -300,14 +344,14 @@ router.get('/:id/related', (req, res) => {
           WHEN parent_cat.name IS NOT NULL THEN parent_cat.name || ' / ' || cat.name
           ELSE cat.name
         END as category_path,
-        (SELECT COUNT(*) FROM documents d WHERE d.product_id = p.id AND COALESCE(d.status, 'active') != 'deleted') as document_count
+        (SELECT COUNT(*) FROM documents d WHERE d.product_id = p.id AND d.status = 'active' AND d.review_status = 'approved') as document_count
       FROM products p
       LEFT JOIN categories cat ON p.category_primary_id = cat.id
       LEFT JOIN categories parent_cat ON cat.parent_id = parent_cat.id
       LEFT JOIN categories grand_cat ON parent_cat.parent_id = grand_cat.id
       WHERE p.company_id = ?
         AND p.id != ?
-        AND COALESCE(p.status, 'active') != 'deleted'
+        AND p.status = 'active'
       ORDER BY
         CASE WHEN p.category_primary_id = ? THEN 0 ELSE 1 END,
         p.updated_at DESC,
@@ -326,7 +370,7 @@ router.get('/:id/related', (req, res) => {
 });
 
 // GET /api/v2/products/:id - 获取产品详情
-router.get('/:id', (req, res) => {
+router.get('/:id', optionalAuth, (req, res) => {
   try {
     const product = db.prepare(`
       SELECT
@@ -360,6 +404,16 @@ router.get('/:id', (req, res) => {
       });
     }
 
+    const privateAccess = canViewPrivateCompany(req.admin, product.company_id);
+    if (!privateAccess) {
+      const publicCompany = db.prepare(`
+        SELECT verification_status, public_visible FROM companies WHERE id = ?
+      `).get(product.company_id);
+      if (product.status !== 'active' || publicCompany?.verification_status !== 'verified' || Number(publicCompany?.public_visible ?? 1) !== 1) {
+        return res.status(404).json({ success: false, message: '产品不存在' });
+      }
+    }
+
     // 获取产品的标签
     const tags = db.prepare(`
       SELECT t.* FROM tags t
@@ -371,7 +425,7 @@ router.get('/:id', (req, res) => {
     product.compliance_categories = getProductComplianceCategories(product.id);
     product.complianceCategoryIds = product.compliance_categories.map((cat) => cat.id);
 
-    res.json({ success: true, data: product });
+    res.json({ success: true, data: privateAccess ? product : sanitizePublicProduct(product) });
   } catch (error) {
     console.error('[错误] GET /api/v2/products/:id:', error);
     res.status(500).json({
@@ -382,8 +436,21 @@ router.get('/:id', (req, res) => {
 });
 
 // GET /api/v2/products/:id/documents - 获取产品的所有文档
-router.get('/:id/documents', (req, res) => {
+router.get('/:id/documents', optionalAuth, (req, res) => {
   try {
+    const product = db.prepare(`
+      SELECT p.company_id, p.status, c.verification_status, c.public_visible
+      FROM products p
+      JOIN companies c ON c.id = p.company_id
+      WHERE p.id = ?
+    `).get(req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: '产品不存在' });
+
+    const privateAccess = canViewPrivateCompany(req.admin, product.company_id);
+    if (!privateAccess && (product.status !== 'active' || product.verification_status !== 'verified' || Number(product.public_visible ?? 1) !== 1)) {
+      return res.status(404).json({ success: false, message: '产品不存在' });
+    }
+
     const documents = db.prepare(`
       SELECT
         d.*,
@@ -396,6 +463,7 @@ router.get('/:id/documents', (req, res) => {
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id AND d.document_type = 'certificate'
       LEFT JOIN certificates_legacy cl ON d.id = cl.id
       WHERE d.product_id = ?
+        ${privateAccess ? '' : "AND d.status = 'active' AND d.review_status = 'approved'"}
       ORDER BY d.created_at DESC
     `).all(req.params.id);
 
@@ -406,7 +474,7 @@ router.get('/:id/documents', (req, res) => {
 
     res.json({
       success: true,
-      data: documents,
+      data: privateAccess ? documents : documents.map(sanitizePublicDocument),
       total: documents.length,
     });
   } catch (error) {
