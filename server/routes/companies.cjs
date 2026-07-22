@@ -639,8 +639,7 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
         al.action,
         al.detail,
         al.created_at,
-        u.username as operator_name,
-        u.email as operator_email
+        u.username as operator_name
       FROM audit_logs al
       LEFT JOIN admins u ON al.admin_id = u.id
       WHERE al.target_type = 'company'
@@ -679,7 +678,6 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
         status: detail.status || '',
         note: detail.note || '',
         operatorName: log.operator_name || '系统',
-        operatorEmail: log.operator_email || '',
         createdAt: log.created_at
       };
     });
