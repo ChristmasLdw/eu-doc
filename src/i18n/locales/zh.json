@@ -464,10 +464,10 @@
       "typeFile": "文件"
     },
     "notifications": {
-      "title": "标题",
-      "desc": "证书到期提醒、审核通知、系统公告等",
+      "title": "通知中心",
+      "desc": "查看企业认证、资料审核和系统业务通知",
       "unreadCount": "条未读",
-      "markAllRead": "全部标为已读",
+      "markAllRead": "全部标记已读",
       "filter": "筛选",
       "all": "全部",
       "unread": "未读",
@@ -478,7 +478,50 @@
       "status": "状态",
       "actions": "操作",
       "read": "已读",
-      "delete": "删除"
+      "delete": "删除",
+      "centerTitle": "通知中心",
+      "centerDesc": "重要通知会置顶显示，后续可扩展邮件通知。",
+      "markRead": "标记已读",
+      "allMarkedRead": "已全部标记为已读",
+      "markedRead": "通知已标记为已读",
+      "markFailed": "标记失败",
+      "empty": "暂无消息提醒。认证结果、资料变更等真实业务消息会显示在这里。",
+      "noFilteredResults": "当前筛选条件下没有通知。",
+      "pinned": "置顶",
+      "viewNotification": "查看通知",
+      "gotIt": "知道了",
+      "filters": {
+        "all": "全部",
+        "unread": "未读",
+        "companyVerification": "企业认证",
+        "documentUpdate": "资料变更",
+        "system": "系统通知"
+      },
+      "statuses": {
+        "unread": "未读",
+        "read": "已读",
+        "actionRequired": "待处理"
+      },
+      "content": {
+        "companyVerificationApproved": {
+          "title": "企业认证已通过",
+          "desc": "你的企业「{{companyName}}」已通过平台认证，相关产品资料可在前台公开展示。"
+        },
+        "companyVerificationRejected": {
+          "title": "企业认证需要补充",
+          "desc": "你的企业「{{companyName}}」认证申请未通过，请根据审核意见补充后重新提交。{{noteSuffix}}",
+          "note": "原因：{{note}}"
+        },
+        "documentReviewApproved": {
+          "title": "资料审核已通过",
+          "desc": "你所在企业「{{companyName}}」的资料「{{documentTitle}}」已通过平台审核并公开。"
+        },
+        "documentReviewRejected": {
+          "title": "资料审核未通过",
+          "desc": "你所在企业「{{companyName}}」的资料「{{documentTitle}}」未通过平台审核，请联系管理员并根据审核意见修改后重新提交。{{noteSuffix}}",
+          "note": "审核意见：{{note}}"
+        }
+      }
     },
     "companyInfo": {
       "title": "公司资料",

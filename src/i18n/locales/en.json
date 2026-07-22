@@ -453,10 +453,10 @@
       "typeFile": "File"
     },
     "notifications": {
-      "title": "Title",
-      "desc": "Certificate expiry reminders, review notifications, system announcements",
+      "title": "Notification Center",
+      "desc": "Review company verification, document review, and system notifications",
       "unreadCount": "unread",
-      "markAllRead": "Mark all as read",
+      "markAllRead": "Mark All as Read",
       "filter": "Filter",
       "all": "All",
       "unread": "Unread",
@@ -467,7 +467,50 @@
       "status": "Status",
       "actions": "Actions",
       "read": "Read",
-      "delete": "Delete"
+      "delete": "Delete",
+      "centerTitle": "Notification Center",
+      "centerDesc": "Important notifications are pinned. Email notifications can be added later.",
+      "markRead": "Mark as Read",
+      "allMarkedRead": "All notifications marked as read",
+      "markedRead": "Notification marked as read",
+      "markFailed": "Failed to mark notification",
+      "empty": "No notifications yet. Company verification and document review updates will appear here.",
+      "noFilteredResults": "No notifications match the current filter.",
+      "pinned": "Pinned",
+      "viewNotification": "View Notification",
+      "gotIt": "Got It",
+      "filters": {
+        "all": "All",
+        "unread": "Unread",
+        "companyVerification": "Company Verification",
+        "documentUpdate": "Document Updates",
+        "system": "System"
+      },
+      "statuses": {
+        "unread": "Unread",
+        "read": "Read",
+        "actionRequired": "Action Required"
+      },
+      "content": {
+        "companyVerificationApproved": {
+          "title": "Company Verification Approved",
+          "desc": "Your company “{{companyName}}” has been verified. Its public product documentation can now appear on public pages."
+        },
+        "companyVerificationRejected": {
+          "title": "Company Verification Needs More Information",
+          "desc": "The verification application for “{{companyName}}” was not approved. Update the information according to the review feedback and submit it again. {{noteSuffix}}",
+          "note": "Reason: {{note}}"
+        },
+        "documentReviewApproved": {
+          "title": "Document Review Approved",
+          "desc": "The document “{{documentTitle}}” from “{{companyName}}” passed platform review and is now public."
+        },
+        "documentReviewRejected": {
+          "title": "Document Review Rejected",
+          "desc": "The document “{{documentTitle}}” from “{{companyName}}” did not pass platform review. Contact an administrator, update it according to the review feedback, and submit it again. {{noteSuffix}}",
+          "note": "Review note: {{note}}"
+        }
+      }
     },
     "companyInfo": {
       "title": "Company Information",

@@ -78,9 +78,9 @@ const NOTIFICATION_FILTERS = [
 
 const NOTIFICATION_CONTENT_KEYS = {
   company_verification_approved: { titleKey: 'admin.notifications.content.companyVerificationApproved.title', descKey: 'admin.notifications.content.companyVerificationApproved.desc', category: 'companyVerification' },
-  company_verification_rejected: { titleKey: 'admin.notifications.content.companyVerificationRejected.title', descKey: 'admin.notifications.content.companyVerificationRejected.desc', category: 'companyVerification' },
+  company_verification_rejected: { titleKey: 'admin.notifications.content.companyVerificationRejected.title', descKey: 'admin.notifications.content.companyVerificationRejected.desc', noteKey: 'admin.notifications.content.companyVerificationRejected.note', category: 'companyVerification' },
   document_review_approved: { titleKey: 'admin.notifications.content.documentReviewApproved.title', descKey: 'admin.notifications.content.documentReviewApproved.desc', category: 'documentUpdate' },
-  document_review_rejected: { titleKey: 'admin.notifications.content.documentReviewRejected.title', descKey: 'admin.notifications.content.documentReviewRejected.desc', category: 'documentUpdate' },
+  document_review_rejected: { titleKey: 'admin.notifications.content.documentReviewRejected.title', descKey: 'admin.notifications.content.documentReviewRejected.desc', noteKey: 'admin.notifications.content.documentReviewRejected.note', category: 'documentUpdate' },
 };
 
 function normalizeNotificationStatus(status) {
@@ -974,9 +974,13 @@ export default function AdminV2Page() {
   const getNotificationContent = (item) => {
     const contentKeys = NOTIFICATION_CONTENT_KEYS[item.notificationType];
     if (!contentKeys) return { title: item.title, desc: item.desc };
+    const values = {
+      ...item.metadata,
+      noteSuffix: item.metadata?.note && contentKeys.noteKey ? t(contentKeys.noteKey, { note: item.metadata.note }) : '',
+    };
     return {
-      title: t(contentKeys.titleKey, item.metadata),
-      desc: t(contentKeys.descKey, item.metadata),
+      title: t(contentKeys.titleKey, values),
+      desc: t(contentKeys.descKey, values),
     };
   };
 

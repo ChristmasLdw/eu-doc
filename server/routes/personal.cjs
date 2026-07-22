@@ -128,6 +128,8 @@ function ensurePersonalTables() {
     status: "TEXT DEFAULT '未读'",
     tone: "TEXT DEFAULT 'blue'",
     pinned: 'INTEGER DEFAULT 0',
+    notification_type: 'TEXT',
+    metadata: 'TEXT',
     created_at: 'DATETIME DEFAULT CURRENT_TIMESTAMP',
   });
 }

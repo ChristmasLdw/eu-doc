@@ -34,6 +34,9 @@ function ensureUserNotificationTable() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
+  const columns = db.prepare('PRAGMA table_info(user_notifications)').all().map((column) => column.name);
+  if (!columns.includes('notification_type')) db.prepare('ALTER TABLE user_notifications ADD COLUMN notification_type TEXT').run();
+  if (!columns.includes('metadata')) db.prepare('ALTER TABLE user_notifications ADD COLUMN metadata TEXT').run();
 }
 
 function notifyDocumentReviewResult(document, status, note = '') {
@@ -55,11 +58,13 @@ function notifyDocumentReviewResult(document, status, note = '') {
   const description = approved
     ? `你所在企业「${document.company_name}」的资料「${document.title}」已通过平台审核并公开。`
     : `你所在企业「${document.company_name}」的资料「${document.title}」未通过平台审核，请联系管理员并根据审核意见修改后重新提交。${reason ? `审核意见：${reason}` : ''}`;
+  const notificationType = approved ? 'document_review_approved' : 'document_review_rejected';
+  const metadata = JSON.stringify({ companyName: document.company_name, documentTitle: document.title, note: reason });
   const insert = db.prepare(`
-    INSERT INTO user_notifications (user_id, title, description, status, tone, pinned)
-    VALUES (?, ?, ?, '未读', ?, ?)
+    INSERT INTO user_notifications (user_id, title, description, status, tone, pinned, notification_type, metadata)
+    VALUES (?, ?, ?, '未读', ?, ?, ?, ?)
   `);
-  recipients.forEach((userId) => insert.run(userId, title, description, approved ? 'green' : 'orange', approved ? 0 : 1));
+  recipients.forEach((userId) => insert.run(userId, title, description, approved ? 'green' : 'orange', approved ? 0 : 1, notificationType, metadata));
 }
 
 function optionalAuth(req, res, next) {

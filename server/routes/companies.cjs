@@ -51,6 +51,9 @@ function ensureUserNotificationTable() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
+  const columns = db.prepare('PRAGMA table_info(user_notifications)').all().map((column) => column.name);
+  if (!columns.includes('notification_type')) db.prepare('ALTER TABLE user_notifications ADD COLUMN notification_type TEXT').run();
+  if (!columns.includes('metadata')) db.prepare('ALTER TABLE user_notifications ADD COLUMN metadata TEXT').run();
 }
 
 function notifyCompanyVerificationResult(companyId, companyName, action, note = '') {
@@ -72,11 +75,13 @@ function notifyCompanyVerificationResult(companyId, companyName, action, note = 
     ? `你的企业「${companyName}」已通过平台认证，相关产品资料可在前台公开展示。`
     : `你的企业「${companyName}」认证申请未通过，请根据审核意见补充后重新提交。${trimmedNote ? `原因：${trimmedNote}` : ''}`;
   const tone = approved ? 'green' : 'orange';
+  const notificationType = approved ? 'company_verification_approved' : 'company_verification_rejected';
+  const metadata = JSON.stringify({ companyName, note: trimmedNote });
   const insert = db.prepare(`
-    INSERT INTO user_notifications (user_id, title, description, status, tone, pinned)
-    VALUES (?, ?, ?, '未读', ?, 1)
+    INSERT INTO user_notifications (user_id, title, description, status, tone, pinned, notification_type, metadata)
+    VALUES (?, ?, ?, '未读', ?, 1, ?, ?)
   `);
-  members.forEach((member) => insert.run(member.user_id, title, description, tone));
+  members.forEach((member) => insert.run(member.user_id, title, description, tone, notificationType, metadata));
 }
 
 // 配置multer用于Logo上传
