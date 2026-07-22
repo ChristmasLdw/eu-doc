@@ -1004,10 +1004,22 @@ export default function SearchPage() {
                                 <span className={styles.detailValue}>{highlightText(item.certNo)}</span>
                               </div>
                             )}
+                            {isCertificate && item.productModel && (
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('search.productModel')}</span>
+                                <span className={styles.detailValue}>{item.productModel}</span>
+                              </div>
+                            )}
                             {isCertificate && item.standard && (
                               <div className={styles.detailItem}>
                                 <span className={styles.detailLabel}>{t('certificate.standard')}</span>
                                 <span className={styles.detailValue}>{item.standard}</span>
+                              </div>
+                            )}
+                            {isCertificate && item.issuer && (
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.issuer')}</span>
+                                <span className={styles.detailValue}>{item.issuer}</span>
                               </div>
                             )}
                             {!isCertificate && (
@@ -1022,10 +1034,12 @@ export default function SearchPage() {
                                 </div>
                               </>
                             )}
-                            <div className={styles.detailItem}>
-                              <span className={styles.detailLabel}>{t('search.belongsToCompany')}</span>
-                              <span className={styles.detailValue}>{item.companyName}</span>
-                            </div>
+                            {!isCertificate && (
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('search.belongsToCompany')}</span>
+                                <span className={styles.detailValue}>{item.companyName}</span>
+                              </div>
+                            )}
                             <div className={styles.detailItem}>
                               <span className={styles.detailLabel}>{t('search.language')}</span>
                               <span className={styles.detailValue}>{item.language ? item.language.toUpperCase() : '-'}</span>
