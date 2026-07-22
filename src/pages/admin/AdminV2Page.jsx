@@ -2113,8 +2113,10 @@ export default function AdminV2Page() {
     if (!currentCompany?.id) return;
     try {
       const history = await api.getCompanyVerificationHistory(currentCompany.id);
+      console.log('认证历史数据:', history);
       setVerificationHistoryModal({ open: true, history });
     } catch (error) {
+      console.error('获取认证记录失败:', error);
       showAction(error.message || '获取认证记录失败');
     }
   };
