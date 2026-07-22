@@ -344,6 +344,10 @@ export default function SearchPage() {
     setSearchMode(newMode);
     setCurrentPage(1);
 
+    // 立即清空结果，避免显示旧模式的数据导致闪烁
+    setResults([]);
+    setLoading(true);
+
     // 切换模式时，清除不适用的筛选条件
     if (newMode !== 'document') {
       setDocumentType('all');
