@@ -370,6 +370,23 @@ test('public product APIs hide actor fields and pending documents', async () => 
   fs.rmSync(publicFilePath, { force: true });
 });
 
+test('public document list exposes image documents through a thumbnail URL', async () => {
+  db.prepare(`
+    INSERT INTO documents (
+      id, company_id, product_id, document_type, title, status, review_status,
+      uploaded_by, file_path, mime_type
+    ) VALUES (40, 1, 1, 'declaration_of_conformity', 'Public DoC', 'active', 'approved', 4, '/documents/doc.png', NULL)
+  `).run();
+
+  const result = await request('/api/v2/documents?documentType=declaration_of_conformity&pageSize=10');
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.length, 1);
+  assert.equal(result.body.data[0].thumbnail_url, '/eu-doc/api/v2/documents/40/file');
+  assert.equal(Object.hasOwn(result.body.data[0], 'file_path'), false);
+
+  db.prepare('DELETE FROM documents WHERE id = 40').run();
+});
+
 test('batch upload records an audit entry', async () => {
   const form = new FormData();
   form.append('companyId', '1');

@@ -106,6 +106,7 @@
       "expiring": "Expiring Soon"
     },
     "noResults": "No certificates found",
+    "noDocumentResults": "No documents found",
     "total": "{{count}} results",
     "categories": {
       "马术头盔": "Equestrian Helmets"

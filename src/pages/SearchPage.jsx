@@ -28,12 +28,19 @@ import styles from './SearchPage.module.css';
 // 每页显示条数
 const PAGE_SIZE = 8;
 
+function normalizeDocumentTypeFilter(value) {
+  if (value === 'doc' || value === 'declaration') return 'declaration_of_conformity';
+  if (value === 'report') return 'test_report';
+  return value || 'all';
+}
+
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchBoxRef = useRef(null);
   const suggestionsRef = useRef(null);
   const isUserTyping = useRef(false);
+  const fetchRequestIdRef = useRef(0);
   const { t, i18n } = useTranslation();
 
   // 获取排序选项（使用多语言）
@@ -42,7 +49,7 @@ export default function SearchPage() {
   // 从 URL 参数获取初始值
   const initialQuery = searchParams.get('q') || '';
   const initialMode = searchParams.get('mode') || 'all';
-  const initialDocumentType = searchParams.get('documentType') || 'all';
+  const initialDocumentType = normalizeDocumentTypeFilter(searchParams.get('documentType'));
   const initialCategory = searchParams.get('category') || '';
   const initialStatus = searchParams.get('status') || '';
   const initialIssuer = searchParams.get('issuer') || '';
@@ -65,7 +72,7 @@ export default function SearchPage() {
   useEffect(() => {
     const nextQuery = searchParams.get('q') || '';
     const nextMode = searchParams.get('mode') || 'all';
-    const nextDocumentType = searchParams.get('documentType') || 'all';
+    const nextDocumentType = normalizeDocumentTypeFilter(searchParams.get('documentType'));
     const nextCategory = searchParams.get('category') || '';
     const nextStatus = searchParams.get('status') || '';
     const nextIssuer = searchParams.get('issuer') || '';
@@ -180,6 +187,7 @@ export default function SearchPage() {
 
   // 核心数据获取：监听搜索参数变化，调用 API 获取结果
   const fetchResults = useCallback(() => {
+    const requestId = ++fetchRequestIdRef.current;
     setLoading(true);
     setError(null);
     // 不立即清空数据，避免闪烁
@@ -270,6 +278,8 @@ export default function SearchPage() {
 
     Promise.all([certPromise, companyPromise, productPromise, documentPromise])
       .then(([certResult, companyResult, productResult, docResult]) => {
+        if (requestId !== fetchRequestIdRef.current) return;
+
         // 批量更新所有状态，避免中间闪烁
         const updates = {};
 
@@ -355,13 +365,16 @@ export default function SearchPage() {
         if (updates.companies !== undefined) setMatchedCompanies(updates.companies);
       })
       .catch((err) => {
+        if (requestId !== fetchRequestIdRef.current) return;
         setError(err.message || t('common.fetchFailed'));
         setResults([]);
         setTotalResults(0);
         setTotalPages(1);
       })
-      .finally(() => setLoading(false));
-  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage, searchMode]);
+      .finally(() => {
+        if (requestId === fetchRequestIdRef.current) setLoading(false);
+      });
+  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage, searchMode, documentType, t]);
 
   // 搜索参数变化时重新获取数据
   useEffect(() => {
@@ -962,16 +975,6 @@ export default function SearchPage() {
                 if (searchMode === 'document') {
                   const docType = item.documentType || 'other';
 
-                  // 调试输出：查看实际的 documentType 值
-                  console.log('Document card debug:', {
-                    id: item.id,
-                    title: item.title,
-                    documentType: docType,
-                    rawDocumentType: item.documentType,
-                    isCertificate: docType === 'certificate',
-                    isDoC: docType === 'declaration_of_conformity'
-                  });
-
                   // 证书类型：使用原来的证书卡片样式
                   if (docType === 'certificate') {
                     return (
@@ -1087,11 +1090,11 @@ export default function SearchPage() {
                         </div>
 
                         {item.thumbnailUrl ? (
-                          <div className={styles.certThumb}>
+                          <div className={`${styles.certThumb} ${styles.documentThumb}`}>
                             <LazyImage src={item.thumbnailUrl} alt={item.title} />
                           </div>
                         ) : (
-                          <div className={styles.certThumb} style={{ background: '#f7fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e0' }}>
+                          <div className={`${styles.certThumb} ${styles.documentThumb} ${styles.documentThumbPlaceholder}`}>
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                               <polyline points="14 2 14 8 20 8" />
@@ -1171,7 +1174,7 @@ export default function SearchPage() {
               <path d="m21 21-4.3-4.3" />
               <path d="M8 11h6" />
             </svg>
-            <h3 className={styles.emptyTitle}>{t('search.noResults')}</h3>
+            <h3 className={styles.emptyTitle}>{t(searchMode === 'document' ? 'search.noDocumentResults' : 'search.noResults')}</h3>
             <p className={styles.emptyText}>{t('search.tryDifferent')}</p>
             {activeFilterCount > 0 ? (
               <button className={styles.emptyClearBtn} onClick={clearAllFilters}>

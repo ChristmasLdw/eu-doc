@@ -82,9 +82,22 @@ function canViewPrivateCompany(user, companyId) {
   `).get(user.id, Number(companyId)));
 }
 
+function isImageDocument(document) {
+  if (String(document.mime_type || '').toLowerCase().startsWith('image/')) return true;
+  return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(String(document.file_path || ''));
+}
+
+function publicAssetUrl(assetPath) {
+  if (!assetPath) return null;
+  return assetPath.startsWith('/eu-doc/') ? assetPath : `/eu-doc${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
+}
+
 function sanitizePublicDocument(document) {
   const sanitized = { ...document };
   sanitized.file_url = `/eu-doc/api/v2/documents/${document.id}/file`;
+  sanitized.thumbnail_url = document.thumbnail_path
+    ? publicAssetUrl(document.thumbnail_path)
+    : (isImageDocument(document) ? sanitized.file_url : null);
   if (sanitized.certificate_metadata) {
     sanitized.certificate_metadata = { ...sanitized.certificate_metadata };
     delete sanitized.certificate_metadata.remark;

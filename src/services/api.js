@@ -924,6 +924,8 @@ export function getDocuments(params = {}) {
     if (response && Array.isArray(response.data)) {
       response.data = response.data.map((doc) => {
         const mapped = keysToCamelCase(doc);
+        // 明确以 API 的 document_type 为准，避免同名 camelCase 字段碰撞后覆盖真实类型。
+        mapped.documentType = doc.document_type ?? doc.documentType ?? mapped.documentType ?? 'other';
         // 处理文件路径
         if (mapped.filePath !== undefined) {
           mapped.fileUrl = withBasename(mapped.filePath);
@@ -933,6 +935,10 @@ export function getDocuments(params = {}) {
           mapped.thumbnailUrl = withBasename(mapped.thumbnailPath);
           delete mapped.thumbnailPath;
         }
+        const imageSource = doc.file_path || doc.filePath || mapped.fileUrl || '';
+        const isImageDocument = String(mapped.mimeType || '').toLowerCase().startsWith('image/')
+          || /\.(?:avif|gif|jpe?g|png|webp)$/i.test(imageSource);
+        if (!mapped.thumbnailUrl && isImageDocument) mapped.thumbnailUrl = mapped.fileUrl;
         return mapped;
       });
     }

@@ -8,10 +8,10 @@ import styles from './DocumentTypeRail.module.css';
 
 const DOCUMENT_TYPES = [
   { value: 'all', label: '全部资料', labelEn: 'All Documents' },
-  { value: 'doc', label: 'DoC', labelEn: 'DoC' },
+  { value: 'declaration_of_conformity', label: 'DoC', labelEn: 'DoC' },
   { value: 'certificate', label: '证书', labelEn: 'Certificates' },
   { value: 'manual', label: '说明书', labelEn: 'Manuals' },
-  { value: 'report', label: '检测报告', labelEn: 'Test Reports' },
+  { value: 'test_report', label: '检测报告', labelEn: 'Test Reports' },
 ];
 
 export default function DocumentTypeRail({ currentType, onTypeChange, show }) {
