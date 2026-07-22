@@ -33,6 +33,57 @@ const platformMenus = [
   { id: 'system', labelKey: 'admin.menu.system' },
 ];
 
+const COMPANY_CATEGORY_OPTIONS = [
+  { value: '个人防护用品', labelKey: 'admin.companyManagement.personalProtection' },
+  { value: '电子电器', labelKey: 'admin.companyManagement.electronics' },
+  { value: '玩具儿童用品', labelKey: 'admin.companyManagement.toys' },
+  { value: '机械设备', labelKey: 'admin.companyManagement.machinery' },
+  { value: '其他 / 待分类', labelKey: 'admin.companyManagement.otherCategory' },
+];
+
+const PRODUCT_STATUS_FILTERS = [
+  { value: 'all', labelKey: 'admin.productManagement.filters.all' },
+  { value: 'complete', labelKey: 'admin.productManagement.filters.complete' },
+  { value: 'missing', labelKey: 'admin.productManagement.filters.missing' },
+];
+
+const PRODUCT_VIEW_MODES = [
+  { value: 'overview', labelKey: 'admin.productManagement.views.overview' },
+  { value: 'standard', labelKey: 'admin.productManagement.views.standard' },
+  { value: 'detail', labelKey: 'admin.productManagement.views.detail' },
+];
+
+const DOCUMENT_TYPE_OPTIONS = [
+  { value: 'certificate', labelKey: 'admin.fileManagement.types.certificate' },
+  { value: 'declaration_of_conformity', labelKey: 'admin.fileManagement.types.declaration' },
+  { value: 'manual', labelKey: 'admin.fileManagement.types.manual' },
+  { value: 'other', labelKey: 'admin.fileManagement.types.other' },
+];
+
+const MEMBER_ROLE_TRANSLATIONS = {
+  applicant: { labelKey: 'admin.memberManagement.roles.applicant', scopeKey: 'admin.memberManagement.scopes.applicant' },
+  owner: { labelKey: 'admin.memberManagement.roles.owner', scopeKey: 'admin.memberManagement.scopes.owner' },
+  admin: { labelKey: 'admin.memberManagement.roles.admin', scopeKey: 'admin.memberManagement.scopes.admin' },
+  uploader: { labelKey: 'admin.memberManagement.roles.uploader', scopeKey: 'admin.memberManagement.scopes.uploader' },
+  viewer: { labelKey: 'admin.memberManagement.roles.viewer', scopeKey: 'admin.memberManagement.scopes.viewer' },
+};
+
+function isCompanyVerified(company = {}) {
+  return company.verificationStatus === 'verified' || company.status === '已认证';
+}
+
+function isCompanyUnderReview(company = {}) {
+  return company.status === '待平台审核' || company.rawStatus === 'pending_review' || company.rawStatus === 'submitted';
+}
+
+function getCompanyVerificationStatusKey(company = {}) {
+  if (isCompanyVerified(company)) return 'verified';
+  if (company.verificationStatus === 'rejected') return 'rejected';
+  if (isCompanyUnderReview(company)) return 'pendingReview';
+  if (company.rawStatus === 'draft' && company.verificationStatus === 'pending') return 'draftPending';
+  return 'notSubmitted';
+}
+
 
 const PRODUCT_CLASSIFICATION_RULES = [
   {
@@ -40,70 +91,70 @@ const PRODUCT_CLASSIFICATION_RULES = [
     compliance: ['PPE / 个人防护法规'],
     standards: [/\bEN\s*1384\b/i, /\bVG1\b/i],
     keywords: [/equestrian/i, /riding helmet/i, /horse riding/i, /马术|骑马/],
-    reason: '识别到马术头盔关键词或 EN 1384 / VG1 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.equestrianHelmet',
   },
   {
     consumer: ['运动户外', '自行车用品', '自行车头盔'],
     compliance: ['PPE / 个人防护法规'],
     standards: [/\bEN\s*1078\b/i],
     keywords: [/bicycle helmet/i, /bike helmet/i, /cycling helmet/i, /skate helmet/i, /自行车头盔|骑行头盔/],
-    reason: '识别到骑行头盔关键词或 EN 1078 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.cyclingHelmet',
   },
   {
     consumer: ['母婴儿童与玩具', '儿童玩具'],
     compliance: ['Toy Safety 玩具安全'],
     standards: [/\bEN\s*71\b/i],
     keywords: [/toy/i, /children.*toy/i, /玩具/],
-    reason: '识别到玩具关键词或 EN 71 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.toys',
   },
   {
     consumer: ['电子电器', '电源与充电', '充电器'],
     compliance: ['LVD 低电压', 'EMC 电磁兼容', 'RoHS / REACH'],
     standards: [/\bEN\s*60335\b/i, /\bEN\s*62368\b/i, /\bEN\s*55032\b/i, /\bEN\s*55035\b/i, /\bEN\s*61000\b/i],
     keywords: [/charger/i, /adapter/i, /power supply/i, /充电器|适配器|电源/],
-    reason: '识别到电源/充电器关键词或电子电器常见标准',
+    reasonKey: 'admin.productManagement.classificationReasons.charger',
   },
   {
     consumer: ['电子电器', '音视频设备'],
     compliance: ['EMC 电磁兼容', 'LVD 低电压'],
     standards: [/\bEN\s*62368\b/i, /\bEN\s*55032\b/i, /\bEN\s*55035\b/i],
     keywords: [/audio/i, /speaker/i, /video/i, /音响|音频|视频/],
-    reason: '识别到音视频设备关键词或 EN 62368 / EMC 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.audioVideo',
   },
   {
     consumer: ['个人防护与安全', '眼面防护'],
     compliance: ['PPE / 个人防护法规'],
     standards: [/\bEN\s*166\b/i],
     keywords: [/goggle/i, /safety glasses/i, /face shield/i, /护目镜|面罩/],
-    reason: '识别到眼面防护关键词或 EN 166 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.eyeProtection',
   },
   {
     consumer: ['个人防护与安全', '手部/足部防护'],
     compliance: ['PPE / 个人防护法规'],
     standards: [/\bEN\s*388\b/i, /\bEN\s*ISO\s*20345\b/i],
     keywords: [/glove/i, /safety shoe/i, /protective footwear/i, /手套|安全鞋|防护鞋/],
-    reason: '识别到手足防护关键词或 EN 388 / EN ISO 20345 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.handFootProtection',
   },
   {
     consumer: ['医疗健康', '护理用品'],
     compliance: ['Medical Device 医疗器械'],
     standards: [/\bEN\s*14683\b/i, /\bEN\s*149\b/i],
     keywords: [/mask/i, /respirator/i, /medical/i, /口罩|医用|防护口罩/],
-    reason: '识别到口罩/医疗关键词或 EN 14683 / EN 149 标准',
+    reasonKey: 'admin.productManagement.classificationReasons.medicalMask',
   },
   {
     consumer: ['工业工具与机械', '机械设备'],
     compliance: ['Machinery 机械设备'],
     standards: [/\bEN\s*ISO\s*12100\b/i, /\bEN\s*60204\b/i],
     keywords: [/machinery/i, /machine/i, /机械|设备/],
-    reason: '识别到机械设备关键词或机械安全标准',
+    reasonKey: 'admin.productManagement.classificationReasons.machinery',
   },
   {
     consumer: ['厨房与食品接触'],
     compliance: ['RoHS / REACH'],
     standards: [/food contact/i, /LFGB/i],
     keywords: [/food contact/i, /kitchen/i, /tableware/i, /cookware/i, /食品接触|厨具|餐具/],
-    reason: '识别到食品接触或厨房用品关键词',
+    reasonKey: 'admin.productManagement.classificationReasons.foodContact',
   },
 ];
 
@@ -163,8 +214,8 @@ function suggestProductClassificationLocal({ product, documents, consumerCategor
     consumerCategoryPath: best.rule.consumer.join(' / '),
     complianceCategoryIds: compliance.map((category) => Number(category.id)),
     complianceCategoryPaths: compliance.map((category) => category.name),
-    confidence: best.score >= 6 ? '高可信' : '中可信',
-    reason: best.rule.reason,
+    confidenceKey: best.score >= 6 ? 'admin.productManagement.confidence.high' : 'admin.productManagement.confidence.medium',
+    reasonKey: best.rule.reasonKey,
     matchedSignals: best.signals.slice(0, 5),
   };
 }
@@ -423,11 +474,8 @@ function getUploadResultFileUrl(result = {}) {
   return getDocumentAssetUrl(result.data || result) || getDocumentAssetUrl({ filePath: result.file_path || result.filePath });
 }
 
-function importTypeLabel(type) {
-  if (type === 'declaration_of_conformity') return 'DoC声明资料';
-  if (type === 'certificate') return '资质证书';
-  if (type === 'manual') return '使用说明书';
-  return '其他资料';
+function documentTypeLabelKey(type) {
+  return DOCUMENT_TYPE_OPTIONS.find((item) => item.value === type)?.labelKey || 'admin.fileManagement.types.other';
 }
 
 function importStepClass(styles, confirmedStep = 0, step) {
@@ -526,8 +574,8 @@ function getProductFileStatus(product, docs) {
   const hasCert = productDocs.some((doc) => doc.documentType === 'certificate' || doc.type === '资质证书');
   const hasDoc = productDocs.some((doc) => doc.documentType === 'declaration_of_conformity' || (doc.type === 'DoC声明资料' || doc.type === 'DoC声明文件'));
   const hasManual = productDocs.some((doc) => doc.documentType === 'manual' || doc.type === '使用说明书');
-  const missing = [!hasCert && '缺证书', !hasDoc && '缺DoC', !hasManual && '缺说明书'].filter(Boolean);
-  return { productDocs, hasCert, hasDoc, hasManual, missing, label: missing.length ? missing.join(' / ') : '资料完整' };
+  const missing = [!hasCert && 'certificate', !hasDoc && 'declaration', !hasManual && 'manual'].filter(Boolean);
+  return { productDocs, hasCert, hasDoc, hasManual, missing };
 }
 
 function buildImportFileStacks(items) {
@@ -666,7 +714,7 @@ export default function AdminV2Page() {
   const [fileFilters, setFileFilters] = useState({ query: '', type: 'all', product: 'all', language: 'all', status: 'all' });
   const [workspaceViewMode, setWorkspaceViewMode] = useState('standard');
   const [workspaceExpandedProduct, setWorkspaceExpandedProduct] = useState(null);
-  const [workspaceExpandedPile, setWorkspaceExpandedPile] = useState('全部资料');
+  const [workspaceExpandedPile, setWorkspaceExpandedPile] = useState('all');
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState('all');
   const [productCategoryTopFilter, setProductCategoryTopFilter] = useState('');
@@ -1574,7 +1622,7 @@ export default function AdminV2Page() {
       setMemberPermissions(response.permissions);
       setCompanies((items) => items.map((item) => String(item.id) === String(activeCompany) ? { ...item, memberRole: response.operatorRole } : item));
     } catch (error) {
-      setMemberError(error.message || '成员数据读取失败');
+      setMemberError(error.message || t('admin.memberManagement.loadFailed'));
       setCompanyMembers([]);
       setMemberPermissions({});
     } finally {
@@ -2124,16 +2172,16 @@ export default function AdminV2Page() {
   const inviteMember = async () => {
     const email = memberInviteModal.email.trim();
     if (!email) {
-      showAction('请输入已注册用户的邮箱');
+      showAction(t('admin.memberManagement.enterRegisteredEmail'));
       return;
     }
     try {
       await api.inviteCompanyMember(activeCompany, email, memberInviteModal.role);
       setMemberInviteModal({ open: false, email: '', role: 'viewer' });
-      showAction('成员已添加');
+      showAction(t('admin.memberManagement.memberAdded'));
       await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
     } catch (error) {
-      showAction(error.message || '添加成员失败');
+      showAction(error.message || t('admin.memberManagement.addFailed'));
     }
   };
 
@@ -2145,22 +2193,22 @@ export default function AdminV2Page() {
     try {
       await api.updateCompanyMemberRole(member.id, role);
       setEditingMemberId(null);
-      showAction('成员权限已更新');
+      showAction(t('admin.memberManagement.roleUpdated'));
       await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
     } catch (error) {
-      showAction(error.message || '权限更新失败');
+      showAction(error.message || t('admin.memberManagement.roleUpdateFailed'));
     }
   };
 
   const removeMember = async (member) => {
-    const name = member.displayName || member.email || '该成员';
-    if (!window.confirm(`确认将 ${name} 从当前公司移除？`)) return;
+    const name = member.displayName || member.email || t('admin.memberManagement.thisMember');
+    if (!window.confirm(t('admin.memberManagement.confirmRemove', { name }))) return;
     try {
       await api.removeCompanyMember(member.id);
-      showAction('成员已移除');
+      showAction(t('admin.memberManagement.memberRemoved'));
       await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
     } catch (error) {
-      showAction(error.message || '移除成员失败');
+      showAction(error.message || t('admin.memberManagement.removeFailed'));
     }
   };
 
@@ -2267,12 +2315,12 @@ export default function AdminV2Page() {
         mainCategory: companyForm.mainCategory,
         address: companyForm.address,
         description: companyForm.description,
-        publicVisible: currentCompany.status === '已认证' && companyForm.publicVisible ? 1 : 0,
+        publicVisible: isCompanyVerified(currentCompany) && companyForm.publicVisible ? 1 : 0,
       });
       setCompanies((items) => items.map((item) => item.id === activeCompany ? { ...item, name: companyForm.name || item.name } : item));
-      showAction('公司资料已保存');
+      showAction(t('admin.companyManagement.companyInfoSaved'));
     } catch (error) {
-      showAction(error.message || '公司资料保存失败');
+      showAction(error.message || t('admin.companyManagement.companyInfoSaveFailed'));
     }
   };
 
@@ -2281,9 +2329,9 @@ export default function AdminV2Page() {
     try {
       const result = await api.uploadCompanyLogo(activeCompany, file);
       if (result.logoPath) setCompanyLogoUrl(`/eu-doc${result.logoPath}`);
-      showAction('公司 Logo 已上传');
+      showAction(t('admin.companyManagement.logoUploaded'));
     } catch (error) {
-      showAction(error.message || 'Logo 上传失败');
+      showAction(error.message || t('admin.companyManagement.logoUploadFailed'));
     }
   };
 
@@ -2327,17 +2375,17 @@ export default function AdminV2Page() {
 
   const deleteCurrentCompanyDraft = async () => {
     if (!currentCompany?.id) return;
-    if (!window.confirm(`确认删除公司草稿「${currentCompany.name}」吗？此操作会移除该公司的草稿资料。`)) return;
+    if (!window.confirm(t('admin.companyManagement.confirmDeleteDraft', { name: currentCompany.name }))) return;
     try {
       await api.deleteCompany(currentCompany.id);
-      showAction('公司草稿已删除');
+      showAction(t('admin.companyManagement.draftDeleted'));
       const nextCompanies = companies.filter((company) => company.id !== currentCompany.id);
       setCompanies(nextCompanies);
       setActiveCompany(nextCompanies[0]?.id || null);
       setExpandedCompanies((items) => items.filter((id) => String(id) !== String(currentCompany.id)));
       if (!nextCompanies.length) openPage('import', 'bulk-import');
     } catch (error) {
-      showAction(error.message || '删除公司草稿失败');
+      showAction(error.message || t('admin.companyManagement.deleteDraftFailed'));
     }
   };
 
@@ -2433,21 +2481,21 @@ export default function AdminV2Page() {
       status: productModal.status || 'active',
     };
     if (!payload.name) {
-      showAction('请先填写产品名称');
+      showAction(t('admin.productManagement.nameRequired'));
       return;
     }
     try {
       if (productModal.product?.id) {
         await api.updateProduct(productModal.product.id, payload);
-        showAction('产品已更新');
+        showAction(t('admin.productManagement.productUpdated'));
       } else {
         await api.createProduct({ companyId: activeCompany, ...payload });
-        showAction('产品已新增');
+        showAction(t('admin.productManagement.productCreated'));
       }
       closeProductModal();
       await refreshCompanyAssets();
     } catch (error) {
-      showAction(error.message || '产品保存失败');
+      showAction(error.message || t('admin.productManagement.saveFailed'));
     }
   };
 
@@ -2482,23 +2530,23 @@ export default function AdminV2Page() {
     if (!product?.id) return;
     const relatedDocs = getProductDocuments(product, companyDocuments);
     if (relatedDocs.length) {
-      showAction(`该产品下还有 ${relatedDocs.length} 份资料，请先在资料管理中删除或转移资料`);
+      showAction(t('admin.productManagement.deleteBlockedByDocuments', { count: relatedDocs.length }));
       return;
     }
-    const firstConfirm = window.confirm(`确认删除产品「${product.name}」吗？删除后前台将不再展示这个产品。`);
+    const firstConfirm = window.confirm(t('admin.productManagement.confirmDelete', { name: product.name }));
     if (!firstConfirm) return;
-    const typed = window.prompt('为避免误删，请输入 DELETE 确认删除');
+    const typed = window.prompt(t('admin.productManagement.typeDeleteConfirm'));
     if (typed !== 'DELETE') {
-      showAction('已取消删除');
+      showAction(t('admin.productManagement.deleteCancelled'));
       return;
     }
     try {
       await api.deleteProduct(product.id);
-      showAction('产品已删除');
+      showAction(t('admin.productManagement.productDeleted'));
       closeProductModal();
       await refreshCompanyAssets();
     } catch (error) {
-      showAction(error.message || '删除产品失败');
+      showAction(error.message || t('admin.productManagement.deleteFailed'));
     }
   };
 
@@ -2512,10 +2560,10 @@ export default function AdminV2Page() {
       try {
         await api.uploadProductImage(product.id, file);
         setProductModal((form) => ({ ...form, imageUrl: URL.createObjectURL(file) }));
-        showAction('产品图已上传');
+        showAction(t('admin.productManagement.imageUploaded'));
         await refreshCompanyAssets();
       } catch (error) {
-        showAction(error.message || '产品图上传失败');
+        showAction(error.message || t('admin.productManagement.imageUploadFailed'));
       }
     };
     input.click();
@@ -2602,10 +2650,10 @@ export default function AdminV2Page() {
     }
     const docUrl = getDocumentAssetUrl(documentModal.doc);
     if (docUrl) {
-      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || '资料预览', objectUrl: '' });
+      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || t('admin.fileManagement.previewTitle'), objectUrl: '' });
       return;
     }
-    showAction(hasDocumentRecord(documentModal.doc) ? '该资料暂无可预览地址，可点击替换补充资料' : '请先上传或选择资料');
+    showAction(hasDocumentRecord(documentModal.doc) ? t('admin.fileManagement.noPreviewReplaceHint') : t('admin.fileManagement.selectOrUploadFirst'));
   };
 
   const closeDocumentPreview = () => {
@@ -2639,7 +2687,7 @@ export default function AdminV2Page() {
     try {
       if (documentModal.mode === 'upload') {
         if (!documentModal.file) {
-          showAction('请选择要上传的资料');
+          showAction(t('admin.fileManagement.selectUploadFile'));
           return;
         }
         const result = await api.createDocument({
@@ -2656,8 +2704,8 @@ export default function AdminV2Page() {
           standard: documentModal.standard,
           issuer: documentModal.issuer,
         });
-        if (!getUploadResultFileUrl(result)) throw new Error('资料已提交但未返回资料地址，请重新上传');
-        showAction('资料已上传并保存成功');
+        if (!getUploadResultFileUrl(result)) throw new Error(t('admin.fileManagement.uploadMissingUrl'));
+        showAction(t('admin.fileManagement.uploadSuccess'));
       } else {
         await api.updateDocument(documentModal.doc.id, {
           title: documentModal.title,
@@ -2668,16 +2716,16 @@ export default function AdminV2Page() {
         });
         if (documentModal.file) {
           const result = await api.replaceDocumentFile(documentModal.doc.id, documentModal.file);
-          if (!getUploadResultFileUrl(result)) throw new Error('资料替换失败：未返回新资料地址');
-          showAction('资料信息和资料本体已更新');
+          if (!getUploadResultFileUrl(result)) throw new Error(t('admin.fileManagement.replaceMissingUrl'));
+          showAction(t('admin.fileManagement.fileAndInfoUpdated'));
         } else {
-          showAction('资料信息已更新');
+          showAction(t('admin.fileManagement.infoUpdated'));
         }
       }
       closeDocumentModal();
       await refreshCompanyAssets();
     } catch (error) {
-      showAction(error.message || '资料保存失败');
+      showAction(error.message || t('admin.fileManagement.saveFailed'));
     }
   };
 
@@ -2690,10 +2738,10 @@ export default function AdminV2Page() {
       if (!file) return;
       try {
         await api.replaceDocumentFile(doc.id, file);
-        showAction('资料已替换');
+        showAction(t('admin.fileManagement.replaceSuccess'));
         await refreshCompanyAssets();
       } catch (error) {
-        showAction(error.message || '资料替换失败');
+        showAction(error.message || t('admin.fileManagement.replaceFailed'));
       }
     };
     input.click();
@@ -2730,34 +2778,34 @@ export default function AdminV2Page() {
   };
 
   const renderCompanyNextStepCard = ({ compact = false } = {}) => {
-    if (!currentCompany?.id || currentCompany.status === '已认证') return null;
-    const isUnderReview = currentCompany.status === '待平台审核' || currentCompany.rawStatus === 'pending_review' || currentCompany.rawStatus === 'submitted';
+    if (!currentCompany?.id || isCompanyVerified(currentCompany)) return null;
+    const isUnderReview = isCompanyUnderReview(currentCompany);
     const hasUploadedMaterials = importItems.length > 0 || companyDocuments.length > 0;
     const statusText = currentCompany.verificationStatus === 'rejected'
-      ? '认证申请需要补充'
+      ? t('admin.companyNextStep.statusRejected')
       : isUnderReview
-        ? '认证正在审核中'
-        : '企业已创建，尚未完成认证';
+        ? t('admin.companyNextStep.statusReviewing')
+        : t('admin.companyNextStep.statusIncomplete');
     const descText = currentCompany.verificationStatus === 'rejected'
-      ? '请根据审核意见补充企业信息后重新提交。资料整理不受影响，可以继续上传和归档。'
+      ? t('admin.companyNextStep.descRejected')
       : isUnderReview
-        ? '审核期间仍可继续整理产品资料。认证通过后，已公开的产品资料才会出现在前台搜索和展示页面。'
-        : '你可以先批量上传证书、DoC 声明、说明书等产品资料，再补充企业信息并提交认证。未认证企业最多上传 20 份资料，单份不超过 20MB。';
+        ? t('admin.companyNextStep.descReviewing')
+        : t('admin.companyNextStep.descIncomplete');
     return (
       <div className={`${styles.companyNextStepCard} ${compact ? styles.companyNextStepCompact : ''}`}>
         <div>
-          <span className={styles.nextStepKicker}>{isUnderReview ? '等待平台审核' : hasUploadedMaterials ? '建议完成认证' : '下一步建议'}</span>
+          <span className={styles.nextStepKicker}>{isUnderReview ? t('admin.companyNextStep.kickerReviewing') : hasUploadedMaterials ? t('admin.companyNextStep.kickerCompleteVerification') : t('admin.companyNextStep.kickerNext')}</span>
           <h3>{statusText}</h3>
           <p>{descText}</p>
         </div>
         <div className={styles.nextStepActions}>
           {isUnderReview ? (
-            <button className={styles.waitingBtn} type="button" disabled>等待认证通过</button>
+            <button className={styles.waitingBtn} type="button" disabled>{t('admin.companyNextStep.waitForApproval')}</button>
           ) : (
-            <button className={styles.primaryBtn} onClick={() => openPage('company', 'verification', currentCompany.id)}>提交企业认证</button>
+            <button className={styles.primaryBtn} onClick={() => openPage('company', 'verification', currentCompany.id)}>{t('admin.companyNextStep.submitVerification')}</button>
           )}
-          {!hasUploadedMaterials && !isUnderReview && <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', currentCompany.id)}>批量上传产品资料</button>}
-          <button className={styles.secondaryBtn} onClick={() => openPage('company', 'company-info', currentCompany.id)}>完善公司信息</button>
+          {!hasUploadedMaterials && !isUnderReview && <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', currentCompany.id)}>{t('admin.companyNextStep.batchUpload')}</button>}
+          <button className={styles.secondaryBtn} onClick={() => openPage('company', 'company-info', currentCompany.id)}>{t('admin.companyNextStep.completeCompanyInfo')}</button>
         </div>
       </div>
     );
@@ -3475,96 +3523,95 @@ export default function AdminV2Page() {
 
     if (activeGroup === 'company') {
       if (activePage === 'company-info') {
+        const companyVerified = isCompanyVerified(currentCompany);
+        const verificationStatusKey = getCompanyVerificationStatusKey(currentCompany);
+        const roleKey = currentCompany.memberRole || (companyVerified ? 'owner' : 'applicant');
         return (
           <Section title={t('admin.companyInfo.title')} desc={t('admin.companyInfo.desc')}>
             {renderCompanyNextStepCard({ compact: true })}
             <div className={styles.companyProfileLayout}>
               <aside className={styles.companySummaryCard}>
-                <div className={styles.companyLogoBox}>{companyLogoUrl ? <img src={companyLogoUrl} alt="公司 Logo" /> : 'LOGO'}</div>
+                <div className={styles.companyLogoBox}>{companyLogoUrl ? <img src={companyLogoUrl} alt={t('admin.companyManagement.companyLogo')} /> : 'LOGO'}</div>
                 <h3>{companyForm.name || currentCompany.name}</h3>
                 <p>{currentCompany.code}</p>
                 <div className={styles.companyStatusRows}>
-                  <span><strong>我的角色</strong><em>{currentCompany.status === '已认证' ? '企业拥有者' : '申请人'}</em></span>
-                  <span><strong>认证状态</strong><em>{currentCompany.status}</em></span>
-                  <span><strong>公开状态</strong><em>{currentCompany.status === '已认证' && companyForm.publicVisible ? '公开展示' : '未认证不公开'}</em></span>
-                  <span><strong>主营分类</strong><em>{companyForm.mainCategory || '待填写'}</em></span>
+                  <span><strong>{t('admin.companyManagement.myRole')}</strong><em>{t(`admin.companyManagement.roles.${roleKey}`, { defaultValue: roleKey })}</em></span>
+                  <span><strong>{t('admin.companyManagement.verificationStatus')}</strong><em>{t(`admin.companyManagement.verificationStatuses.${verificationStatusKey}`)}</em></span>
+                  <span><strong>{t('admin.companyManagement.publicStatus')}</strong><em>{companyVerified && companyForm.publicVisible ? t('admin.companyManagement.publicVisible') : t('admin.companyManagement.notPublic')}</em></span>
+                  <span><strong>{t('admin.companyManagement.mainCategory')}</strong><em>{companyForm.mainCategory ? t(COMPANY_CATEGORY_OPTIONS.find((item) => item.value === companyForm.mainCategory)?.labelKey || 'admin.companyManagement.otherCategory') : t('admin.companyManagement.toBeCompleted')}</em></span>
                 </div>
                 <>
                   <input ref={companyLogoInputRef} type="file" accept="image/png,image/jpeg" className={styles.hiddenInput} onChange={(event) => uploadCompanyLogoFile(event.target.files?.[0])} />
-                  <button className={styles.secondaryBtn} onClick={() => companyLogoInputRef.current?.click()}>上传 Logo</button>
-                  {currentCompany.status !== '已认证' && <button className={styles.dangerSoftBtn} onClick={deleteCurrentCompanyDraft}>删除公司草稿</button>}
+                  <button className={styles.secondaryBtn} onClick={() => companyLogoInputRef.current?.click()}>{t('admin.companyManagement.uploadLogo')}</button>
+                  {!companyVerified && <button className={styles.dangerSoftBtn} onClick={deleteCurrentCompanyDraft}>{t('admin.companyManagement.deleteCompanyDraft')}</button>}
                 </>
               </aside>
 
               <div className={styles.companyFormCard}>
                 <div className={styles.formHeader}>
                   <div>
-                    <h3>基础信息</h3>
-                    <p>这些内容会展示在公司详情页，方便用户和审核机构了解企业。</p>
+                    <h3>{t('admin.companyManagement.basicInfo')}</h3>
+                    <p>{t('admin.companyManagement.basicInfoDesc')}</p>
                   </div>
-                  <button className={styles.secondaryBtn} onClick={() => navigate(`/companies/${activeCompany}`)}>预览公司主页</button>
+                  <button className={styles.secondaryBtn} onClick={() => navigate(`/companies/${activeCompany}`)}>{t('admin.companyManagement.previewCompanyPage')}</button>
                 </div>
 
                 <div className={styles.editGrid}>
                   <label>
-                    <span>公司中文名称</span>
-                    <input value={companyForm.name} onChange={(event) => setCompanyForm((form) => ({ ...form, name: event.target.value }))} placeholder="例如：广州某某安全用品有限公司" />
+                    <span>{t('admin.companyManagement.companyChineseName')}</span>
+                    <input value={companyForm.name} onChange={(event) => setCompanyForm((form) => ({ ...form, name: event.target.value }))} placeholder={t('admin.companyManagement.companyChineseNamePlaceholder')} />
                   </label>
                   <label>
-                    <span>公司英文名称</span>
-                    <input value={companyForm.nameEn} onChange={(event) => setCompanyForm((form) => ({ ...form, nameEn: event.target.value }))} placeholder="例如：Guangzhou Safety Equipment Co., Ltd." />
+                    <span>{t('admin.companyManagement.companyEnglishName')}</span>
+                    <input value={companyForm.nameEn} onChange={(event) => setCompanyForm((form) => ({ ...form, nameEn: event.target.value }))} placeholder={t('admin.companyManagement.companyEnglishNamePlaceholder')} />
                   </label>
                   <label>
-                    <span>公司编号</span>
+                    <span>{t('admin.companyInfo.companyCode')}</span>
                     <input value={currentCompany.code} readOnly />
                   </label>
                   <label>
-                    <span>公司网址名</span>
-                    <input value={companyForm.slug} onChange={(event) => setCompanyForm((form) => ({ ...form, slug: event.target.value }))} placeholder="例如：guangzhou-safety-equipment" />
+                    <span>{t('admin.companyManagement.urlSlug')}</span>
+                    <input value={companyForm.slug} onChange={(event) => setCompanyForm((form) => ({ ...form, slug: event.target.value }))} placeholder={t('admin.companyManagement.urlSlugPlaceholder')} />
                   </label>
                   <label>
-                    <span>联系邮箱</span>
+                    <span>{t('admin.companyManagement.contactEmail')}</span>
                     <input value={companyForm.contactEmail} onChange={(event) => setCompanyForm((form) => ({ ...form, contactEmail: event.target.value }))} placeholder="contact@example.com" />
                   </label>
                   <label>
-                    <span>联系电话</span>
+                    <span>{t('admin.companyManagement.contactPhone')}</span>
                     <input value={companyForm.contactPhone} onChange={(event) => setCompanyForm((form) => ({ ...form, contactPhone: event.target.value }))} placeholder="+86 ..." />
                   </label>
                   <label>
-                    <span>公司官网</span>
+                    <span>{t('admin.companyManagement.officialWebsite')}</span>
                     <input value={companyForm.website} onChange={(event) => setCompanyForm((form) => ({ ...form, website: event.target.value }))} placeholder="https://www.example.com" />
                   </label>
                   <label>
-                    <span>主营分类</span>
+                    <span>{t('admin.companyManagement.mainCategory')}</span>
                     <select value={companyForm.mainCategory} onChange={(event) => setCompanyForm((form) => ({ ...form, mainCategory: event.target.value }))}>
-                      <option value="个人防护用品">个人防护用品</option>
-                      <option value="电子电器">电子电器</option>
-                      <option value="玩具儿童用品">玩具儿童用品</option>
-                      <option value="机械设备">机械设备</option>
-                      <option value="其他 / 待分类">其他 / 待分类</option>
+                      {COMPANY_CATEGORY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}
                     </select>
                   </label>
                   <label className={styles.fullField}>
-                    <span>公司地址</span>
-                    <input value={companyForm.address} onChange={(event) => setCompanyForm((form) => ({ ...form, address: event.target.value }))} placeholder="国家、省/州、城市、详细地址" />
+                    <span>{t('admin.companyManagement.officeAddress')}</span>
+                    <input value={companyForm.address} onChange={(event) => setCompanyForm((form) => ({ ...form, address: event.target.value }))} placeholder={t('admin.companyManagement.addressPlaceholder')} />
                   </label>
                   <label className={styles.fullField}>
-                    <span>公司介绍</span>
-                    <textarea value={companyForm.description} onChange={(event) => setCompanyForm((form) => ({ ...form, description: event.target.value }))} placeholder="介绍公司的主营业务、资质、服务范围。" rows="5" />
+                    <span>{t('admin.companyManagement.companyIntro')}</span>
+                    <textarea value={companyForm.description} onChange={(event) => setCompanyForm((form) => ({ ...form, description: event.target.value }))} placeholder={t('admin.companyManagement.companyIntroPlaceholder')} rows="5" />
                   </label>
                 </div>
 
                 <div className={styles.companySwitchRow}>
                   <div>
-                    <strong>公开展示公司主页</strong>
-                    <p>{currentCompany.status === '已认证' ? '关闭后，普通用户无法在前台直接查看公司主页。' : '认证通过前，公司主页不会公开展示，也不会被搜索收录。'}</p>
+                    <strong>{t('admin.companyManagement.publicDisplay')}</strong>
+                    <p>{companyVerified ? t('admin.companyManagement.publicDisplayNote') : t('admin.companyManagement.notCertifiedNote')}</p>
                   </div>
-                  <button className={currentCompany.status === '已认证' && companyForm.publicVisible ? styles.switchOn : styles.switchOff} onClick={() => currentCompany.status === '已认证' ? setCompanyForm((form) => ({ ...form, publicVisible: !form.publicVisible })) : showAction('企业认证通过前不能公开展示')}>{currentCompany.status === '已认证' && companyForm.publicVisible ? '已开启' : '已关闭'}</button>
+                  <button className={companyVerified && companyForm.publicVisible ? styles.switchOn : styles.switchOff} onClick={() => companyVerified ? setCompanyForm((form) => ({ ...form, publicVisible: !form.publicVisible })) : showAction(t('admin.companyManagement.verifyBeforePublic'))}>{companyVerified && companyForm.publicVisible ? t('admin.companyManagement.publicDisplayOn') : t('admin.companyManagement.publicDisplayOff')}</button>
                 </div>
 
                 <div className={styles.formActions}>
-                  <button className={styles.secondaryBtn} onClick={() => showAction('如需恢复，请刷新页面重新读取已保存资料')}>取消</button>
-                  <button className={styles.primaryBtn} onClick={saveCompanyProfile}>保存公司资料</button>
+                  <button className={styles.secondaryBtn} onClick={() => showAction(t('admin.companyManagement.cancelHint'))}>{t('admin.common.cancel')}</button>
+                  <button className={styles.primaryBtn} onClick={saveCompanyProfile}>{t('admin.companyManagement.saveCompanyInfo')}</button>
                 </div>
               </div>
             </div>
@@ -3581,26 +3628,22 @@ export default function AdminV2Page() {
                   <input
                     value={productSearchQuery}
                     onChange={(event) => setProductSearchQuery(event.target.value)}
-                    placeholder="搜索产品名称、型号、资料名"
+                    placeholder={t('admin.productManagement.workspaceSearchPlaceholder')}
                   />
                 </div>
                 <div className={styles.headerActionsInline}>
-                  <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量上传</button>
-                  <button className={styles.primaryBtn} onClick={() => openProductModal()}>新增产品</button>
+                  <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>{t('admin.productManagement.batchUpload')}</button>
+                  <button className={styles.primaryBtn} onClick={() => openProductModal()}>{t('admin.productManagement.addProduct')}</button>
                 </div>
               </div>
 
               <div className={styles.productControlBar}>
                 <div className={styles.productFilterButtons}>
                   <div className={styles.productStatusButtons}>
-                    {[
-                      ['all', '全部'],
-                      ['complete', '资料完整'],
-                      ['missing', '缺资料'],
-                    ].map(([value, label]) => <button key={value} className={productStatusFilter === value ? styles.stackFilterActive : ''} onClick={() => setProductStatusFilter(value)}>{label}</button>)}
+                    {PRODUCT_STATUS_FILTERS.map((item) => <button key={item.value} className={productStatusFilter === item.value ? styles.stackFilterActive : ''} onClick={() => setProductStatusFilter(item.value)}>{t(item.labelKey)}</button>)}
                   </div>
                   <div className={styles.productCategorySelectGroup}>
-                    <strong>C端分类</strong>
+                    <strong>{t('admin.productManagement.consumerCategory')}</strong>
                     <select
                       value={productCategoryTopFilter}
                       onChange={(event) => {
@@ -3609,9 +3652,9 @@ export default function AdminV2Page() {
                         setProductCategoryThirdFilter('');
                       }}
                     >
-                      <option value="">全部分类</option>
+                      <option value="">{t('admin.productManagement.allCategories')}</option>
                       {topConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-                      <option value="uncategorized">其他 / 待分类</option>
+                      <option value="uncategorized">{t('admin.productManagement.uncategorized')}</option>
                     </select>
                     {productFilterSecondCategories.length > 0 && (
                       <select
@@ -3621,7 +3664,7 @@ export default function AdminV2Page() {
                           setProductCategoryThirdFilter('');
                         }}
                       >
-                        <option value="">全部二级</option>
+                        <option value="">{t('admin.productManagement.allSecondLevel')}</option>
                         {productFilterSecondCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                       </select>
                     )}
@@ -3630,7 +3673,7 @@ export default function AdminV2Page() {
                         value={productCategoryThirdFilter}
                         onChange={(event) => setProductCategoryThirdFilter(event.target.value)}
                       >
-                        <option value="">全部三级</option>
+                        <option value="">{t('admin.productManagement.allThirdLevel')}</option>
                         {productFilterThirdCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                       </select>
                     )}
@@ -3639,8 +3682,8 @@ export default function AdminV2Page() {
 
                 <div className={styles.workspaceViewTools}>
                   <div className={styles.stackViewSwitch}>
-                    {['overview', 'standard', 'detail'].map((mode) => (
-                      <button key={mode} className={workspaceViewMode === mode ? styles.stackFilterActive : ''} onClick={() => setWorkspaceViewMode(mode)}>{mode === 'overview' ? '概览' : mode === 'standard' ? '标准' : '详细'}</button>
+                    {PRODUCT_VIEW_MODES.map((item) => (
+                      <button key={item.value} className={workspaceViewMode === item.value ? styles.stackFilterActive : ''} onClick={() => setWorkspaceViewMode(item.value)}>{t(item.labelKey)}</button>
                     ))}
                   </div>
                 </div>
@@ -3678,37 +3721,38 @@ export default function AdminV2Page() {
                     progress: Math.round((completedTypes / 3) * 100),
                     progressClass: completedTypes === 3 ? styles.progressGood : completedTypes === 2 ? styles.progressWarn : completedTypes === 1 ? styles.progressPoor : styles.progressEmpty,
                     className: status.missing.length ? styles.stackMissing : styles.stackOk,
-                    label: status.missing.length ? '缺资料' : '资料完整',
+                    label: status.missing.length ? t('admin.productManagement.filters.missing') : t('admin.productManagement.filters.complete'),
                   };
                   const fileRows = [
-                    ['资质证书', 'certificate', status.productDocs.filter((doc) => doc.documentType === 'certificate' || doc.type === '资质证书')],
-                    ['DoC声明', 'declaration_of_conformity', status.productDocs.filter((doc) => doc.documentType === 'declaration_of_conformity' || (doc.type === 'DoC声明资料' || doc.type === 'DoC声明文件'))],
-                    ['说明书', 'manual', status.productDocs.filter((doc) => doc.documentType === 'manual' || doc.type === '使用说明书')],
+                    ['certificate', status.productDocs.filter((doc) => doc.documentType === 'certificate' || doc.type === '资质证书')],
+                    ['declaration_of_conformity', status.productDocs.filter((doc) => doc.documentType === 'declaration_of_conformity' || (doc.type === 'DoC声明资料' || doc.type === 'DoC声明文件'))],
+                    ['manual', status.productDocs.filter((doc) => doc.documentType === 'manual' || doc.type === '使用说明书')],
                   ];
                   return (
                     <article key={productKey} className={`${styles.stackProductCard} ${isExpanded ? styles.stackProductSelected : ''}`}>
-                      <button className={styles.stackProductClickLayer} onClick={() => { setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile(isExpanded ? workspaceExpandedPile : '全部资料'); }} aria-label={`查看 ${product.name}`} />
+                      <button className={styles.stackProductClickLayer} onClick={() => { setWorkspaceExpandedProduct(productKey); setWorkspaceExpandedPile(isExpanded ? workspaceExpandedPile : 'all'); }} aria-label={t('admin.productManagement.viewProductAria', { name: product.name })} />
                       <div className={styles.stackProductHead}>
                         <div>
                           <h3 className={styles.smartProductTitle}><SmartProductTitle title={product.name} /></h3>
-                          <p>{product.category} · {product.updatedAt || '未记录时间'}</p>
+                          <p>{product.category} · {product.updatedAt || t('admin.productManagement.timeNotRecorded')}</p>
                         </div>
                         <span className={health.className}>{health.label}</span>
                       </div>
                       <div className={`${styles.stackProgressTrack} ${health.progressClass}`}><span style={{ width: `${health.progress}%` }} /></div>
-                      {workspaceViewMode !== 'overview' && <div className={styles.stackNextAction}>{status.missing.length ? `下一步建议：补充${status.missing[0]}` : '资料完整：可以直接对外展示，也适合生成二维码。'}</div>}
+                      {workspaceViewMode !== 'overview' && <div className={styles.stackNextAction}>{status.missing.length ? t('admin.productManagement.nextStepMissing', { type: t(`admin.productManagement.missingTypes.${status.missing[0]}`) }) : t('admin.productManagement.completeHint')}</div>}
                       <div className={styles.stackFileRows}>
-                        {fileRows.map(([label, type, docs]) => {
-                          const active = isExpanded && workspaceExpandedPile === label;
+                        {fileRows.map(([type, docs]) => {
+                          const label = t(documentTypeLabelKey(type));
+                          const active = isExpanded && workspaceExpandedPile === type;
                           const shouldShowFiles = workspaceViewMode === 'detail' || (workspaceViewMode === 'standard' && active);
                           const primaryDoc = docs[0];
                           return (
-                            <div key={label} className={`${styles.stackFileRowWrap} ${!docs.length ? styles.stackFileRowMissing : ''} ${active || workspaceViewMode === 'detail' ? styles.stackFileRowOpen : ''}`}>
+                            <div key={type} className={`${styles.stackFileRowWrap} ${!docs.length ? styles.stackFileRowMissing : ''} ${active || workspaceViewMode === 'detail' ? styles.stackFileRowOpen : ''}`}>
                               <button className={styles.stackFileRow} onClick={(event) => { event.stopPropagation(); openDocumentSlotModal(product, type, docs); }}>
-                                <span className={styles.stackFileThumb}>{primaryDoc ? documentFileExt(primaryDoc.name) : '无'}</span>
+                                <span className={styles.stackFileThumb}>{primaryDoc ? documentFileExt(primaryDoc.name) : t('admin.productManagement.none')}</span>
                                 <span className={styles.stackFileMain}>
                                   <em>{label}</em>
-                                  <small>{primaryDoc ? primaryDoc.name : '暂无资料，点击上传'}</small>
+                                  <small>{primaryDoc ? primaryDoc.name : t('admin.productManagement.noDocumentUpload')}</small>
                                 </span>
                                 <strong>{docs.length || '+'}</strong>
                               </button>
@@ -3724,13 +3768,13 @@ export default function AdminV2Page() {
                       {workspaceViewMode === 'detail' && (
                         <>
                           <div className={styles.stackInlineModels}>{(models.length ? models : [product.model]).map((model) => <span key={model}>{model}</span>)}</div>
-                          <div className={styles.stackDetailMeta}><span>分类：{product.category}</span><span>资料：{status.productDocs.length} 份</span></div>
+                          <div className={styles.stackDetailMeta}><span>{t('admin.productManagement.categoryMeta', { category: product.category })}</span><span>{t('admin.productManagement.documentCountMeta', { count: status.productDocs.length })}</span></div>
                         </>
                       )}
                       {workspaceViewMode !== 'overview' && <div className={styles.stackCardActions}>
-                        <button onClick={(event) => { event.stopPropagation(); manageProductFiles(product); }}>管理资料</button>
-                        <button onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>编辑产品</button>
-                        <button onClick={(event) => { event.stopPropagation(); navigate(`/products/${product.id}`); }}>预览</button>
+                        <button onClick={(event) => { event.stopPropagation(); manageProductFiles(product); }}>{t('admin.productManagement.manageDocuments')}</button>
+                        <button onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>{t('admin.productManagement.editProduct')}</button>
+                        <button onClick={(event) => { event.stopPropagation(); navigate(`/products/${product.id}`); }}>{t('admin.productManagement.preview')}</button>
                       </div>}
                     </article>
                   );
@@ -3743,18 +3787,18 @@ export default function AdminV2Page() {
 
       if (activePage === 'files') {
         const fileTypeOptions = [
-          ['all', '全部资料'],
-          ['certificate', '资质证书'],
-          ['declaration_of_conformity', 'DoC声明资料'],
-          ['manual', '使用说明书'],
-          ['unbound', '未绑定产品'],
+          { value: 'all', labelKey: 'admin.fileManagement.allDocuments' },
+          { value: 'certificate', labelKey: 'admin.fileManagement.types.certificate' },
+          { value: 'declaration_of_conformity', labelKey: 'admin.fileManagement.types.declaration' },
+          { value: 'manual', labelKey: 'admin.fileManagement.types.manual' },
+          { value: 'unbound', labelKey: 'admin.fileManagement.statuses.unbound' },
         ];
         const getDocHealth = (doc) => {
-          if (doc.reviewStatus === 'pending') return { label: '待平台审核，请联系管理员', filter: '待审核', tone: 'pending' };
-          if (doc.reviewStatus === 'rejected') return { label: '审核未通过，请联系管理员', filter: '审核未通过', tone: 'rejected' };
-          if (!doc.productId) return { label: '未绑定产品', filter: '未绑定产品', tone: 'warn' };
-          if (!doc.language || doc.lang === '未设置' || doc.documentType === 'other') return { label: '待完善', filter: '待完善', tone: 'warn' };
-          return { label: '已审核公开', filter: '已公开', tone: 'safe' };
+          if (doc.reviewStatus === 'pending') return { labelKey: 'admin.fileManagement.statuses.pendingContactAdmin', filter: 'pending', tone: 'pending' };
+          if (doc.reviewStatus === 'rejected') return { labelKey: 'admin.fileManagement.statuses.rejectedContactAdmin', filter: 'rejected', tone: 'rejected' };
+          if (!doc.productId) return { labelKey: 'admin.fileManagement.statuses.unbound', filter: 'unbound', tone: 'warn' };
+          if (!doc.language || doc.lang === '未设置' || doc.documentType === 'other') return { labelKey: 'admin.fileManagement.statuses.incomplete', filter: 'incomplete', tone: 'warn' };
+          return { labelKey: 'admin.fileManagement.statuses.public', filter: 'public', tone: 'safe' };
         };
         const uniqueLanguages = [...new Set(companyDocuments.map((doc) => doc.lang).filter(Boolean))];
         const filteredDocuments = companyDocuments.filter((doc) => {
@@ -3769,42 +3813,42 @@ export default function AdminV2Page() {
         });
 
         return (
-          <Section title="资料管理" desc="这里是公司资料库：检查资料归属、语言、类型、证书信息，并处理替换和预览。">
+          <Section title={t('admin.fileManagement.libraryTitle')} desc={t('admin.fileManagement.libraryDesc')}>
             <div className={styles.fileOverviewGrid}>
               {[
-                ['全部资料', companyDocuments.length, '当前公司已归档的全部资料'],
-                ['资质证书', companyDocuments.filter((doc) => doc.documentType === 'certificate').length, '证明产品测试和认证状态'],
-                ['DoC声明资料', companyDocuments.filter((doc) => doc.documentType === 'declaration_of_conformity').length, '供审核机构查看合规声明'],
-                ['使用说明书', companyDocuments.filter((doc) => doc.documentType === 'manual').length, '帮助用户了解产品使用方式'],
-                ['未绑定产品', companyDocuments.filter((doc) => !doc.productId).length, '这些资料前台产品页可能看不到'],
-                ['待审核', companyDocuments.filter((doc) => doc.reviewStatus === 'pending').length, '待平台审核，请联系管理员'],
-                ['审核未通过', companyDocuments.filter((doc) => doc.reviewStatus === 'rejected').length, '请根据审核意见修改后重新提交'],
-              ].map(([name, count, desc]) => (
-                <button key={name} className={styles.fileOverviewCard} onClick={() => setFileFilters((form) => ({ ...form, type: name === '未绑定产品' ? 'unbound' : form.type, status: ['待审核', '审核未通过'].includes(name) ? name : form.status }))}>
-                  <strong>{count}</strong><span>{name}</span><p>{desc}</p>
+                { key: 'all', labelKey: 'admin.fileManagement.overview.all', count: companyDocuments.length, descKey: 'admin.fileManagement.overview.allDesc' },
+                { key: 'certificate', labelKey: 'admin.fileManagement.types.certificate', count: companyDocuments.filter((doc) => doc.documentType === 'certificate').length, descKey: 'admin.fileManagement.overview.certificateDesc' },
+                { key: 'declaration', labelKey: 'admin.fileManagement.types.declaration', count: companyDocuments.filter((doc) => doc.documentType === 'declaration_of_conformity').length, descKey: 'admin.fileManagement.overview.declarationDesc' },
+                { key: 'manual', labelKey: 'admin.fileManagement.types.manual', count: companyDocuments.filter((doc) => doc.documentType === 'manual').length, descKey: 'admin.fileManagement.overview.manualDesc' },
+                { key: 'unbound', labelKey: 'admin.fileManagement.statuses.unbound', count: companyDocuments.filter((doc) => !doc.productId).length, descKey: 'admin.fileManagement.overview.unboundDesc', type: 'unbound' },
+                { key: 'pending', labelKey: 'admin.fileManagement.statuses.pending', count: companyDocuments.filter((doc) => doc.reviewStatus === 'pending').length, descKey: 'admin.fileManagement.overview.pendingDesc', status: 'pending' },
+                { key: 'rejected', labelKey: 'admin.fileManagement.statuses.rejected', count: companyDocuments.filter((doc) => doc.reviewStatus === 'rejected').length, descKey: 'admin.fileManagement.overview.rejectedDesc', status: 'rejected' },
+              ].map((item) => (
+                <button key={item.key} className={styles.fileOverviewCard} onClick={() => setFileFilters((form) => ({ ...form, type: item.type || form.type, status: item.status || form.status }))}>
+                  <strong>{item.count}</strong><span>{t(item.labelKey)}</span><p>{t(item.descKey)}</p>
                 </button>
               ))}
             </div>
 
             <div className={styles.fileManageHeader}>
               <div className={styles.fileTabs}>
-                {fileTypeOptions.map(([value, label]) => <button key={value} className={fileFilters.type === value ? styles.tabActive : ''} onClick={() => setFileFilters((form) => ({ ...form, type: value }))}>{label}</button>)}
+                {fileTypeOptions.map((item) => <button key={item.value} className={fileFilters.type === item.value ? styles.tabActive : ''} onClick={() => setFileFilters((form) => ({ ...form, type: item.value }))}>{t(item.labelKey)}</button>)}
               </div>
               <div className={styles.headerActionsInline}>
-                <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量导入</button>
-                <button className={styles.primaryBtn} onClick={uploadDocumentFile}>上传资料</button>
+                <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>{t('admin.fileManagement.batchImport')}</button>
+                <button className={styles.primaryBtn} onClick={uploadDocumentFile}>{t('admin.fileManagement.uploadDocument')}</button>
               </div>
             </div>
 
             <div className={`${styles.productTools} ${styles.fileFilterTools}`}>
-              <input value={fileFilters.query} onChange={(event) => setFileFilters((form) => ({ ...form, query: event.target.value }))} placeholder="搜索资料名、产品、证书编号、标准" />
-              <select value={fileFilters.product} onChange={(event) => setFileFilters((form) => ({ ...form, product: event.target.value }))}><option value="all">全部产品</option>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select>
-              <select value={fileFilters.language} onChange={(event) => setFileFilters((form) => ({ ...form, language: event.target.value }))}><option value="all">全部语言</option>{uniqueLanguages.map((lang) => <option key={lang} value={lang}>{lang}</option>)}</select>
-              <select value={fileFilters.status} onChange={(event) => setFileFilters((form) => ({ ...form, status: event.target.value }))}><option value="all">全部状态</option><option value="已公开">已审核公开</option><option value="待审核">待平台审核</option><option value="审核未通过">审核未通过</option><option value="待完善">待完善</option><option value="未绑定产品">未绑定产品</option></select>
+              <input value={fileFilters.query} onChange={(event) => setFileFilters((form) => ({ ...form, query: event.target.value }))} placeholder={t('admin.fileManagement.librarySearchPlaceholder')} />
+              <select value={fileFilters.product} onChange={(event) => setFileFilters((form) => ({ ...form, product: event.target.value }))}><option value="all">{t('admin.fileManagement.allProducts')}</option>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select>
+              <select value={fileFilters.language} onChange={(event) => setFileFilters((form) => ({ ...form, language: event.target.value }))}><option value="all">{t('admin.fileManagement.allLanguages')}</option>{uniqueLanguages.map((lang) => <option key={lang} value={lang}>{lang}</option>)}</select>
+              <select value={fileFilters.status} onChange={(event) => setFileFilters((form) => ({ ...form, status: event.target.value }))}><option value="all">{t('admin.fileManagement.allStatuses')}</option><option value="public">{t('admin.fileManagement.statuses.public')}</option><option value="pending">{t('admin.fileManagement.statuses.pending')}</option><option value="rejected">{t('admin.fileManagement.statuses.rejected')}</option><option value="incomplete">{t('admin.fileManagement.statuses.incomplete')}</option><option value="unbound">{t('admin.fileManagement.statuses.unbound')}</option></select>
             </div>
 
             <div className={styles.fileTableHeader}>
-              <span>资料</span><span>归属产品</span><span>关键信息</span><span>状态</span><span>操作</span>
+              <span>{t('admin.fileManagement.document')}</span><span>{t('admin.fileManagement.relatedProduct')}</span><span>{t('admin.fileManagement.keyInfo')}</span><span>{t('admin.fileManagement.status')}</span><span>{t('admin.fileManagement.actions')}</span>
             </div>
 
             <div className={styles.fileLibraryList}>
@@ -3815,30 +3859,30 @@ export default function AdminV2Page() {
                     <span className={styles.fileTypeIcon}>{doc.type.slice(0, 3)}</span>
                     <div className={styles.fileLibraryMain}>
                       <h3>{doc.name}</h3>
-                      <p>{doc.type} · {doc.lang || '未设置语言'} · {doc.updatedAt || '未记录时间'}</p>
+                      <p>{t(documentTypeLabelKey(doc.documentType))} · {doc.lang || t('admin.fileManagement.languageNotSet')} · {doc.updatedAt || t('admin.fileManagement.timeNotRecorded')}</p>
                     </div>
                     <div className={styles.fileLibraryProduct}>
-                      <strong>{doc.productId ? doc.product : '未绑定产品'}</strong>
-                      <span>{doc.productId ? '已归档到产品' : '需要先绑定产品'}</span>
+                      <strong>{doc.productId ? doc.product : t('admin.fileManagement.statuses.unbound')}</strong>
+                      <span>{doc.productId ? t('admin.fileManagement.archivedToProduct') : t('admin.fileManagement.bindProductFirst')}</span>
                     </div>
                     <div className={styles.fileLibraryTags}>
-                      {doc.certNo && <span>证书号：{doc.certNo}</span>}
+                      {doc.certNo && <span>{t('admin.fileManagement.certificateNumberValue', { number: doc.certNo })}</span>}
                       {doc.standard && <span>{doc.standard}</span>}
                       {doc.issuer && <span>{doc.issuer}</span>}
-                      {!doc.certNo && !doc.standard && !doc.issuer && <span>暂无证书信息</span>}
+                      {!doc.certNo && !doc.standard && !doc.issuer && <span>{t('admin.fileManagement.noCertificateInfo')}</span>}
                     </div>
                     <div className={styles.fileReviewStatus}>
-                      <span className={health.tone === 'safe' ? styles.safeTag : health.tone === 'rejected' ? styles.rejectedTag : health.tone === 'pending' ? styles.pendingTag : styles.warnTag}>{health.label}</span>
-                      {doc.reviewStatus === 'rejected' && doc.reviewNote && <small>审核意见：{doc.reviewNote}</small>}
+                      <span className={health.tone === 'safe' ? styles.safeTag : health.tone === 'rejected' ? styles.rejectedTag : health.tone === 'pending' ? styles.pendingTag : styles.warnTag}>{t(health.labelKey)}</span>
+                      {doc.reviewStatus === 'rejected' && doc.reviewNote && <small>{t('admin.fileManagement.reviewNote', { note: doc.reviewNote })}</small>}
                     </div>
                     <div className={styles.fileActions}>
-                      <button className={styles.secondaryBtn} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : showAction('该资料暂无可预览地址')}>预览</button>
-                      <button className={styles.secondaryBtn} onClick={() => selectDocumentInSlotModal(doc)}>编辑</button>
-                      <button className={styles.secondaryBtn} onClick={() => replaceFile(doc)}>替换</button>
+                      <button className={styles.secondaryBtn} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : showAction(t('admin.fileManagement.noPreviewUrl'))}>{t('admin.fileManagement.preview')}</button>
+                      <button className={styles.secondaryBtn} onClick={() => selectDocumentInSlotModal(doc)}>{t('admin.common.edit')}</button>
+                      <button className={styles.secondaryBtn} onClick={() => replaceFile(doc)}>{t('admin.fileManagement.replace')}</button>
                     </div>
                   </article>
                 );
-              }) : <div className={styles.emptyState}>没有符合筛选条件的资料。</div>}
+              }) : <div className={styles.emptyState}>{t('admin.fileManagement.noFilteredDocuments')}</div>}
             </div>
           </Section>
         );
@@ -3847,34 +3891,34 @@ export default function AdminV2Page() {
       if (activePage === 'members') {
         const isPlatformReadOnly = Boolean(memberPermissions.readOnly);
         const roleCounts = Object.keys(MEMBER_ROLES).map((role) => [
-          MEMBER_ROLES[role].label,
+          role,
           companyMembers.filter((member) => member.role === role).length,
         ]);
         return (
           <Section title={t('admin.members.title')} desc={t('admin.members.desc')}>
             <div className={styles.memberHeaderPanel}>
               <div>
-                <h3>团队成员</h3>
-                <p>{isPlatformReadOnly ? '平台管理员正在只读查看该公司的真实成员关系，不会自动成为企业成员。' : '成员数据来自当前公司的真实账号关系；添加成员前，对方需要先注册 EU-DOC。'}</p>
+                <h3>{t('admin.memberManagement.teamMembers')}</h3>
+                <p>{isPlatformReadOnly ? t('admin.memberManagement.platformReadOnlyDesc') : t('admin.memberManagement.memberSourceDesc')}</p>
               </div>
               <button
                 className={styles.primaryBtn}
                 disabled={!memberPermissions.canInvite}
                 onClick={() => setMemberInviteModal({ open: true, email: '', role: 'viewer' })}
               >
-                添加员工
+                {t('admin.memberManagement.addEmployee')}
               </button>
             </div>
 
             <div className={styles.memberRoleStrip}>
               <div className={styles.memberRoleIntro}>
-                <h3>角色概览</h3>
-                <p>共 {companyMembers.length} 位真实成员。</p>
+                <h3>{t('admin.memberManagement.roleOverview')}</h3>
+                <p>{t('admin.memberManagement.realMemberCount', { count: companyMembers.length })}</p>
               </div>
               {roleCounts.map(([role, count]) => (
                 <div key={role} className={styles.memberRolePill}>
                   <strong>{count}</strong>
-                  <span>{role}</span>
+                  <span>{t(MEMBER_ROLE_TRANSLATIONS[role]?.labelKey || 'admin.memberManagement.roles.unknown')}</span>
                 </div>
               ))}
             </div>
@@ -3882,37 +3926,39 @@ export default function AdminV2Page() {
             <div className={styles.memberListPanel}>
               <div className={styles.listTitleRow}>
                 <div>
-                  <h3>成员列表</h3>
-                  <p>{isPlatformReadOnly ? '平台监管视图仅供核查；如需干预成员权限，应走单独的平台干预流程并记录原因。' : memberPermissions.canChangeRoles ? '你可以调整非拥有者成员的角色。' : '只有企业拥有者可以修改成员角色。'}</p>
+                  <h3>{t('admin.memberManagement.memberList')}</h3>
+                  <p>{isPlatformReadOnly ? t('admin.memberManagement.platformInterventionDesc') : memberPermissions.canChangeRoles ? t('admin.memberManagement.canChangeRolesDesc') : t('admin.memberManagement.ownerOnlyDesc')}</p>
                 </div>
               </div>
               <div className={styles.productTools}>
                 <input
                   value={memberFilters.query}
                   onChange={(event) => setMemberFilters((filters) => ({ ...filters, query: event.target.value }))}
-                  placeholder="搜索姓名、邮箱、用户编号"
+                  placeholder={t('admin.memberManagement.searchPlaceholder')}
                 />
                 <select value={memberFilters.role} onChange={(event) => setMemberFilters((filters) => ({ ...filters, role: event.target.value }))}>
-                  <option value="all">全部角色</option>
-                  {Object.entries(MEMBER_ROLES).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}
+                  <option value="all">{t('admin.memberManagement.allRoles')}</option>
+                  {Object.keys(MEMBER_ROLES).map((value) => <option key={value} value={value}>{t(MEMBER_ROLE_TRANSLATIONS[value]?.labelKey || 'admin.memberManagement.roles.unknown')}</option>)}
                 </select>
                 <select value={memberFilters.status} onChange={(event) => setMemberFilters((filters) => ({ ...filters, status: event.target.value }))}>
-                  <option value="all">全部状态</option>
-                  <option value="active">正常</option>
-                  <option value="disabled">已停用</option>
+                  <option value="all">{t('admin.memberManagement.allStatuses')}</option>
+                  <option value="active">{t('admin.memberManagement.statusActive')}</option>
+                  <option value="disabled">{t('admin.memberManagement.statusInactive')}</option>
                 </select>
-                <button className={styles.secondaryBtn} onClick={refreshCompanyMembers}>刷新</button>
+                <button className={styles.secondaryBtn} onClick={refreshCompanyMembers}>{t('admin.common.refresh')}</button>
               </div>
 
               <div className={styles.memberCards}>
                 {memberLoading ? (
-                  <div className={styles.emptyState}>正在读取成员数据...</div>
+                  <div className={styles.emptyState}>{t('admin.memberManagement.loading')}</div>
                 ) : memberError ? (
                   <div className={styles.emptyState}>{memberError}</div>
                 ) : filteredCompanyMembers.length ? filteredCompanyMembers.map((member) => {
-                  const role = MEMBER_ROLES[member.role] || { label: member.role, scope: '按系统角色控制' };
-                  const name = member.displayName || member.email?.split('@')[0] || '未命名成员';
-                  const status = member.status === 'active' ? '正常' : '已停用';
+                  const roleTranslation = MEMBER_ROLE_TRANSLATIONS[member.role];
+                  const roleLabel = roleTranslation ? t(roleTranslation.labelKey) : member.role;
+                  const roleScope = roleTranslation ? t(roleTranslation.scopeKey) : t('admin.memberManagement.systemRoleScope');
+                  const name = member.displayName || member.email?.split('@')[0] || t('admin.memberManagement.unnamedMember');
+                  const memberActive = member.status === 'active';
                   const isPrimaryMember = ['applicant', 'owner'].includes(member.role);
                   const canEdit = memberPermissions.canChangeRoles && !isPrimaryMember;
                   const canRemove = memberPermissions.canRemoveMembers && !isPrimaryMember && String(member.userId) !== String(admin?.id);
@@ -3926,26 +3972,26 @@ export default function AdminV2Page() {
                       </div>
                       <div className={styles.memberMeta}>
                         <span>
-                          <strong>角色</strong>
+                          <strong>{t('admin.memberManagement.role')}</strong>
                           {editingMemberId === member.id ? (
                             <select value={member.role} autoFocus onChange={(event) => updateMemberRole(member, event.target.value)} onBlur={() => setEditingMemberId(null)}>
-                              <option value="admin">企业管理员</option>
-                              <option value="uploader">资料上传员</option>
-                              <option value="viewer">只读成员</option>
+                              <option value="admin">{t('admin.memberManagement.roles.admin')}</option>
+                              <option value="uploader">{t('admin.memberManagement.roles.uploader')}</option>
+                              <option value="viewer">{t('admin.memberManagement.roles.viewer')}</option>
                             </select>
-                          ) : <em>{role.label}</em>}
+                          ) : <em>{roleLabel}</em>}
                         </span>
-                        <span><strong>权限范围</strong><em>{role.scope}</em></span>
-                        <span><strong>状态</strong><em className={status === '正常' ? styles.statusOk : styles.statusMuted}>{status}</em></span>
+                        <span><strong>{t('admin.memberManagement.permissionScope')}</strong><em>{roleScope}</em></span>
+                        <span><strong>{t('admin.memberManagement.status')}</strong><em className={memberActive ? styles.statusOk : styles.statusMuted}>{memberActive ? t('admin.memberManagement.statusActive') : t('admin.memberManagement.statusInactive')}</em></span>
                       </div>
                       <div className={styles.memberActions}>
-                        {canEdit && <button className={styles.primaryTextBtn} onClick={() => setEditingMemberId(member.id)}>修改权限</button>}
-                        <button className={styles.secondaryTextBtn} onClick={() => showMemberActivity(member)}>查看记录</button>
-                        {canRemove && <button className={styles.dangerTextBtn} onClick={() => removeMember(member)}>移除成员</button>}
+                        {canEdit && <button className={styles.primaryTextBtn} onClick={() => setEditingMemberId(member.id)}>{t('admin.memberManagement.changePermissions')}</button>}
+                        <button className={styles.secondaryTextBtn} onClick={() => showMemberActivity(member)}>{t('admin.memberManagement.viewActivity')}</button>
+                        {canRemove && <button className={styles.dangerTextBtn} onClick={() => removeMember(member)}>{t('admin.memberManagement.removeMember')}</button>}
                       </div>
                     </article>
                   );
-                }) : <div className={styles.emptyState}>没有符合筛选条件的成员。</div>}
+                }) : <div className={styles.emptyState}>{t('admin.memberManagement.noFilteredMembers')}</div>}
               </div>
             </div>
           </Section>
@@ -4847,29 +4893,29 @@ export default function AdminV2Page() {
               <div className={styles.adminModal} onClick={(event) => event.stopPropagation()}>
                 <div className={styles.modalHeader}>
                   <div>
-                    <h3>添加企业成员</h3>
-                    <p>输入已注册 EU-DOC 的邮箱。添加成功后，该账号会立即获得当前公司的对应权限。</p>
+                    <h3>{t('admin.memberManagement.inviteTitle')}</h3>
+                    <p>{t('admin.memberManagement.inviteDesc')}</p>
                   </div>
                   <button className={styles.iconCloseBtn} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>×</button>
                 </div>
                 <div className={styles.modalFormGrid}>
                   <label className={styles.fullField}>
-                    <span>成员邮箱</span>
+                    <span>{t('admin.memberManagement.memberEmail')}</span>
                     <input type="email" value={memberInviteModal.email} onChange={(event) => setMemberInviteModal((form) => ({ ...form, email: event.target.value }))} placeholder="member@example.com" />
                   </label>
                   <label className={styles.fullField}>
-                    <span>初始角色</span>
+                    <span>{t('admin.memberManagement.initialRole')}</span>
                     <select value={memberInviteModal.role} onChange={(event) => setMemberInviteModal((form) => ({ ...form, role: event.target.value }))}>
-                      <option value="admin">企业管理员 - 管理产品、资料和成员</option>
-                      <option value="uploader">资料上传员 - 上传和管理资料</option>
-                      <option value="viewer">只读成员 - 仅查看企业资料</option>
+                      <option value="admin">{t('admin.memberManagement.inviteRoles.admin')}</option>
+                      <option value="uploader">{t('admin.memberManagement.inviteRoles.uploader')}</option>
+                      <option value="viewer">{t('admin.memberManagement.inviteRoles.viewer')}</option>
                     </select>
                   </label>
                 </div>
-                <div className={styles.profileNote}>当前版本只支持添加已注册账号，不会向未注册邮箱发送虚假的邀请邮件。</div>
+                <div className={styles.profileNote}>{t('admin.memberManagement.registeredOnlyNote')}</div>
                 <div className={styles.modalActions}>
-                  <button className={styles.secondaryBtn} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>取消</button>
-                  <button className={styles.primaryBtn} onClick={inviteMember}>确认添加</button>
+                  <button className={styles.secondaryBtn} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>{t('admin.common.cancel')}</button>
+                  <button className={styles.primaryBtn} onClick={inviteMember}>{t('admin.memberManagement.confirmAdd')}</button>
                 </div>
               </div>
             </div>
@@ -4949,8 +4995,8 @@ export default function AdminV2Page() {
               <div className={`${styles.adminModal} ${styles.productEditModal}`} onClick={(event) => event.stopPropagation()}>
                 <div className={styles.modalHeader}>
                   <div>
-                    <h3>{productModal.product ? '编辑产品' : '新增产品'}</h3>
-                    <p>产品页要能说明“这是什么产品、适用哪些型号、资料是否完整”。</p>
+                    <h3>{productModal.product ? t('admin.productManagement.editProduct') : t('admin.productManagement.addProduct')}</h3>
+                    <p>{t('admin.productManagement.modalDesc')}</p>
                   </div>
                   <button className={styles.iconCloseBtn} onClick={closeProductModal}>×</button>
                 </div>
@@ -4958,24 +5004,24 @@ export default function AdminV2Page() {
                 <div className={styles.productEditLayout}>
                   <section className={`${styles.productEditBlock} ${styles.productEditHeroBlock}`}>
                     <div className={styles.productEditHeroInfo}>
-                      <div className={styles.productEditBlockTitle}>基础信息</div>
+                      <div className={styles.productEditBlockTitle}>{t('admin.productManagement.basicInfo')}</div>
                       <div className={styles.modalFormGrid}>
-                        <label><span>产品/系列名称</span><input value={productModal.name} onChange={(event) => setProductModal((form) => ({ ...form, name: event.target.value }))} placeholder="例如 Equestrian Helmet F20" /></label>
-                        <label><span>英文名称（可选）</span><input value={productModal.nameEn} onChange={(event) => setProductModal((form) => ({ ...form, nameEn: event.target.value }))} placeholder="用于多语言页面" /></label>
-                        <label><span>展示状态</span><select value={productModal.status} onChange={(event) => setProductModal((form) => ({ ...form, status: event.target.value }))}><option value="active">公开展示</option><option value="draft">草稿 / 待完善</option><option value="inactive">暂不公开</option></select></label>
+                        <label><span>{t('admin.productManagement.productSeriesName')}</span><input value={productModal.name} onChange={(event) => setProductModal((form) => ({ ...form, name: event.target.value }))} placeholder={t('admin.productManagement.productNamePlaceholder')} /></label>
+                        <label><span>{t('admin.productManagement.englishNameOptional')}</span><input value={productModal.nameEn} onChange={(event) => setProductModal((form) => ({ ...form, nameEn: event.target.value }))} placeholder={t('admin.productManagement.englishNamePlaceholder')} /></label>
+                        <label><span>{t('admin.productManagement.displayStatus')}</span><select value={productModal.status} onChange={(event) => setProductModal((form) => ({ ...form, status: event.target.value }))}><option value="active">{t('admin.productManagement.displayStatuses.active')}</option><option value="draft">{t('admin.productManagement.displayStatuses.draft')}</option><option value="inactive">{t('admin.productManagement.displayStatuses.inactive')}</option></select></label>
                       </div>
                     </div>
                     <button
                       type="button"
                       className={styles.productImageUploadBox}
-                      onClick={() => productModal.product ? uploadProductImageFile(productModal.product) : showAction('请先保存产品，再上传产品图')}
+                      onClick={() => productModal.product ? uploadProductImageFile(productModal.product) : showAction(t('admin.productManagement.saveBeforeImage'))}
                     >
                       {productModal.imageUrl ? (
-                        <img src={productModal.imageUrl} alt={productModal.name || '产品图'} />
+                        <img src={productModal.imageUrl} alt={productModal.name || t('admin.productManagement.productImage')} />
                       ) : (
                         <span>
-                          <strong>产品图片</strong>
-                          <em>{productModal.product ? '点击上传 / 替换' : '保存后可上传'}</em>
+                          <strong>{t('admin.productManagement.productImage')}</strong>
+                          <em>{productModal.product ? t('admin.productManagement.clickUploadReplace') : t('admin.productManagement.uploadAfterSave')}</em>
                         </span>
                       )}
                     </button>
@@ -4983,26 +5029,26 @@ export default function AdminV2Page() {
 
                   <section className={styles.productEditBlock}>
                     <div className={styles.productEditBlockTitle}>
-                      分类信息
-                      <span className={styles.infoTip} tabIndex="0" aria-label="分类说明">
+                      {t('admin.productManagement.classificationInfo')}
+                      <span className={styles.infoTip} tabIndex="0" aria-label={t('admin.productManagement.classificationHelp')}>
                         i
-                        <span className={styles.infoTipBubble}>C端产品分类用于普通用户按用途查找；审核/合规分类用于机构按法规、标准查找。</span>
+                        <span className={styles.infoTipBubble}>{t('admin.productManagement.classificationHelpText')}</span>
                       </span>
                     </div>
                     {productClassificationSuggestion ? (
                       <div className={styles.productCategorySuggestion}>
                         <div>
-                          <strong>系统推荐分类</strong>
-                          <span>{productClassificationSuggestion.consumerCategoryPath || '其他 / 待分类'}{productClassificationSuggestion.complianceCategoryPaths?.length ? ` · ${productClassificationSuggestion.complianceCategoryPaths.join(' / ')}` : ''}</span>
-                          <em>{productClassificationSuggestion.confidence} · {productClassificationSuggestion.reason}</em>
+                          <strong>{t('admin.productManagement.recommendedClassification')}</strong>
+                          <span>{productClassificationSuggestion.consumerCategoryPath || t('admin.productManagement.uncategorized')}{productClassificationSuggestion.complianceCategoryPaths?.length ? ` · ${productClassificationSuggestion.complianceCategoryPaths.join(' / ')}` : ''}</span>
+                          <em>{t(productClassificationSuggestion.confidenceKey)} · {t(productClassificationSuggestion.reasonKey)}</em>
                         </div>
-                        <button type="button" className={styles.secondaryBtn} onClick={applyProductClassificationSuggestion}>套用推荐</button>
+                        <button type="button" className={styles.secondaryBtn} onClick={applyProductClassificationSuggestion}>{t('admin.productManagement.applyRecommendation')}</button>
                       </div>
                     ) : (
                       <div className={styles.productCategorySuggestion}>
                         <div>
-                          <strong>暂无明确推荐</strong>
-                          <span>可补充产品名称、型号、说明，或上传带标准号的证书后再识别。</span>
+                          <strong>{t('admin.productManagement.noRecommendation')}</strong>
+                          <span>{t('admin.productManagement.noRecommendationDesc')}</span>
                         </div>
                       </div>
                     )}

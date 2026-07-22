@@ -41,7 +41,10 @@ function isImage(url = '', mimeType = '') {
 
 function isPdf(url = '', mimeType = '') {
   if (String(mimeType).toLowerCase() === 'application/pdf') return true;
-  return String(url).split('?')[0].toLowerCase().endsWith('.pdf');
+  const cleanUrl = String(url).split('?')[0].toLowerCase();
+  // API 文件路径格式：/api/v2/documents/{id}/file，默认假设是 PDF
+  if (cleanUrl.includes('/api/v2/documents/') && cleanUrl.includes('/file')) return true;
+  return cleanUrl.endsWith('.pdf');
 }
 
 function formatDate(value, language) {

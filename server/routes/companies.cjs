@@ -296,6 +296,9 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
       };
     });
 
+    console.log('[认证历史] 格式化后的历史记录:', history);
+    console.log('[认证历史] 返回数据:', { success: true, data: history });
+
     res.json({ success: true, data: history });
   } catch (err) {
     console.error('获取认证历史失败:', err);

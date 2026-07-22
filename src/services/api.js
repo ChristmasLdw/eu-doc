@@ -810,6 +810,37 @@ export function getCompanyProducts(companyId, options = {}) {
   });
 }
 
+/** 搜索产品列表（支持分页、搜索、筛选、排序） */
+export function getProducts(params = {}) {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', params.page);
+  if (params.pageSize) query.set('pageSize', params.pageSize);
+  if (params.search) query.set('search', params.search);
+  if (params.companyId) query.set('companyId', params.companyId);
+  if (params.categoryId) query.set('categoryId', params.categoryId);
+  if (params.status) query.set('status', params.status);
+  if (params.sortBy) query.set('sortBy', params.sortBy);
+  if (params.sortOrder) query.set('sortOrder', params.sortOrder);
+
+  return request(`/v2/products?${query.toString()}`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) {
+      response.data = response.data.map((product) => {
+        const mapped = keysToCamelCase(product);
+        // 处理产品图片路径
+        if (mapped.imagePath !== undefined) {
+          mapped.imageUrl = mapped.imagePath ? withBasename(mapped.imagePath) : null;
+          delete mapped.imagePath;
+        }
+        return mapped;
+      });
+    }
+    if (response && response.pagination) {
+      response.pagination = keysToCamelCase(response.pagination);
+    }
+    return response;
+  });
+}
+
 export function getCategories(taxonomyType = 'consumer', options = {}) {
   const params = new URLSearchParams();
   params.set('taxonomyType', taxonomyType);

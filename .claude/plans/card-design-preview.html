@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搜索卡片设计方案</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: #1a202c;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #718096;
+      margin-bottom: 40px;
+    }
+
+    /* 卡片区域 */
+    .card-section {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card-section h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #2d3748;
+    }
+    .card-section .description {
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 24px;
+    }
+
+    /* 模拟搜索卡片 */
+    .demo-card {
+      display: flex;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      margin-bottom: 24px;
+    }
+    .demo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #cbd5e0;
+    }
+
+    .card-content {
+      flex: 1;
+      padding: 20px 24px;
+      min-width: 0;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a202c;
+      margin-bottom: 4px;
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: #718096;
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #d4edda;
+      color: #155724;
+      flex-shrink: 0;
+    }
+
+    .card-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      color: #a0aec0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      color: #2d3748;
+      font-weight: 500;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+
+    .footer-meta {
+      font-size: 13px;
+      color: #a0aec0;
+    }
+
+    .view-link {
+      font-size: 13px;
+      color: #3182ce;
+      font-weight: 500;
+    }
+
+    .card-thumb {
+      flex-shrink: 0;
+      width: 200px;
+      min-height: 140px;
+      background: #f7fafc;
+      border-left: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #cbd5e0;
+      font-size: 14px;
+    }
+
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 注释框 */
+    .annotations {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .annotation {
+      background: #f7fafc;
+      border-left: 4px solid #3182ce;
+      padding: 16px;
+      border-radius: 4px;
+    }
+
+    .annotation-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 8px;
+    }
+
+    .annotation-text {
+      font-size: 13px;
+      color: #4a5568;
+      line-height: 1.5;
+    }
+
+    .annotation-list {
+      font-size: 13px;
+      color: #4a5568;
+      margin-left: 16px;
+    }
+
+    /* 对比表格 */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .comparison-table th {
+      background: #f7fafc;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 14px;
+    }
+
+    .comparison-table td {
+      font-size: 13px;
+      color: #4a5568;
+    }
+
+    .highlight {
+      background: #fef5e7;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 EU-DOC 搜索卡片设计方案</h1>
+    <p class="subtitle">为不同搜索类型设计统一风格的卡片布局</p>
+
+    <!-- 当前证书卡片 -->
+    <div class="card-section">
+      <h2>📜 当前：证书卡片</h2>
+      <p class="description">现有的证书搜索结果卡片样式，作为设计基准</p>
+
+      <div class="demo-card">
+        <div class="card-content">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">绍兴锐风运动用品有限公司</h3>
+              <p class="card-subtitle">Equestrian Helmet F20</p>
+            </div>
+            <span class="status-badge">已认证</span>
+          </div>
+
+          <div class="card-details">
+            <div class="detail-item">
+              <span class="detail-label">证书编号</span>
+              <span class="detail-value">CE-2024-F20-001</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">型号</span>
+              <span class="detail-value">F20-PRO</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">标准</span>
+              <span class="detail-value">EN 1384:2017</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">过期日期</span>
+              <span class="detail-value">2027-12-31</span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span class="footer-meta">发证机构: TÜV SÜD</span>
+            <span class="view-link">查看详情 →</span>
+          </div>
+        </div>
+
+        <div class="card-thumb">
+          [证书缩略图]
+        </div>
+      </div>
+
+      <div class="annotations">
+        <div class="annotation">
+          <div class="annotation-title">✅ 保持不变</div>
+          <div class="annotation-text">布局：左信息 + 右缩略图<br>宽度：缩略图固定 200px<br>悬停：上移 + 阴影 + 缩略图放大</div>
+        </div>
+        <div class="annotation">
+          <div class="annotation-title">📊 数据来源</div>
+          <div class="annotation-text">API: <code>/api/certificates</code><br>缩略图: thumbnailUrl<br>状态徽章: status</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 产品卡片 -->
+    <div class="card-section">
+      <h2>📦 新增：产品卡片</h2>
+      <p class="description">用户搜索产品时展示，突出产品信息和关联资料数量</p>
+
+      <div class="demo-card">
+        <div class="card-content">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Equestrian Helmet F20</h3>
+              <p class="card-subtitle">F20-PRO · 绍兴锐风运动用品有限公司</p>
+            </div>
+            <span class="status-badge">在售</span>
+          </div>
+
+          <div class="card-details">
+            <div class="detail-item">
+              <span class="detail-label">产品分类</span>
+              <span class="detail-value">体育用品 / 马术装备 / 头盔</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">相关资料</span>
+              <span class="detail-value">3 份证书 · 5 份文档</span>
+            </div>
+            <div class="detail-item" style="grid-column: 1 / -1;">
+              <span class="detail-label">产品描述</span>
+              <span class="detail-value">专业马术头盔，符合 EN 1384 标准，提供全面头部保护...</span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span class="footer-meta">创建于 2024-01-15</span>
+            <span class="view-link">查看产品 →</span>
+          </div>
+        </div>
+
+        <div class="card-thumb">
+          [产品图片]
+        </div>
+      </div>
+
+      <div class="annotations">
+        <div class="annotation">
+          <div class="annotation-title">🎯 设计重点</div>
+          <div class="annotation-text">
+            <strong>标题</strong>：产品名称（突出显示）<br>
+            <strong>副标题</strong>：型号 + 公司名<br>
+            <strong>关键信息</strong>：分类路径、关联资料数量
+          </div>
+        </div>
+        <div class="annotation">
+          <div class="annotation-title">📊 数据字段</div>
+          <div class="annotation-text">
+            API: <code>/api/v2/products</code><br>
+            图片: image_path<br>
+            分类: category_path<br>
+            统计: document_count, certificate_count
+          </div>
+        </div>
+        <div class="annotation">
+          <div class="annotation-title">💡 待确认</div>
+          <ul class="annotation-list">
+            <li>是否显示产品描述摘要？</li>
+            <li>无产品图片时显示什么？</li>
+            <li>是否需要快速操作按钮？</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 文档/DoC 卡片 -->
+    <div class="card-section">
+      <h2>📄 新增：文档卡片 (DoC/说明书)</h2>
+      <p class="description">用户搜索资料时展示，根据文档类型显示不同字段</p>
+
+      <div class="demo-card">
+        <div class="card-content">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Declaration of Conformity - F20 Helmet</h3>
+              <p class="card-subtitle">Equestrian Helmet F20 · 绍兴锐风运动用品</p>
+            </div>
+            <span class="status-badge" style="background: #d1ecf1; color: #0c5460;">DoC</span>
+          </div>
+
+          <div class="card-details">
+            <div class="detail-item">
+              <span class="detail-label">符合标准</span>
+              <span class="detail-value">EN 1384:2017</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">产品型号</span>
+              <span class="detail-value">F20-PRO, F20-LITE</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">文档类型</span>
+              <span class="detail-value">符合性声明</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">语言版本</span>
+              <span class="detail-value">EN / 中文</span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span class="footer-meta">PDF · 234 KB</span>
+            <span class="view-link">查看文档 →</span>
+          </div>
+        </div>
+
+        <div class="card-thumb">
+          [文档缩略图]
+        </div>
+      </div>
+
+      <div class="annotations">
+        <div class="annotation">
+          <div class="annotation-title">🎯 设计重点</div>
+          <div class="annotation-text">
+            <strong>标题</strong>：文档标题<br>
+            <strong>副标题</strong>：产品名 + 公司名<br>
+            <strong>类型标识</strong>：DoC/Manual/Certificate 等
+          </div>
+        </div>
+        <div class="annotation">
+          <div class="annotation-title">📊 数据字段</div>
+          <div class="annotation-text">
+            API: <code>/api/v2/documents</code><br>
+            类型: document_type<br>
+            证书字段: cert_no, standard, issuer<br>
+            缩略图: thumbnail_path
+          </div>
+        </div>
+        <div class="annotation">
+          <div class="annotation-title">🔄 动态内容</div>
+          <div class="annotation-text">
+            <strong>证书类型</strong>：显示证书号、标准、发证机构<br>
+            <strong>其他文档</strong>：显示文件大小、语言版本、文档类型
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 对比表格 -->
+    <div class="card-section">
+      <h2>📋 字段对比表</h2>
+      <p class="description">不同卡片类型展示的信息字段对比</p>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>区域</th>
+            <th>证书卡片</th>
+            <th>产品卡片</th>
+            <th>文档卡片 (DoC)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>标题</strong></td>
+            <td>公司名</td>
+            <td><span class="highlight">产品名</span></td>
+            <td><span class="highlight">文档标题</span></td>
+          </tr>
+          <tr>
+            <td><strong>副标题</strong></td>
+            <td>产品名</td>
+            <td>型号 + 公司名</td>
+            <td>产品名 + 公司名</td>
+          </tr>
+          <tr>
+            <td><strong>详情字段 1</strong></td>
+            <td>证书编号</td>
+            <td><span class="highlight">产品分类</span></td>
+            <td>符合标准</td>
+          </tr>
+          <tr>
+            <td><strong>详情字段 2</strong></td>
+            <td>型号</td>
+            <td><span class="highlight">相关资料数量</span></td>
+            <td>产品型号</td>
+          </tr>
+          <tr>
+            <td><strong>详情字段 3</strong></td>
+            <td>标准</td>
+            <td><span class="highlight">产品描述（可选）</span></td>
+            <td>文档类型</td>
+          </tr>
+          <tr>
+            <td><strong>详情字段 4</strong></td>
+            <td>过期日期</td>
+            <td>-</td>
+            <td>语言版本</td>
+          </tr>
+          <tr>
+            <td><strong>底部左侧</strong></td>
+            <td>发证机构</td>
+            <td>创建时间</td>
+            <td>文件大小</td>
+          </tr>
+          <tr>
+            <td><strong>缩略图来源</strong></td>
+            <td>thumbnailUrl</td>
+            <td><span class="highlight">image_path</span></td>
+            <td>thumbnail_path</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 实现说明 -->
+    <div class="card-section" style="background: #f7fafc; border: 2px solid #3182ce;">
+      <h2>🚀 下一步：先实现产品卡片</h2>
+      <p class="description">我们将首先实现产品卡片，验证设计方案可行性</p>
+
+      <div class="annotations">
+        <div class="annotation" style="border-left-color: #38a169;">
+          <div class="annotation-title">✅ 第一步：接入 API</div>
+          <div class="annotation-text">
+            1. 在 api.js 中添加 getProducts() 函数<br>
+            2. 在 SearchPage 中判断 searchMode === 'product' 时调用新 API<br>
+            3. 测试数据返回是否正常
+          </div>
+        </div>
+        <div class="annotation" style="border-left-color: #d69e2e;">
+          <div class="annotation-title">✅ 第二步：调整卡片渲染</div>
+          <div class="annotation-text">
+            1. 复用现有 .certCard 样式<br>
+            2. 根据数据类型渲染不同字段<br>
+            3. 处理无产品图片的情况（显示占位符）
+          </div>
+        </div>
+        <div class="annotation" style="border-left-color: #805ad5;">
+          <div class="annotation-title">✅ 第三步：测试和优化</div>
+          <div class="annotation-text">
+            1. 测试搜索、筛选、分页功能<br>
+            2. 优化样式细节和响应式布局<br>
+            3. 用户反馈后再调整字段显示
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -13,8 +13,8 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { getCertificates, getStats, getCompanies, getSearchSuggestions } from '../services/api';
+import { Trans, useTranslation } from 'react-i18next';
+import { getCertificates, getStats, getCompanies, getSearchSuggestions, getProducts } from '../services/api';
 import { categories as defaultCategories } from '../data/mockData';
 import { categoryLabel, localizedField } from '../utils/languageContent';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
@@ -211,22 +211,33 @@ export default function SearchPage() {
     // 根据搜索模式决定查询内容
     let certPromise;
     let companyPromise;
+    let productPromise;
 
     if (searchMode === 'company') {
       // 企业模式：只查询企业
       certPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
+      productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       companyPromise = getCompanies({
         search: submittedQuery,
         page: currentPage,
         pageSize: PAGE_SIZE
       }).catch(() => ({ data: [], pagination: { total: 0, totalPages: 1 } }));
     } else if (searchMode === 'product') {
-      // 产品模式：暂时还是查询证书（TODO: 后续需要产品 API）
-      certPromise = getCertificates(params);
+      // 产品模式：查询产品
+      certPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       companyPromise = Promise.resolve({ data: [] });
+      productPromise = getProducts({
+        search: submittedQuery,
+        page: currentPage,
+        pageSize: PAGE_SIZE,
+        categoryId: activeCategory || undefined,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder
+      }).catch(() => ({ data: [], pagination: { total: 0, totalPages: 1 } }));
     } else if (searchMode === 'document') {
       // 资料模式：查询证书/文档
       certPromise = getCertificates(params);
+      productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       companyPromise = Promise.resolve({ data: [] });
     } else {
       // 综合模式：同时查询证书和企业
@@ -234,10 +245,11 @@ export default function SearchPage() {
         ? getCompanies({ search: submittedQuery, pageSize: 3 }).catch(() => ({ data: [] }))
         : Promise.resolve({ data: [] });
       certPromise = getCertificates(params);
+      productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
     }
 
-    Promise.all([certPromise, companyPromise])
-      .then(([certResult, companyResult]) => {
+    Promise.all([certPromise, companyPromise, productPromise])
+      .then(([certResult, companyResult, productResult]) => {
         // 批量更新所有状态，避免中间闪烁
         const updates = {};
 
@@ -261,8 +273,20 @@ export default function SearchPage() {
             updates.totalResults = 0;
             updates.totalPages = 1;
           }
+        } else if (searchMode === 'product') {
+          // 产品模式：使用产品 API 的总数
+          updates.companies = [];
+          if (productResult && Array.isArray(productResult.data)) {
+            updates.results = productResult.data;
+            updates.totalResults = productResult.pagination?.total ?? 0;
+            updates.totalPages = productResult.pagination?.totalPages ?? 1;
+          } else {
+            updates.results = [];
+            updates.totalResults = 0;
+            updates.totalPages = 1;
+          }
         } else {
-          // 产品/资料/综合模式：使用证书 API 的总数
+          // 资料/综合模式：使用证书 API 的总数
           if (certResult) {
             let data = certResult.data || [];
             // relevance 排序：有搜索词时，匹配字段越多越靠前（前端二次排序）
@@ -730,13 +754,13 @@ export default function SearchPage() {
                 <>{t('common.loadFailed')}</>
               ) : searchMode === 'company' ? (
                 // 企业模式：显示企业总数（使用 totalResults 而不是数组长度）
-                <>找到 <strong>{totalResults}</strong> 家企业</>
+                <Trans i18nKey="search.companyResultCount" values={{ count: totalResults }} components={{ strong: <strong /> }} />
               ) : searchMode === 'product' ? (
                 // 产品模式：只显示产品数量
-                <>找到 <strong>{totalResults}</strong> 个产品</>
+                <Trans i18nKey="search.productResultCount" values={{ count: totalResults }} components={{ strong: <strong /> }} />
               ) : searchMode === 'document' ? (
                 // 资料模式：只显示资料数量
-                <>找到 <strong>{totalResults}</strong> 份资料</>
+                <Trans i18nKey="search.documentResultCount" values={{ count: totalResults }} components={{ strong: <strong /> }} />
               ) : matchedCompanies.length > 0 && totalResults === 0 ? (
                 // 综合模式：只有企业
                 <>{t('search.matchedCompanyResult', { count: matchedCompanies.length })}</>
@@ -745,7 +769,7 @@ export default function SearchPage() {
                 <>{t('search.mixedResult', { total: matchedCompanies.length + totalResults })} <em>{t('search.mixedResultDetail', { companyCount: matchedCompanies.length, docCount: totalResults })}</em></>
               ) : (
                 // 综合模式：只有证书
-                <>找到 <strong>{totalResults}</strong> 条结果</>
+                <Trans i18nKey="search.resultCount" values={{ count: totalResults }} components={{ strong: <strong /> }} />
               )}
             </span>
           </div>
@@ -829,57 +853,128 @@ export default function SearchPage() {
         {!error && results.length > 0 ? (
           <>
             <div className={styles.resultList}>
-              {results.map((cert) => (
-                <Link
-                  to={cert.productId ? `/products/${cert.productId}` : `/documents/${cert.id}`}
-                  key={cert.id}
-                  className={styles.certCard}
-                >
-                  <div className={styles.certBody}>
-                    {/* 信息区域 */}
-                    <div className={styles.certContent}>
-                      <div className={styles.certHeader}>
-                        <div className={styles.certMeta}>
-                          <h3 className={styles.certCompany}>{highlightText(cert.companyName)}</h3>
-                          <p className={styles.certProduct}>{highlightText(cert.productName)}</p>
+              {results.map((item) => {
+                // 产品模式：渲染产品卡片
+                if (searchMode === 'product') {
+                  return (
+                    <Link
+                      to={`/products/${item.id}`}
+                      key={`product-${item.id}`}
+                      className={styles.certCard}
+                    >
+                      <div className={styles.certBody}>
+                        <div className={styles.certContent}>
+                          <div className={styles.certHeader}>
+                            <div className={styles.certMeta}>
+                              <h3 className={styles.certCompany}>{highlightText(item.name)}</h3>
+                              <p className={styles.certProduct}>
+                                {item.model && `${item.model} · `}{item.companyName}
+                              </p>
+                            </div>
+                            <StatusBadge status={item.status} />
+                          </div>
+
+                          <div className={styles.certDetails}>
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.productCategory')}</span>
+                              <span className={styles.detailValue}>{item.categoryPath || t('search.uncategorized')}</span>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.relatedDocuments')}</span>
+                              <span className={styles.detailValue}>
+                                {item.certificateCount || 0} {t('search.certificates')} · {item.documentCount || 0} {t('search.documents')}
+                              </span>
+                            </div>
+                            {item.description && (
+                              <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                                <span className={styles.detailLabel}>{t('search.productDescription')}</span>
+                                <span className={styles.detailValue}>
+                                  {item.description.length > 100 ? `${item.description.slice(0, 100)}...` : item.description}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className={styles.certFooter}>
+                            <span className={styles.certIssuer}>
+                              {t('search.createdAt')}: {new Date(item.createdAt).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'zh-CN')}
+                            </span>
+                            <span className={styles.viewDetail}>{t('search.viewProduct')} →</span>
+                          </div>
                         </div>
-                        <StatusBadge status={cert.status} />
+
+                        {/* 产品图片 */}
+                        {item.imageUrl ? (
+                          <div className={styles.certThumb}>
+                            <LazyImage src={item.imageUrl} alt={item.name} />
+                          </div>
+                        ) : (
+                          <div className={styles.certThumb} style={{ background: '#f7fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e0' }}>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                              <circle cx="8.5" cy="8.5" r="1.5" />
+                              <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                }
+
+                // 证书/文档模式：渲染证书卡片
+                return (
+                  <Link
+                    to={item.productId ? `/products/${item.productId}` : `/documents/${item.id}`}
+                    key={item.id}
+                    className={styles.certCard}
+                  >
+                    <div className={styles.certBody}>
+                      {/* 信息区域 */}
+                      <div className={styles.certContent}>
+                        <div className={styles.certHeader}>
+                          <div className={styles.certMeta}>
+                            <h3 className={styles.certCompany}>{highlightText(item.companyName)}</h3>
+                            <p className={styles.certProduct}>{highlightText(item.productName)}</p>
+                          </div>
+                          <StatusBadge status={item.status} />
+                        </div>
+
+                        <div className={styles.certDetails}>
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>{t('certificate.certNo')}</span>
+                            <span className={styles.detailValue}>{highlightText(item.certNo)}</span>
+                          </div>
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>{t('certificate.model')}</span>
+                            <span className={styles.detailValue}>{highlightText(item.model)}</span>
+                          </div>
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>{t('certificate.standard')}</span>
+                            <span className={styles.detailValue}>{item.standard}</span>
+                          </div>
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>{t('certificate.expiryDate')}</span>
+                            <span className={styles.detailValue}>{item.expiryDate}</span>
+                          </div>
+                        </div>
+
+                        <div className={styles.certFooter}>
+                          <span className={styles.certIssuer}>{t('certificate.issuer')}: {item.issuer}</span>
+                          <span className={styles.viewDetail}>{t('certificate.view')} →</span>
+                        </div>
                       </div>
 
-                      <div className={styles.certDetails}>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>{t('certificate.certNo')}</span>
-                          <span className={styles.detailValue}>{highlightText(cert.certNo)}</span>
+                      {/* 缩略图 */}
+                      {item.thumbnailUrl && (
+                        <div className={styles.certThumb}>
+                          <LazyImage src={item.thumbnailUrl} alt={item.productName} />
                         </div>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>{t('certificate.model')}</span>
-                          <span className={styles.detailValue}>{highlightText(cert.model)}</span>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>{t('certificate.standard')}</span>
-                          <span className={styles.detailValue}>{cert.standard}</span>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>{t('certificate.expiryDate')}</span>
-                          <span className={styles.detailValue}>{cert.expiryDate}</span>
-                        </div>
-                      </div>
-
-                      <div className={styles.certFooter}>
-                        <span className={styles.certIssuer}>{t('certificate.issuer')}: {cert.issuer}</span>
-                        <span className={styles.viewDetail}>{t('certificate.view')} →</span>
-                      </div>
+                      )}
                     </div>
-
-                    {/* 缩略图 */}
-                    {cert.thumbnailUrl && (
-                      <div className={styles.certThumb}>
-                        <LazyImage src={cert.thumbnailUrl} alt={cert.productName} />
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
 
             {/* 分页 */}

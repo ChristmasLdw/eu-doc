@@ -31,7 +31,7 @@ const guides = {
       title: 'B端企业使用指南',
       intro: '作为企业用户，您可以通过本平台展示产品合规资料：',
       sections: [
-        ['1. 注册账号', ['访问注册页面', '使用企业邮箱注册账号', '填写企业名称（可选）']],
+        ['1. 注册账号', [{ prefix: '访问', label: '注册页面', to: '/admin/register' }, '使用企业邮箱注册账号', '填写企业名称（可选）']],
         ['2. 创建企业', ['登录后进入管理后台', '在企业资料页面创建企业', '创建者自动成为企业所有者']],
         ['3. 批量上传资料', ['进入“批量上传”页面', '选择目标企业并上传产品资料文件夹', '按系统引导确认产品、型号、资料类型与语言']],
         ['4. 管理产品资料', ['在“产品资料”页面查看已归档资料', '补充产品名称、型号、尺寸、材质等基础信息', '对缺失资料进行补充上传或替换']],
@@ -83,7 +83,7 @@ const guides = {
       title: 'Company Guide',
       intro: 'As a company user, you can present public product compliance documentation through EU-DOC:',
       sections: [
-        ['1. Register an account', ['Open the registration page', 'Register with a company email address', 'Enter the company name if needed']],
+        ['1. Register an account', [{ prefix: 'Open the', label: 'registration page', to: '/admin/register' }, 'Register with a company email address', 'Enter the company name if needed']],
         ['2. Create a company profile', ['Log in and enter the admin console', 'Create a company from the company profile area', 'The creator becomes the company owner automatically']],
         ['3. Batch upload documentation', ['Open the Batch Upload page', 'Choose the target company and upload a product documentation folder', 'Follow the guided checks to confirm product, models, document type, and language']],
         ['4. Manage product documentation', ['Open Product Documentation to review archived materials', 'Complete product name, model, dimensions, material, and other basic information', 'Upload or replace missing documentation where needed']],
@@ -145,7 +145,9 @@ function GuideSection({ data, tone = 'rgba(59, 130, 246, 0.1)' }) {
           <h3>{title}</h3>
           <ul>
             {items.map((item) => (
-              <li key={item}>{item === '访问注册页面' ? <><span>访问 </span><Link to="/admin/register">注册页面</Link></> : item}</li>
+              <li key={typeof item === 'string' ? item : `${item.to}-${item.label}`}>
+                {typeof item === 'string' ? item : <>{item.prefix} <Link to={item.to}>{item.label}</Link></>}
+              </li>
             ))}
           </ul>
         </div>
