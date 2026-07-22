@@ -962,8 +962,24 @@ export default function SearchPage() {
                 if (searchMode === 'document') {
                   const docType = item.documentType || 'other';
 
-                  // 证书类型：使用原来的证书卡片样式
-                  if (docType === 'certificate') {
+                  // 判断是否为 DoC 类型（兼容多种命名方式）
+                  const isDoC = docType === 'declaration_of_conformity' ||
+                                docType === 'declaration' ||
+                                docType === 'doc' ||
+                                (item.title && (item.title.toLowerCase().includes('declaration of conformity') ||
+                                               item.title.toLowerCase().includes('doc')));
+
+                  // 调试输出
+                  console.log('Document card debug:', {
+                    id: item.id,
+                    title: item.title,
+                    documentType: docType,
+                    isDoC: isDoC,
+                    isCertificate: docType === 'certificate'
+                  });
+
+                  // 证书类型：使用原来的证书卡片样式（排除 DoC）
+                  if (docType === 'certificate' && !isDoC) {
                     return (
                       <Link
                         to={`/documents/${item.id}`}
@@ -1032,10 +1048,10 @@ export default function SearchPage() {
                               </p>
                             </div>
                             <span className={styles.status} style={{
-                              background: docType === 'declaration_of_conformity' ? '#d1ecf1' :
+                              background: isDoC ? '#d1ecf1' :
                                          docType === 'manual' ? '#d1f2eb' :
                                          docType === 'test_report' ? '#e8daef' : '#e2e8f0',
-                              color: docType === 'declaration_of_conformity' ? '#0c5460' :
+                              color: isDoC ? '#0c5460' :
                                      docType === 'manual' ? '#0c5460' :
                                      docType === 'test_report' ? '#6c3483' : '#495057',
                               padding: '4px 12px',
@@ -1043,7 +1059,7 @@ export default function SearchPage() {
                               fontSize: '12px',
                               fontWeight: '600'
                             }}>
-                              {docType === 'declaration_of_conformity' ? 'DoC' :
+                              {isDoC ? 'DoC' :
                                docType === 'manual' ? t('search.manual') :
                                docType === 'test_report' ? t('search.report') : t('search.document')}
                             </span>
