@@ -963,11 +963,15 @@ export default function SearchPage() {
                   const docType = item.documentType || 'other';
 
                   // 判断是否为 DoC 类型（兼容多种命名方式）
+                  // 优先通过标题判断，因为数据库中很多 DoC 的 document_type 还是 certificate
+                  const titleLower = (item.title || '').toLowerCase();
                   const isDoC = docType === 'declaration_of_conformity' ||
                                 docType === 'declaration' ||
                                 docType === 'doc' ||
-                                (item.title && (item.title.toLowerCase().includes('declaration of conformity') ||
-                                               item.title.toLowerCase().includes('doc')));
+                                titleLower.includes('declaration of conformity') ||
+                                titleLower.includes(' - doc') ||
+                                titleLower.endsWith('doc') ||
+                                /\bdoc\b/i.test(item.title || '');
 
                   // 调试输出
                   console.log('Document card debug:', {
@@ -975,7 +979,7 @@ export default function SearchPage() {
                     title: item.title,
                     documentType: docType,
                     isDoC: isDoC,
-                    isCertificate: docType === 'certificate'
+                    isCertificate: docType === 'certificate' && !isDoC
                   });
 
                   // 证书类型：使用原来的证书卡片样式（排除 DoC）

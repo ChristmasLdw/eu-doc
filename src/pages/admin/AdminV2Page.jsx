@@ -68,6 +68,59 @@ const MEMBER_ROLE_TRANSLATIONS = {
   viewer: { labelKey: 'admin.memberManagement.roles.viewer', scopeKey: 'admin.memberManagement.scopes.viewer' },
 };
 
+const NOTIFICATION_FILTERS = [
+  { value: 'all', labelKey: 'admin.notifications.filters.all' },
+  { value: 'unread', labelKey: 'admin.notifications.filters.unread' },
+  { value: 'companyVerification', labelKey: 'admin.notifications.filters.companyVerification' },
+  { value: 'documentUpdate', labelKey: 'admin.notifications.filters.documentUpdate' },
+  { value: 'system', labelKey: 'admin.notifications.filters.system' },
+];
+
+const NOTIFICATION_CONTENT_KEYS = {
+  company_verification_approved: { titleKey: 'admin.notifications.content.companyVerificationApproved.title', descKey: 'admin.notifications.content.companyVerificationApproved.desc', category: 'companyVerification' },
+  company_verification_rejected: { titleKey: 'admin.notifications.content.companyVerificationRejected.title', descKey: 'admin.notifications.content.companyVerificationRejected.desc', category: 'companyVerification' },
+  document_review_approved: { titleKey: 'admin.notifications.content.documentReviewApproved.title', descKey: 'admin.notifications.content.documentReviewApproved.desc', category: 'documentUpdate' },
+  document_review_rejected: { titleKey: 'admin.notifications.content.documentReviewRejected.title', descKey: 'admin.notifications.content.documentReviewRejected.desc', category: 'documentUpdate' },
+};
+
+function normalizeNotificationStatus(status) {
+  if (status === '已读' || status === 'read') return 'read';
+  if (status === '待处理' || status === 'action_required') return 'actionRequired';
+  return 'unread';
+}
+
+function inferNotificationType(title = '') {
+  const typeByTitle = {
+    企业认证已通过: 'company_verification_approved',
+    企业认证需要补充: 'company_verification_rejected',
+    资料审核已通过: 'document_review_approved',
+    资料审核未通过: 'document_review_rejected',
+  };
+  return typeByTitle[title] || 'system';
+}
+
+function parseNotificationMetadata(item = {}, type = '') {
+  if (item.metadata) {
+    try {
+      return typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+    } catch {
+      // Fall back to legacy description parsing below.
+    }
+  }
+  const description = String(item.description || '');
+  if (type.startsWith('company_verification_')) {
+    const companyName = description.match(/企业「([^」]+)」/)?.[1] || '';
+    const note = description.match(/原因：(.+)$/)?.[1] || '';
+    return { companyName, note };
+  }
+  if (type.startsWith('document_review_')) {
+    const match = description.match(/企业「([^」]+)」的资料「([^」]+)」/);
+    const note = description.match(/审核意见：(.+)$/)?.[1] || '';
+    return { companyName: match?.[1] || '', documentTitle: match?.[2] || '', note };
+  }
+  return {};
+}
+
 function isCompanyVerified(company = {}) {
   return company.verificationStatus === 'verified' || company.status === '已认证';
 }
@@ -677,6 +730,7 @@ export default function AdminV2Page() {
   ]);
   const [recentlyDeletedItems, setRecentlyDeletedItems] = useState([]);
   const [notificationItems, setNotificationItems] = useState([]);
+  const [notificationFilter, setNotificationFilter] = useState('all');
   const [loginRecords, setLoginRecords] = useState([]);
   const [companyMembers, setCompanyMembers] = useState([]);
   const [memberPermissions, setMemberPermissions] = useState({});
@@ -827,14 +881,19 @@ export default function AdminV2Page() {
           item.id,
           item.itemId,
         ]));
-        setNotificationItems((data.notifications || []).map((item) => ({
-          id: item.id,
-          title: item.title,
-          desc: item.description,
-          status: item.status,
-          tone: item.tone,
-          pinned: Boolean(item.pinned),
-        })));
+        setNotificationItems((data.notifications || []).map((item) => {
+          const notificationType = item.notificationType || inferNotificationType(item.title);
+          return {
+            id: item.id,
+            title: item.title,
+            desc: item.description,
+            statusCode: normalizeNotificationStatus(item.status),
+            notificationType,
+            metadata: parseNotificationMetadata(item, notificationType),
+            tone: item.tone,
+            pinned: Boolean(item.pinned),
+          };
+        }));
         setLoginRecords(data.loginRecords || []);
       })
       .catch((error) => showAction(error.message || '个人数据读取失败'));
@@ -903,12 +962,27 @@ export default function AdminV2Page() {
       return `${log.companyName || ''} ${log.actorName || ''} ${log.actorEmail || ''} ${getActivityDescription(log)} ${ACTIVITY_ACTIONS[log.action] || log.action || ''}`.toLowerCase().includes(query);
     });
   }, [platformActivity, platformActivityFilters]);
-  const unreadNotificationCount = notificationItems.filter((item) => item.status === '未读' || item.status === '待处理').length;
-  const verificationNotice = notificationItems.find((item) => item.status === '未读' && item.title?.includes('企业认证'));
+  const unreadNotificationCount = notificationItems.filter((item) => item.statusCode === 'unread' || item.statusCode === 'actionRequired').length;
+  const filteredNotificationItems = useMemo(() => notificationItems.filter((item) => {
+    if (notificationFilter === 'all') return true;
+    if (notificationFilter === 'unread') return item.statusCode === 'unread' || item.statusCode === 'actionRequired';
+    const category = NOTIFICATION_CONTENT_KEYS[item.notificationType]?.category || 'system';
+    return category === notificationFilter;
+  }), [notificationFilter, notificationItems]);
+  const verificationNotice = notificationItems.find((item) => item.statusCode === 'unread' && NOTIFICATION_CONTENT_KEYS[item.notificationType]?.category === 'companyVerification');
+
+  const getNotificationContent = (item) => {
+    const contentKeys = NOTIFICATION_CONTENT_KEYS[item.notificationType];
+    if (!contentKeys) return { title: item.title, desc: item.desc };
+    return {
+      title: t(contentKeys.titleKey, item.metadata),
+      desc: t(contentKeys.descKey, item.metadata),
+    };
+  };
 
   const markNotificationItemRead = async (id) => {
     await api.markNotificationRead(id);
-    setNotificationItems((items) => items.map((item) => item.id === id ? { ...item, status: '已读' } : item));
+    setNotificationItems((items) => items.map((item) => item.id === id ? { ...item, statusCode: 'read' } : item));
   };
 
   const openNotificationCenter = () => openPage('personal', 'notifications');
@@ -3172,33 +3246,51 @@ export default function AdminV2Page() {
           <Section title={t('admin.notifications.title')} desc={t('admin.notifications.desc')}>
             <div className={styles.notificationTopBar}>
               <div>
-                <h3>通知中心</h3>
-                <p>重要通知会置顶显示，后续可扩展邮件通知。</p>
+                <h3>{t('admin.notifications.centerTitle')}</h3>
+                <p>{t('admin.notifications.centerDesc')}</p>
               </div>
-              <button className={styles.secondaryBtn} onClick={async () => { try { await api.markAllNotificationsRead(); setNotificationItems((items) => items.map((item) => ({ ...item, status: item.status === '待处理' ? item.status : '已读' }))); showAction('已全部标记为已读'); } catch (error) { showAction(error.message || '标记失败'); } }}>全部标记已读</button>
+              <button className={styles.secondaryBtn} onClick={async () => {
+                try {
+                  await api.markAllNotificationsRead();
+                  setNotificationItems((items) => items.map((item) => ({ ...item, statusCode: item.statusCode === 'actionRequired' ? item.statusCode : 'read' })));
+                  showAction(t('admin.notifications.allMarkedRead'));
+                } catch (error) {
+                  showAction(error.message || t('admin.notifications.markFailed'));
+                }
+              }}>{t('admin.notifications.markAllRead')}</button>
             </div>
 
             <div className={styles.toolbar}>
-              {['全部', '未读', '企业认证', '资料变更', '系统通知'].map((item, index) => (
-                <button key={item} className={index === 0 ? styles.primaryBtn : styles.secondaryBtn}>{item}</button>
+              {NOTIFICATION_FILTERS.map((item) => (
+                <button key={item.value} className={notificationFilter === item.value ? styles.primaryBtn : styles.secondaryBtn} onClick={() => setNotificationFilter(item.value)}>{t(item.labelKey)}</button>
               ))}
             </div>
 
             <div className={styles.notificationList}>
-              {notificationItems.length === 0 && (
-                <div className={styles.emptyState}>暂无消息提醒。认证结果、资料变更等真实业务消息会显示在这里。</div>
+              {filteredNotificationItems.length === 0 && (
+                <div className={styles.emptyState}>{notificationItems.length === 0 ? t('admin.notifications.empty') : t('admin.notifications.noFilteredResults')}</div>
               )}
-              {notificationItems.map(({ id, title, desc, status, tone, pinned }) => (
-                <article key={id || title} className={`${styles.notificationItem} ${pinned ? styles.notificationPinned : ''}`}>
-                  <div className={`${styles.noticeDot} ${styles[tone]}`} />
-                  <div>
-                    <h3>{pinned ? '置顶 · ' : ''}{title}</h3>
-                    <p>{desc}</p>
-                  </div>
-                  <span>{status}</span>
-                  <button className={styles.secondaryBtn} disabled={status === '已读'} onClick={async () => { try { await markNotificationItemRead(id); showAction('通知已标记为已读'); } catch (error) { showAction(error.message || '操作失败'); } }}>{status === '已读' ? '已读' : '标记已读'}</button>
-                </article>
-              ))}
+              {filteredNotificationItems.map((item) => {
+                const content = getNotificationContent(item);
+                return (
+                  <article key={item.id || content.title} className={`${styles.notificationItem} ${item.pinned ? styles.notificationPinned : ''}`}>
+                    <div className={`${styles.noticeDot} ${styles[item.tone]}`} />
+                    <div>
+                      <h3>{item.pinned ? `${t('admin.notifications.pinned')} · ` : ''}{content.title}</h3>
+                      <p>{content.desc}</p>
+                    </div>
+                    <span>{t(`admin.notifications.statuses.${item.statusCode}`)}</span>
+                    <button className={styles.secondaryBtn} disabled={item.statusCode === 'read'} onClick={async () => {
+                      try {
+                        await markNotificationItemRead(item.id);
+                        showAction(t('admin.notifications.markedRead'));
+                      } catch (error) {
+                        showAction(error.message || t('admin.common.operationFailed'));
+                      }
+                    }}>{item.statusCode === 'read' ? t('admin.notifications.statuses.read') : t('admin.notifications.markRead')}</button>
+                  </article>
+                );
+              })}
             </div>
           </Section>
         );
@@ -4778,12 +4870,12 @@ export default function AdminV2Page() {
           {verificationNotice && activePage !== 'notifications' && (
             <div className={styles.verificationNoticeBanner}>
               <div>
-                <strong>{verificationNotice.title}</strong>
-                <p>{verificationNotice.desc}</p>
+                <strong>{getNotificationContent(verificationNotice).title}</strong>
+                <p>{getNotificationContent(verificationNotice).desc}</p>
               </div>
               <div className={styles.verificationNoticeActions}>
-                <button className={styles.primaryBtn} onClick={openNotificationCenter}>查看通知</button>
-                <button className={styles.secondaryBtn} onClick={async () => { try { await markNotificationItemRead(verificationNotice.id); showAction('通知已标记为已读'); } catch (error) { showAction(error.message || '操作失败'); } }}>知道了</button>
+                <button className={styles.primaryBtn} onClick={openNotificationCenter}>{t('admin.notifications.viewNotification')}</button>
+                <button className={styles.secondaryBtn} onClick={async () => { try { await markNotificationItemRead(verificationNotice.id); showAction(t('admin.notifications.markedRead')); } catch (error) { showAction(error.message || t('admin.common.operationFailed')); } }}>{t('admin.notifications.gotIt')}</button>
               </div>
             </div>
           )}
