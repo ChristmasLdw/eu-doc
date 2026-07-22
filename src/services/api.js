@@ -906,6 +906,43 @@ export function getCompanyDocuments(companyId, options = {}) {
   });
 }
 
+/** 搜索文档列表（支持分页、搜索、筛选、排序） */
+export function getDocuments(params = {}) {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', params.page);
+  if (params.pageSize) query.set('pageSize', params.pageSize);
+  if (params.search) query.set('search', params.search);
+  if (params.companyId) query.set('companyId', params.companyId);
+  if (params.productId) query.set('productId', params.productId);
+  if (params.documentType) query.set('documentType', params.documentType);
+  if (params.reviewStatus) query.set('reviewStatus', params.reviewStatus);
+  if (params.status) query.set('status', params.status);
+  if (params.sortBy) query.set('sortBy', params.sortBy);
+  if (params.sortOrder) query.set('sortOrder', params.sortOrder);
+
+  return request(`/v2/documents?${query.toString()}`, { raw: true }).then((response) => {
+    if (response && Array.isArray(response.data)) {
+      response.data = response.data.map((doc) => {
+        const mapped = keysToCamelCase(doc);
+        // 处理文件路径
+        if (mapped.filePath !== undefined) {
+          mapped.fileUrl = withBasename(mapped.filePath);
+          delete mapped.filePath;
+        }
+        if (mapped.thumbnailPath !== undefined) {
+          mapped.thumbnailUrl = withBasename(mapped.thumbnailPath);
+          delete mapped.thumbnailPath;
+        }
+        return mapped;
+      });
+    }
+    if (response && response.pagination) {
+      response.pagination = keysToCamelCase(response.pagination);
+    }
+    return response;
+  });
+}
+
 export function createProduct(data) {
   return request('/v2/products', {
     method: 'POST',

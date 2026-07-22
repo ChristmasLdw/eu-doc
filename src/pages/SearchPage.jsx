@@ -14,7 +14,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { getCertificates, getStats, getCompanies, getSearchSuggestions, getProducts } from '../services/api';
+import { getCertificates, getStats, getCompanies, getSearchSuggestions, getProducts, getDocuments } from '../services/api';
 import { categories as defaultCategories } from '../data/mockData';
 import { categoryLabel, localizedField } from '../utils/languageContent';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
@@ -212,11 +212,13 @@ export default function SearchPage() {
     let certPromise;
     let companyPromise;
     let productPromise;
+    let documentPromise;
 
     if (searchMode === 'company') {
       // 企业模式：只查询企业
       certPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
+      documentPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       companyPromise = getCompanies({
         search: submittedQuery,
         page: currentPage,
@@ -225,6 +227,7 @@ export default function SearchPage() {
     } else if (searchMode === 'product') {
       // 产品模式：查询产品
       certPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
+      documentPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       companyPromise = Promise.resolve({ data: [] });
       productPromise = getProducts({
         search: submittedQuery,
@@ -235,10 +238,26 @@ export default function SearchPage() {
         sortOrder: params.sortOrder
       }).catch(() => ({ data: [], pagination: { total: 0, totalPages: 1 } }));
     } else if (searchMode === 'document') {
-      // 资料模式：查询证书/文档
-      certPromise = getCertificates(params);
+      // 资料模式：查询文档
+      certPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
       companyPromise = Promise.resolve({ data: [] });
+
+      // 使用文档 API，支持按文档类型筛选
+      const docParams = {
+        search: submittedQuery,
+        page: currentPage,
+        pageSize: PAGE_SIZE,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder
+      };
+
+      // 如果选择了具体的文档类型，传递给 API
+      if (documentType && documentType !== 'all') {
+        docParams.documentType = documentType;
+      }
+
+      documentPromise = getDocuments(docParams).catch(() => ({ data: [], pagination: { total: 0, totalPages: 1 } }));
     } else {
       // 综合模式：同时查询证书和企业
       companyPromise = (submittedQuery && currentPage === 1)
@@ -246,10 +265,11 @@ export default function SearchPage() {
         : Promise.resolve({ data: [] });
       certPromise = getCertificates(params);
       productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
+      documentPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
     }
 
-    Promise.all([certPromise, companyPromise, productPromise])
-      .then(([certResult, companyResult, productResult]) => {
+    Promise.all([certPromise, companyPromise, productPromise, documentPromise])
+      .then(([certResult, companyResult, productResult, docResult]) => {
         // 批量更新所有状态，避免中间闪烁
         const updates = {};
 
@@ -280,6 +300,18 @@ export default function SearchPage() {
             updates.results = productResult.data;
             updates.totalResults = productResult.pagination?.total ?? 0;
             updates.totalPages = productResult.pagination?.totalPages ?? 1;
+          } else {
+            updates.results = [];
+            updates.totalResults = 0;
+            updates.totalPages = 1;
+          }
+        } else if (searchMode === 'document') {
+          // 文档模式：使用文档 API 的总数
+          updates.companies = [];
+          if (docResult && Array.isArray(docResult.data)) {
+            updates.results = docResult.data;
+            updates.totalResults = docResult.pagination?.total ?? 0;
+            updates.totalPages = docResult.pagination?.totalPages ?? 1;
           } else {
             updates.results = [];
             updates.totalResults = 0;
@@ -926,7 +958,110 @@ export default function SearchPage() {
                   );
                 }
 
-                // 证书/文档模式：渲染证书卡片
+                // 文档模式：渲染文档卡片
+                if (searchMode === 'document') {
+                  const docType = item.documentType || 'other';
+                  const isCertificate = docType === 'certificate';
+
+                  return (
+                    <Link
+                      to={`/documents/${item.id}`}
+                      key={`doc-${item.id}`}
+                      className={styles.certCard}
+                    >
+                      <div className={styles.certBody}>
+                        <div className={styles.certContent}>
+                          <div className={styles.certHeader}>
+                            <div className={styles.certMeta}>
+                              <h3 className={styles.certCompany}>{highlightText(item.title || item.productName)}</h3>
+                              <p className={styles.certProduct}>
+                                {item.productName} · {item.companyName}
+                              </p>
+                            </div>
+                            <span className={styles.status} style={{
+                              background: docType === 'declaration_of_conformity' ? '#d1ecf1' :
+                                         docType === 'certificate' ? '#d4edda' :
+                                         docType === 'manual' ? '#d1f2eb' : '#e2e8f0',
+                              color: docType === 'declaration_of_conformity' ? '#0c5460' :
+                                     docType === 'certificate' ? '#155724' :
+                                     docType === 'manual' ? '#0c5460' : '#495057',
+                              padding: '4px 12px',
+                              borderRadius: '999px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              {docType === 'declaration_of_conformity' ? 'DoC' :
+                               docType === 'certificate' ? t('search.certificate') :
+                               docType === 'manual' ? t('search.manual') :
+                               docType === 'test_report' ? t('search.report') : t('search.document')}
+                            </span>
+                          </div>
+
+                          <div className={styles.certDetails}>
+                            {isCertificate && item.certNo && (
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.certNo')}</span>
+                                <span className={styles.detailValue}>{highlightText(item.certNo)}</span>
+                              </div>
+                            )}
+                            {isCertificate && item.standard && (
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.standard')}</span>
+                                <span className={styles.detailValue}>{item.standard}</span>
+                              </div>
+                            )}
+                            {!isCertificate && (
+                              <>
+                                <div className={styles.detailItem}>
+                                  <span className={styles.detailLabel}>{t('search.documentStandard')}</span>
+                                  <span className={styles.detailValue}>{item.standard || item.certNo || '-'}</span>
+                                </div>
+                                <div className={styles.detailItem}>
+                                  <span className={styles.detailLabel}>{t('search.productModel')}</span>
+                                  <span className={styles.detailValue}>{item.productModel || '-'}</span>
+                                </div>
+                              </>
+                            )}
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.belongsToCompany')}</span>
+                              <span className={styles.detailValue}>{item.companyName}</span>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.language')}</span>
+                              <span className={styles.detailValue}>{item.language ? item.language.toUpperCase() : '-'}</span>
+                            </div>
+                          </div>
+
+                          <div className={styles.certFooter}>
+                            <span className={styles.certIssuer}>
+                              {item.fileSize ? `${(item.fileSize / 1024).toFixed(0)} KB` : 'PDF'}
+                            </span>
+                            <span className={styles.viewDetail}>{t('search.viewDocument')} →</span>
+                          </div>
+                        </div>
+
+                        {/* 文档缩略图 */}
+                        {item.thumbnailUrl ? (
+                          <div className={styles.certThumb}>
+                            <LazyImage src={item.thumbnailUrl} alt={item.title} />
+                          </div>
+                        ) : (
+                          <div className={styles.certThumb} style={{ background: '#f7fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e0' }}>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                              <line x1="16" y1="13" x2="8" y2="13" />
+                              <line x1="16" y1="17" x2="8" y2="17" />
+                              <polyline points="10 9 9 9 8 9" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                }
+
+                // 证书/综合模式：渲染证书卡片
                 return (
                   <Link
                     to={item.productId ? `/products/${item.productId}` : `/documents/${item.id}`}

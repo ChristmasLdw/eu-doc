@@ -4408,7 +4408,7 @@ export default function AdminV2Page() {
                       <article key={document.id} className={styles.documentReviewFile}>
                         <div>
                           <strong>{document.title || `资料 #${document.id}`}</strong>
-                          <span>{document.productName || '未关联产品'} · {importTypeLabel(document.documentType)} · {document.uploadedByName || '企业成员'}</span>
+                          <span>{document.productName || t('admin.fileManagement.unlinkedProduct')} · {t(documentTypeLabelKey(document.documentType))} · {document.uploadedByName || t('admin.memberManagement.companyMember')}</span>
                           <em>{formatActivityTime(document.createdAt)}</em>
                         </div>
                         <div className={styles.documentReviewFileActions}>
@@ -5054,27 +5054,27 @@ export default function AdminV2Page() {
                     )}
                     <div className={styles.categoryGroupStack}>
                       <div className={styles.categoryGroupBox}>
-                        <div className={styles.categoryGroupTitle}>C端分类</div>
+                        <div className={styles.categoryGroupTitle}>{t('admin.productManagement.consumerCategory')}</div>
                         <div className={styles.modalFormGrid}>
                           <label>
-                            <span>一级分类</span>
+                            <span>{t('admin.productManagement.primaryCategory')}</span>
                             <select value={selectedConsumerTopId} onChange={(event) => changeConsumerTopCategory(event.target.value)}>
-                              <option value="">其他 / 待分类</option>
+                              <option value="">{t('admin.productManagement.uncategorized')}</option>
                               {topConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                             </select>
                           </label>
                           <label>
-                            <span>二级分类</span>
+                            <span>{t('admin.productManagement.secondaryCategory')}</span>
                             <select value={selectedConsumerSecondId} onChange={(event) => changeConsumerSecondCategory(event.target.value)} disabled={!selectedConsumerTopId || !secondConsumerCategories.length}>
-                              <option value="">{selectedConsumerTopId ? '不选择二级分类' : '请先选择一级分类'}</option>
+                              <option value="">{selectedConsumerTopId ? t('admin.productManagement.noSecondaryCategory') : t('admin.productManagement.selectPrimaryFirst')}</option>
                               {secondConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                             </select>
                           </label>
                           {thirdConsumerCategories.length > 0 && (
                             <label>
-                              <span>三级分类（可选）</span>
+                              <span>{t('admin.productManagement.tertiaryCategoryOptional')}</span>
                               <select value={selectedConsumerThirdId} onChange={(event) => changeConsumerThirdCategory(event.target.value)}>
-                                <option value="">不选择三级分类</option>
+                                <option value="">{t('admin.productManagement.noTertiaryCategory')}</option>
                                 {thirdConsumerCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                               </select>
                             </label>
@@ -5083,19 +5083,19 @@ export default function AdminV2Page() {
                       </div>
 
                       <div className={styles.categoryGroupBox}>
-                        <div className={styles.categoryGroupTitle}>审核分类</div>
+                        <div className={styles.categoryGroupTitle}>{t('admin.productManagement.complianceCategory')}</div>
                         <div className={styles.modalFormGrid}>
                           <label>
-                            <span>一级分类</span>
+                            <span>{t('admin.productManagement.primaryCategory')}</span>
                             <select value={selectedComplianceTopId} onChange={(event) => changeComplianceTopCategory(event.target.value)}>
-                              <option value="">暂不选择</option>
+                              <option value="">{t('admin.productManagement.notSelected')}</option>
                               {topComplianceCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                             </select>
                           </label>
                           <label>
-                            <span>二级分类</span>
+                            <span>{t('admin.productManagement.secondaryCategory')}</span>
                             <select value={selectedComplianceSecondId} onChange={(event) => changeComplianceSecondCategory(event.target.value)} disabled={!selectedComplianceTopId || !secondComplianceCategories.length}>
-                              <option value="">{selectedComplianceTopId ? '不选择二级分类' : '请先选择一级分类'}</option>
+                              <option value="">{selectedComplianceTopId ? t('admin.productManagement.noSecondaryCategory') : t('admin.productManagement.selectPrimaryFirst')}</option>
                               {secondComplianceCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                             </select>
                           </label>
@@ -5105,52 +5105,52 @@ export default function AdminV2Page() {
                   </section>
 
                   <section className={styles.productEditBlock}>
-                    <div className={styles.productEditBlockTitle}>适用型号</div>
-                    <p className={styles.productEditHint}>一个产品系列可以包含多个型号；每个型号单独成框，避免后续证书和资料归档混乱。</p>
+                    <div className={styles.productEditBlockTitle}>{t('admin.productManagement.applicableModels')}</div>
+                    <p className={styles.productEditHint}>{t('admin.productManagement.modelsHint')}</p>
                     <div className={styles.productModelEditor}>
                       {productModal.models.map((model, index) => (
                         <div key={`${index}-${productModal.models.length}`} className={styles.productModelPill}>
-                          <input value={model} onChange={(event) => updateProductModel(index, event.target.value)} placeholder={`型号 ${index + 1}`} />
+                          <input value={model} onChange={(event) => updateProductModel(index, event.target.value)} placeholder={t('admin.productManagement.modelNumber', { number: index + 1 })} />
                           <button type="button" onClick={() => removeProductModel(index)}>×</button>
                         </div>
                       ))}
-                      <button type="button" className={styles.addModelMiniBtn} onClick={addProductModel}>+ 型号</button>
+                      <button type="button" className={styles.addModelMiniBtn} onClick={addProductModel}>+ {t('admin.productManagement.model')}</button>
                     </div>
                   </section>
 
                   <section className={styles.productEditBlock}>
-                    <div className={styles.productEditBlockTitle}>前台展示参数</div>
+                    <div className={styles.productEditBlockTitle}>{t('admin.productManagement.publicDisplayParameters')}</div>
                     <div className={styles.modalFormGrid}>
-                      <label><span>产品尺寸</span><input value={productModal.dimensions} onChange={(event) => setProductModal((form) => ({ ...form, dimensions: event.target.value }))} placeholder="例如 280 × 220 × 180 mm" /></label>
-                      <label><span>重量</span><input value={productModal.weight} onChange={(event) => setProductModal((form) => ({ ...form, weight: event.target.value }))} placeholder="例如 520 g" /></label>
-                      <label><span>材质</span><input value={productModal.material} onChange={(event) => setProductModal((form) => ({ ...form, material: event.target.value }))} placeholder="例如 ABS 外壳 / EPS 内衬" /></label>
-                      <label><span>适用场景</span><input value={productModal.usageScenario} onChange={(event) => setProductModal((form) => ({ ...form, usageScenario: event.target.value }))} placeholder="例如 马术训练、骑乘防护" /></label>
-                      <label><span>颜色/外观</span><input value={productModal.color} onChange={(event) => setProductModal((form) => ({ ...form, color: event.target.value }))} placeholder="例如 黑色、白色、哑光" /></label>
-                      <label><span>产地/生产地</span><input value={productModal.originCountry} onChange={(event) => setProductModal((form) => ({ ...form, originCountry: event.target.value }))} placeholder="例如 China / EU" /></label>
-                      <label><span>保修/服务</span><input value={productModal.warranty} onChange={(event) => setProductModal((form) => ({ ...form, warranty: event.target.value }))} placeholder="例如 12个月有限保修" /></label>
-                      <label><span>包装内容</span><input value={productModal.packageContents} onChange={(event) => setProductModal((form) => ({ ...form, packageContents: event.target.value }))} placeholder="例如 头盔、说明书、收纳袋" /></label>
+                      <label><span>{t('admin.productManagement.dimensions')}</span><input value={productModal.dimensions} onChange={(event) => setProductModal((form) => ({ ...form, dimensions: event.target.value }))} placeholder={t('admin.productManagement.dimensionsPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.weight')}</span><input value={productModal.weight} onChange={(event) => setProductModal((form) => ({ ...form, weight: event.target.value }))} placeholder={t('admin.productManagement.weightPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.material')}</span><input value={productModal.material} onChange={(event) => setProductModal((form) => ({ ...form, material: event.target.value }))} placeholder={t('admin.productManagement.materialPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.usageScenario')}</span><input value={productModal.usageScenario} onChange={(event) => setProductModal((form) => ({ ...form, usageScenario: event.target.value }))} placeholder={t('admin.productManagement.usageScenarioPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.color')}</span><input value={productModal.color} onChange={(event) => setProductModal((form) => ({ ...form, color: event.target.value }))} placeholder={t('admin.productManagement.colorPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.originCountry')}</span><input value={productModal.originCountry} onChange={(event) => setProductModal((form) => ({ ...form, originCountry: event.target.value }))} placeholder={t('admin.productManagement.originCountryPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.warranty')}</span><input value={productModal.warranty} onChange={(event) => setProductModal((form) => ({ ...form, warranty: event.target.value }))} placeholder={t('admin.productManagement.warrantyPlaceholder')} /></label>
+                      <label><span>{t('admin.productManagement.packageContents')}</span><input value={productModal.packageContents} onChange={(event) => setProductModal((form) => ({ ...form, packageContents: event.target.value }))} placeholder={t('admin.productManagement.packageContentsPlaceholder')} /></label>
                     </div>
                   </section>
 
                   <section className={styles.productEditBlock}>
-                    <div className={styles.productEditBlockTitle}>页面展示内容</div>
+                    <div className={styles.productEditBlockTitle}>{t('admin.productManagement.pageContent')}</div>
                     <div className={styles.modalFormGrid}>
-                      <label className={styles.fullField}><span>产品说明</span><textarea rows="4" value={productModal.description} onChange={(event) => setProductModal((form) => ({ ...form, description: event.target.value }))} placeholder="给用户看的简短介绍、用途、注意事项" /></label>
-                      <label className={styles.fullField}><span>英文说明（可选）</span><textarea rows="3" value={productModal.descriptionEn} onChange={(event) => setProductModal((form) => ({ ...form, descriptionEn: event.target.value }))} placeholder="多语言页面可用" /></label>
+                      <label className={styles.fullField}><span>{t('admin.productManagement.productDescription')}</span><textarea rows="4" value={productModal.description} onChange={(event) => setProductModal((form) => ({ ...form, description: event.target.value }))} placeholder={t('admin.productManagement.publicDescriptionPlaceholder')} /></label>
+                      <label className={styles.fullField}><span>{t('admin.productManagement.englishDescriptionOptional')}</span><textarea rows="3" value={productModal.descriptionEn} onChange={(event) => setProductModal((form) => ({ ...form, descriptionEn: event.target.value }))} placeholder={t('admin.productManagement.englishDescriptionPlaceholder')} /></label>
                     </div>
                   </section>
 
                   {productModal.product && (
                     <section className={styles.productEditBlock}>
-                      <div className={styles.productEditBlockTitle}>关联资料</div>
+                      <div className={styles.productEditBlockTitle}>{t('admin.productManagement.relatedDocuments')}</div>
                       <div className={styles.productEditFiles}>
                         {getProductDocuments(productModal.product, companyDocuments).length ? getProductDocuments(productModal.product, companyDocuments).map((doc) => (
                           <button key={doc.id} onClick={() => selectDocumentInSlotModal(doc)}><strong>{doc.type}</strong><span>{doc.name}</span><em>{doc.lang}</em></button>
-                        )) : <p>这个产品还没有绑定资料，可通过“添加资料”或“批量导入”补充。</p>}
+                        )) : <p>{t('admin.productManagement.noRelatedDocuments')}</p>}
                       </div>
                       <div className={styles.productEditInlineActions}>
-                        <button className={styles.secondaryBtn} onClick={uploadDocumentFile}>添加资料</button>
-                        <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>批量导入</button>
+                        <button className={styles.secondaryBtn} onClick={uploadDocumentFile}>{t('admin.productManagement.addDocument')}</button>
+                        <button className={styles.secondaryBtn} onClick={() => openPage('import', 'bulk-import', activeCompany)}>{t('admin.productManagement.batchImport')}</button>
                       </div>
                     </section>
                   )}
@@ -5158,11 +5158,11 @@ export default function AdminV2Page() {
 
                 <div className={`${styles.modalActions} ${styles.productEditModalActions}`}>
                   <div>
-                    {productModal.product?.id && <button className={styles.dangerSoftBtn} onClick={deleteProductFromModal}>删除产品</button>}
+                    {productModal.product?.id && <button className={styles.dangerSoftBtn} onClick={deleteProductFromModal}>{t('admin.productManagement.deleteProduct')}</button>}
                   </div>
                   <div>
-                    <button className={styles.secondaryBtn} onClick={closeProductModal}>取消</button>
-                    <button className={styles.primaryBtn} onClick={createOrEditProduct}>保存产品</button>
+                    <button className={styles.secondaryBtn} onClick={closeProductModal}>{t('admin.common.cancel')}</button>
+                    <button className={styles.primaryBtn} onClick={createOrEditProduct}>{t('admin.productManagement.saveProduct')}</button>
                   </div>
                 </div>
               </div>
@@ -5186,29 +5186,29 @@ export default function AdminV2Page() {
                           <>
                             <button type="button" className={`${styles.documentPreviewBody} ${!hasRecord && !documentModal.file ? styles.documentUploadEmpty : ''} ${isMissingFile ? styles.documentFileMissing : ''}`} onClick={() => canPreview ? openDocumentPreview() : documentFileInputRef.current?.click()}>
                               {previewImageUrl ? (
-                                <img src={previewImageUrl} alt={documentModal.file?.name || documentModal.doc?.name || '资料缩略图'} />
+                                <img src={previewImageUrl} alt={documentModal.file?.name || documentModal.doc?.name || t('admin.fileManagement.thumbnailAlt')} />
                               ) : hasActualFile ? (
                                 <strong>{documentModal.file ? documentFileExt(documentModal.file.name) : documentFileExt(documentModal.doc?.name || docUrl || 'FILE')}</strong>
                               ) : isMissingFile ? (
                                 <span className={styles.documentMissingPrompt}>
                                   <b>!</b>
-                                  <strong>资料信息已存在</strong>
-                                  <em>但没有找到对应资料，请补传或替换资料</em>
+                                  <strong>{t('admin.fileManagement.recordExists')}</strong>
+                                  <em>{t('admin.fileManagement.missingFileDesc')}</em>
                                 </span>
                               ) : (
                                 <span className={styles.documentUploadPrompt}>
                                   <b>+</b>
-                                  <strong>点击上传资料</strong>
-                                  <em>支持 PDF、PNG、JPG、WebP、Word，单份资料不超过 20MB</em>
+                                  <strong>{t('admin.fileManagement.clickUpload')}</strong>
+                                  <em>{t('admin.fileManagement.uploadFormatHint')}</em>
                                 </span>
                               )}
                             </button>
                             <div className={styles.documentPreviewMeta}>
                               <div>
-                                <span>{documentModal.file?.name || documentModal.doc?.name || '当前槽位暂无资料'}</span>
-                                <em>{hasActualFile ? '点击图片放大查看资料' : isMissingFile ? '已有资料信息，但服务器未关联资料地址' : '上传后会自动带入标题与语言，可继续修改'}</em>
+                                <span>{documentModal.file?.name || documentModal.doc?.name || t('admin.fileManagement.emptySlot')}</span>
+                                <em>{hasActualFile ? t('admin.fileManagement.clickToPreview') : isMissingFile ? t('admin.fileManagement.serverFileMissing') : t('admin.fileManagement.autoFillHint')}</em>
                               </div>
-                              {(hasRecord || documentModal.file) && <button type="button" onClick={() => documentFileInputRef.current?.click()}>{isMissingFile ? '补传' : '替换'}</button>}
+                              {(hasRecord || documentModal.file) && <button type="button" onClick={() => documentFileInputRef.current?.click()}>{isMissingFile ? t('admin.fileManagement.reupload') : t('admin.fileManagement.replace')}</button>}
                             </div>
                           </>
                         );
@@ -5225,15 +5225,15 @@ export default function AdminV2Page() {
                 <section className={styles.documentInfoColumn}>
                   <button className={styles.iconCloseBtn} onClick={() => closeDocumentModal()}>×</button>
                   <div className={styles.documentSplitHeader}>
-                    <h3>{documentModal.mode === 'upload' ? '补充产品资料' : '维护产品资料'}</h3>
-                    <p>{documentModal.source === 'slot' ? '已根据入口锁定产品和资料类型，只需要上传或校对资料信息。' : '资质证书、DoC 声明和使用说明书都可以在这里维护。'}请仅维护适合对外展示的产品资料，不要上传商业敏感资料。</p>
+                    <h3>{documentModal.mode === 'upload' ? t('admin.fileManagement.addProductDocument') : t('admin.fileManagement.maintainProductDocument')}</h3>
+                    <p>{documentModal.source === 'slot' ? t('admin.fileManagement.lockedEntryDesc') : t('admin.fileManagement.generalMaintainDesc')} {t('admin.fileManagement.publicOnlyWarning')}</p>
                   </div>
 
                   {documentModal.docs?.length > 1 && (
                     <div className={styles.documentPageTabs}>
                       {documentModal.docs.map((doc, index) => (
                         <button key={doc.id} className={String(documentModal.doc?.id) === String(doc.id) ? styles.documentPageActive : ''} onClick={() => selectDocumentInSlotModal(doc)}>
-                          <span>资料 {index + 1}</span>
+                          <span>{t('admin.fileManagement.documentIndex', { number: index + 1 })}</span>
                           <strong>{doc.name}</strong>
                         </button>
                       ))}
@@ -5242,24 +5242,24 @@ export default function AdminV2Page() {
 
                   <div className={`${styles.modalFormGrid} ${styles.documentInfoGrid}`}>
                     {documentModal.lockedProduct ? (
-                      <label className={styles.documentLockedField}><span>绑定产品</span><input value={documentModal.productName || companyProducts.find((product) => String(product.id) === String(documentModal.productId))?.name || '请选择产品'} readOnly /></label>
+                      <label className={styles.documentLockedField}><span>{t('admin.fileManagement.bindProduct')}</span><input value={documentModal.productName || companyProducts.find((product) => String(product.id) === String(documentModal.productId))?.name || t('admin.fileManagement.selectProduct')} readOnly /></label>
                     ) : (
-                      <label><span>绑定产品</span><select value={documentModal.productId} onChange={(event) => setDocumentModal((form) => ({ ...form, productId: event.target.value, productName: companyProducts.find((product) => String(product.id) === String(event.target.value))?.name || '' }))}>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+                      <label><span>{t('admin.fileManagement.bindProduct')}</span><select value={documentModal.productId} onChange={(event) => setDocumentModal((form) => ({ ...form, productId: event.target.value, productName: companyProducts.find((product) => String(product.id) === String(event.target.value))?.name || '' }))}>{companyProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
                     )}
                     {documentModal.lockedType ? (
-                      <label className={styles.documentLockedField}><span>资料类型</span><input value={importTypeLabel(documentModal.documentType)} readOnly /></label>
+                      <label className={styles.documentLockedField}><span>{t('admin.fileManagement.documentType')}</span><input value={t(documentTypeLabelKey(documentModal.documentType))} readOnly /></label>
                     ) : (
-                      <label><span>资料类型</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select></label>
+                      <label><span>{t('admin.fileManagement.documentType')}</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}>{DOCUMENT_TYPE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}</select></label>
                     )}
-                    <label><span>资料标题</span><input value={documentModal.title} placeholder="选择资料后自动带入，可修改" onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
-                    <label><span>语言</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>
-                    {documentModal.documentType === 'certificate' && <label><span>证书编号</span><input value={documentModal.certNo} placeholder="可稍后补充" onChange={(event) => setDocumentModal((form) => ({ ...form, certNo: event.target.value }))} /></label>}
-                    {documentModal.documentType === 'certificate' && <label><span>认证标准</span><input value={documentModal.standard} placeholder="例如 EN 1384 / CE" onChange={(event) => setDocumentModal((form) => ({ ...form, standard: event.target.value }))} /></label>}
-                    {documentModal.documentType === 'certificate' && <label><span>发证机构</span><input value={documentModal.issuer} placeholder="例如 TÜV / SGS" onChange={(event) => setDocumentModal((form) => ({ ...form, issuer: event.target.value }))} /></label>}
+                    <label><span>{t('admin.fileManagement.documentTitle')}</span><input value={documentModal.title} placeholder={t('admin.fileManagement.titleAutoFillPlaceholder')} onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
+                    <label><span>{t('admin.fileManagement.language')}</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>
+                    {documentModal.documentType === 'certificate' && <label><span>{t('admin.fileManagement.certificateNumber')}</span><input value={documentModal.certNo} placeholder={t('admin.fileManagement.optionalLater')} onChange={(event) => setDocumentModal((form) => ({ ...form, certNo: event.target.value }))} /></label>}
+                    {documentModal.documentType === 'certificate' && <label><span>{t('admin.fileManagement.applicableStandards')}</span><input value={documentModal.standard} placeholder={t('admin.fileManagement.standardPlaceholder')} onChange={(event) => setDocumentModal((form) => ({ ...form, standard: event.target.value }))} /></label>}
+                    {documentModal.documentType === 'certificate' && <label><span>{t('admin.fileManagement.issuer')}</span><input value={documentModal.issuer} placeholder={t('admin.fileManagement.issuerPlaceholder')} onChange={(event) => setDocumentModal((form) => ({ ...form, issuer: event.target.value }))} /></label>}
                   </div>
                   <div className={styles.modalActions}>
-                    <button className={styles.secondaryBtn} onClick={() => closeDocumentModal()}>取消</button>
-                    <button className={styles.primaryBtn} onClick={submitDocumentModal}>{documentModal.mode === 'upload' ? '确认上传' : documentModal.file ? '保存并替换' : '保存信息'}</button>
+                    <button className={styles.secondaryBtn} onClick={() => closeDocumentModal()}>{t('admin.common.cancel')}</button>
+                    <button className={styles.primaryBtn} onClick={submitDocumentModal}>{documentModal.mode === 'upload' ? t('admin.fileManagement.confirmUpload') : documentModal.file ? t('admin.fileManagement.saveAndReplace') : t('admin.fileManagement.saveInfo')}</button>
                   </div>
                 </section>
               </div>
@@ -5271,16 +5271,16 @@ export default function AdminV2Page() {
               <div className={styles.previewModal} onClick={(event) => event.stopPropagation()}>
                 <div className={styles.previewHeader}>
                   <div>
-                    <h3>{documentPreview.title || '资料预览'}</h3>
-                    <p>用于快速核对资料内容，不会修改当前资料。</p>
+                    <h3>{documentPreview.title || t('admin.fileManagement.previewTitle')}</h3>
+                    <p>{t('admin.fileManagement.previewDesc')}</p>
                   </div>
                   <button className={styles.iconCloseBtn} onClick={closeDocumentPreview}>×</button>
                 </div>
                 <div className={styles.previewFrameWrap}>
                   {documentPreview.url.match(/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i) || documentPreview.objectUrl ? (
-                    <img src={documentPreview.url} alt={documentPreview.title || '资料预览'} />
+                    <img src={documentPreview.url} alt={documentPreview.title || t('admin.fileManagement.previewTitle')} />
                   ) : (
-                    <iframe src={documentPreview.url} title={documentPreview.title || '资料预览'} />
+                    <iframe src={documentPreview.url} title={documentPreview.title || t('admin.fileManagement.previewTitle')} />
                   )}
                 </div>
               </div>
