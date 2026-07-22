@@ -958,11 +958,64 @@ export default function SearchPage() {
                   );
                 }
 
-                // 文档模式：渲染文档卡片
+                // 文档模式：根据文档类型渲染不同卡片
                 if (searchMode === 'document') {
                   const docType = item.documentType || 'other';
-                  const isCertificate = docType === 'certificate';
 
+                  // 证书类型：使用原来的证书卡片样式
+                  if (docType === 'certificate') {
+                    return (
+                      <Link
+                        to={`/documents/${item.id}`}
+                        key={`cert-${item.id}`}
+                        className={styles.certCard}
+                      >
+                        <div className={styles.certBody}>
+                          <div className={styles.certContent}>
+                            <div className={styles.certHeader}>
+                              <div className={styles.certMeta}>
+                                <h3 className={styles.certCompany}>{highlightText(item.companyName)}</h3>
+                                <p className={styles.certProduct}>{highlightText(item.productName)}</p>
+                              </div>
+                              <StatusBadge status={item.status} />
+                            </div>
+
+                            <div className={styles.certDetails}>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.certNo')}</span>
+                                <span className={styles.detailValue}>{highlightText(item.certNo)}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.model')}</span>
+                                <span className={styles.detailValue}>{highlightText(item.productModel || '-')}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.standard')}</span>
+                                <span className={styles.detailValue}>{item.standard}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>{t('certificate.expiryDate')}</span>
+                                <span className={styles.detailValue}>{item.expiryDate || '-'}</span>
+                              </div>
+                            </div>
+
+                            <div className={styles.certFooter}>
+                              <span className={styles.certIssuer}>{t('certificate.issuer')}: {item.issuer || '-'}</span>
+                              <span className={styles.viewDetail}>{t('certificate.view')} →</span>
+                            </div>
+                          </div>
+
+                          {item.thumbnailUrl && (
+                            <div className={styles.certThumb}>
+                              <LazyImage src={item.thumbnailUrl} alt={item.productName} />
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  }
+
+                  // DoC、说明书等其他文档类型：使用新的文档卡片样式
                   return (
                     <Link
                       to={`/documents/${item.id}`}
@@ -980,66 +1033,35 @@ export default function SearchPage() {
                             </div>
                             <span className={styles.status} style={{
                               background: docType === 'declaration_of_conformity' ? '#d1ecf1' :
-                                         docType === 'certificate' ? '#d4edda' :
-                                         docType === 'manual' ? '#d1f2eb' : '#e2e8f0',
+                                         docType === 'manual' ? '#d1f2eb' :
+                                         docType === 'test_report' ? '#e8daef' : '#e2e8f0',
                               color: docType === 'declaration_of_conformity' ? '#0c5460' :
-                                     docType === 'certificate' ? '#155724' :
-                                     docType === 'manual' ? '#0c5460' : '#495057',
+                                     docType === 'manual' ? '#0c5460' :
+                                     docType === 'test_report' ? '#6c3483' : '#495057',
                               padding: '4px 12px',
                               borderRadius: '999px',
                               fontSize: '12px',
                               fontWeight: '600'
                             }}>
                               {docType === 'declaration_of_conformity' ? 'DoC' :
-                               docType === 'certificate' ? t('search.certificate') :
                                docType === 'manual' ? t('search.manual') :
                                docType === 'test_report' ? t('search.report') : t('search.document')}
                             </span>
                           </div>
 
                           <div className={styles.certDetails}>
-                            {isCertificate && item.certNo && (
-                              <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>{t('certificate.certNo')}</span>
-                                <span className={styles.detailValue}>{highlightText(item.certNo)}</span>
-                              </div>
-                            )}
-                            {isCertificate && item.productModel && (
-                              <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>{t('search.productModel')}</span>
-                                <span className={styles.detailValue}>{item.productModel}</span>
-                              </div>
-                            )}
-                            {isCertificate && item.standard && (
-                              <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>{t('certificate.standard')}</span>
-                                <span className={styles.detailValue}>{item.standard}</span>
-                              </div>
-                            )}
-                            {isCertificate && item.issuer && (
-                              <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>{t('certificate.issuer')}</span>
-                                <span className={styles.detailValue}>{item.issuer}</span>
-                              </div>
-                            )}
-                            {!isCertificate && (
-                              <>
-                                <div className={styles.detailItem}>
-                                  <span className={styles.detailLabel}>{t('search.documentStandard')}</span>
-                                  <span className={styles.detailValue}>{item.standard || item.certNo || '-'}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                  <span className={styles.detailLabel}>{t('search.productModel')}</span>
-                                  <span className={styles.detailValue}>{item.productModel || '-'}</span>
-                                </div>
-                              </>
-                            )}
-                            {!isCertificate && (
-                              <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>{t('search.belongsToCompany')}</span>
-                                <span className={styles.detailValue}>{item.companyName}</span>
-                              </div>
-                            )}
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.documentStandard')}</span>
+                              <span className={styles.detailValue}>{item.standard || item.certNo || '-'}</span>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.productModel')}</span>
+                              <span className={styles.detailValue}>{item.productModel || '-'}</span>
+                            </div>
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>{t('search.belongsToCompany')}</span>
+                              <span className={styles.detailValue}>{item.companyName}</span>
+                            </div>
                             <div className={styles.detailItem}>
                               <span className={styles.detailLabel}>{t('search.language')}</span>
                               <span className={styles.detailValue}>{item.language ? item.language.toUpperCase() : '-'}</span>
@@ -1054,7 +1076,6 @@ export default function SearchPage() {
                           </div>
                         </div>
 
-                        {/* 文档缩略图 */}
                         {item.thumbnailUrl ? (
                           <div className={styles.certThumb}>
                             <LazyImage src={item.thumbnailUrl} alt={item.title} />
@@ -1075,7 +1096,7 @@ export default function SearchPage() {
                   );
                 }
 
-                // 证书/综合模式：渲染证书卡片
+                // 综合模式/其他模式：渲染原来的证书卡片
                 return (
                   <Link
                     to={item.productId ? `/products/${item.productId}` : `/documents/${item.id}`}
