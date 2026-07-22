@@ -620,12 +620,16 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
   const companyId = req.params.id;
 
   try {
+    console.log('[认证历史] 请求公司ID:', companyId, '用户ID:', req.admin.id, '用户角色:', req.admin.role);
+
     // 检查权限：平台管理员或企业成员可查看
     if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
       const membership = db.prepare(`
         SELECT id FROM company_members
         WHERE user_id = ? AND company_id = ? AND status = 'active'
       `).get(req.admin.id, companyId);
+
+      console.log('[认证历史] 成员关系查询结果:', membership);
 
       if (!membership) {
         return res.status(403).json({ success: false, message: '无权查看该企业认证记录' });
@@ -647,6 +651,8 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
         AND al.action IN ('submit_verification', 'approve_verification', 'reject_verification')
       ORDER BY al.created_at DESC
     `).all(companyId);
+
+    console.log('[认证历史] SQL查询结果:', logs);
 
     // 格式化日志
     const history = logs.map(log => {
