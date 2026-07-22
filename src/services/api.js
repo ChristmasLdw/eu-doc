@@ -437,6 +437,16 @@ export function submitCompanyVerification(companyId, payload = {}) {
   });
 }
 
+/** 获取企业认证历史记录 */
+export function getCompanyVerificationHistory(companyId) {
+  return request(`/companies/${companyId}/verification-history`).then((res) => {
+    if (res && Array.isArray(res.data)) {
+      return res.data.map(keysToCamelCase);
+    }
+    return [];
+  });
+}
+
 /** 获取企业认证审核列表 */
 export function getCompanyVerificationDocuments(companyId) {
   return request(`/v2/company-verifications/${companyId}/documents`).then(keysToCamelCase);

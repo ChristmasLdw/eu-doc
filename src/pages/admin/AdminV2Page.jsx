@@ -698,6 +698,7 @@ export default function AdminV2Page() {
   const [documentPreview, setDocumentPreview] = useState({ open: false, url: '', title: '', objectUrl: '' });
   const [passwordModal, setPasswordModal] = useState({ open: false, oldPassword: '', newPassword: '', confirmPassword: '' });
   const [companyModal, setCompanyModal] = useState({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' });
+  const [verificationHistoryModal, setVerificationHistoryModal] = useState({ open: false, history: [] });
   const [verificationForm, setVerificationForm] = useState({ businessLicenseNo: '', contactPerson: '', contactEmail: '' });
   const [verificationItems, setVerificationItems] = useState([]);
   const [pendingReviewDocuments, setPendingReviewDocuments] = useState([]);
@@ -2106,6 +2107,16 @@ export default function AdminV2Page() {
   const showAction = (message) => {
     setActionMessage(message);
     setTimeout(() => setActionMessage(''), 1800);
+  };
+
+  const openVerificationHistory = async () => {
+    if (!currentCompany?.id) return;
+    try {
+      const history = await api.getCompanyVerificationHistory(currentCompany.id);
+      setVerificationHistoryModal({ open: true, history });
+    } catch (error) {
+      showAction(error.message || '获取认证记录失败');
+    }
   };
 
   const inviteMember = async () => {
@@ -3955,7 +3966,7 @@ export default function AdminV2Page() {
                 <h3>{currentCompany.name}</h3>
                 <p>{verification.desc}</p>
               </div>
-              <button className={styles.secondaryBtn}>查看认证记录</button>
+              <button className={styles.secondaryBtn} onClick={openVerificationHistory}>查看认证记录</button>
             </div>
 
             <div className={styles.verifySteps}>
@@ -4881,6 +4892,51 @@ export default function AdminV2Page() {
                 <div className={styles.modalActions}>
                   <button className={styles.secondaryBtn} onClick={() => setPasswordModal({ open: false, oldPassword: '', newPassword: '', confirmPassword: '' })}>取消</button>
                   <button className={styles.primaryBtn} onClick={changePassword}>确认修改</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {verificationHistoryModal.open && (
+            <div className={styles.modalBackdrop} onClick={() => setVerificationHistoryModal({ open: false, history: [] })}>
+              <div className={styles.adminModal} onClick={(event) => event.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                  <div>
+                    <h3>认证记录</h3>
+                    <p>查看企业认证申请和审核的历史记录</p>
+                  </div>
+                  <button className={styles.iconCloseBtn} onClick={() => setVerificationHistoryModal({ open: false, history: [] })}>×</button>
+                </div>
+                <div className={styles.verificationHistoryList}>
+                  {verificationHistoryModal.history.length === 0 ? (
+                    <div className={styles.emptyState}>暂无认证记录</div>
+                  ) : (
+                    verificationHistoryModal.history.map((record) => (
+                      <div key={record.id} className={styles.verificationHistoryItem}>
+                        <div className={styles.verificationHistoryHeader}>
+                          <span className={`${styles.verifyBadge} ${styles[`verifyBadge_${record.tone}`] || ''}`}>
+                            {record.actionLabel}
+                          </span>
+                          <span className={styles.verificationHistoryTime}>
+                            {new Date(record.createdAt).toLocaleString('zh-CN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div className={styles.verificationHistoryBody}>
+                          <p><strong>操作人：</strong>{record.operatorName}</p>
+                          {record.note && <p><strong>审核意见：</strong>{record.note}</p>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className={styles.modalActions}>
+                  <button className={styles.primaryBtn} onClick={() => setVerificationHistoryModal({ open: false, history: [] })}>关闭</button>
                 </div>
               </div>
             </div>

@@ -613,6 +613,85 @@ router.post('/:id/verification', authMiddleware, logoUpload.fields([
 
 
 /**
+ * GET /api/companies/:id/verification-history
+ * 获取企业认证历史记录（需认证，企业成员可查看自己公司）
+ */
+router.get('/:id/verification-history', authMiddleware, (req, res) => {
+  const companyId = req.params.id;
+
+  try {
+    // 检查权限：平台管理员或企业成员可查看
+    if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
+      const membership = db.prepare(`
+        SELECT id FROM company_members
+        WHERE user_id = ? AND company_id = ? AND status = 'active'
+      `).get(req.admin.id, companyId);
+
+      if (!membership) {
+        return res.status(403).json({ success: false, message: '无权查看该企业认证记录' });
+      }
+    }
+
+    // 查询认证相关的审计日志
+    const logs = db.prepare(`
+      SELECT
+        al.id,
+        al.action,
+        al.detail,
+        al.created_at,
+        u.username as operator_name,
+        u.email as operator_email
+      FROM audit_logs al
+      LEFT JOIN admins u ON al.admin_id = u.id
+      WHERE al.target_type = 'company'
+        AND al.target_id = ?
+        AND al.action IN ('submit_verification', 'approve_verification', 'reject_verification')
+      ORDER BY al.created_at DESC
+    `).all(companyId);
+
+    // 格式化日志
+    const history = logs.map(log => {
+      let detail = {};
+      try {
+        detail = JSON.parse(log.detail || '{}');
+      } catch (e) {
+        detail = {};
+      }
+
+      let actionLabel = '';
+      let tone = 'gray';
+      if (log.action === 'submit_verification') {
+        actionLabel = '提交认证申请';
+        tone = 'blue';
+      } else if (log.action === 'approve_verification') {
+        actionLabel = '认证审核通过';
+        tone = 'green';
+      } else if (log.action === 'reject_verification') {
+        actionLabel = '认证审核拒绝';
+        tone = 'red';
+      }
+
+      return {
+        id: log.id,
+        action: log.action,
+        actionLabel,
+        tone,
+        status: detail.status || '',
+        note: detail.note || '',
+        operatorName: log.operator_name || '系统',
+        operatorEmail: log.operator_email || '',
+        createdAt: log.created_at
+      };
+    });
+
+    res.json({ success: true, data: history });
+  } catch (err) {
+    console.error('获取认证历史失败:', err);
+    res.status(500).json({ success: false, message: '获取失败' });
+  }
+});
+
+/**
  * PUT /api/companies/:id/verification
  * 审核企业认证（仅管理员）
  */
