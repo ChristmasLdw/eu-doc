@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { isEnglishLanguage } from '../utils/languageContent';
+import { getLanguageCode } from '../i18n/languages';
 import styles from './LegalPage.module.css';
 
 const guides = {
@@ -113,6 +113,58 @@ const guides = {
     footerHome: 'Back to Home',
     footerContact: 'Contact',
   },
+  de: {
+    title: 'Anleitung',
+    tabs: {
+      consumer: 'Verbraucher',
+      business: 'Unternehmen',
+      regulator: 'Prüfstellen',
+    },
+    consumer: {
+      title: 'Anleitung für Verbraucher',
+      intro: 'Als Verbraucher, Einkäufer oder allgemeiner Nutzer können Sie EU-DOC wie folgt verwenden:',
+      sections: [
+        ['1. Produkte suchen', ['Geben Sie auf der Startseite einen Produktnamen, ein Modell oder einen Unternehmensnamen ein', 'Nutzen Sie die Suchvorschläge, um das gewünschte Produkt schneller zu finden', 'Öffnen Sie ein Suchergebnis, um die Produktdetails anzuzeigen']],
+        ['2. Produktdokumente ansehen', ['Auf der Produktdetailseite finden Sie die zugehörigen Dokumente', 'Zertifikate: relevante Produktzertifizierungen prüfen', 'Konformitätserklärungen: Selbsterklärungen des Unternehmens ansehen', 'Anleitungen: Informationen zur Verwendung des Produkts lesen']],
+        ['3. Dokumente ansehen oder herunterladen', ['Klicken Sie auf „Ansehen“, um ein Dokument online zu öffnen', 'Klicken Sie auf „Herunterladen“, um das Dokument lokal zu speichern']],
+        ['4. Probleme melden', ['Fehlerhafte Dokumentinformationen können Sie auf der Dokumentdetailseite melden', 'Beschreiben Sie das Problem; wir prüfen die Meldung so bald wie möglich']],
+      ],
+      tip: 'Hinweis: Alle Dokumente werden von den Unternehmen bereitgestellt. EU-DOC übernimmt keine Gewähr für ihre Echtheit. Wenden Sie sich im Zweifel direkt an das Unternehmen.',
+    },
+    business: {
+      title: 'Anleitung für Unternehmen',
+      intro: 'Als Unternehmensnutzer können Sie öffentliche Produkt- und Konformitätsdokumente über EU-DOC bereitstellen:',
+      sections: [
+        ['1. Konto registrieren', [{ prefix: 'Öffnen Sie die', label: 'Registrierungsseite', to: '/admin/register' }, 'Registrieren Sie sich mit einer geschäftlichen E-Mail-Adresse', 'Geben Sie bei Bedarf den Unternehmensnamen an']],
+        ['2. Unternehmensprofil erstellen', ['Melden Sie sich an und öffnen Sie den Verwaltungsbereich', 'Erstellen Sie im Bereich „Unternehmensprofil“ ein Unternehmen', 'Der Ersteller wird automatisch zum Eigentümer des Unternehmens']],
+        ['3. Dokumente gesammelt hochladen', ['Öffnen Sie den Bereich für den Mehrfach-Upload', 'Wählen Sie das Unternehmen und laden Sie einen Ordner mit Produktdokumenten hoch', 'Bestätigen Sie Produkt, Modelle, Dokumenttyp und Sprache anhand der geführten Schritte']],
+        ['4. Produktdokumente verwalten', ['Prüfen Sie archivierte Dokumente im Bereich „Produktdokumentation“', 'Ergänzen Sie Produktname, Modell, Abmessungen, Material und weitere Grunddaten', 'Laden Sie fehlende Dokumente hoch oder ersetzen Sie veraltete Dateien']],
+        ['5. Mitglieder einladen', ['Laden Sie Teammitglieder über die Mitgliederverwaltung ein', 'Weisen Sie Rollen wie Administrator, Uploader oder Betrachter zu', 'Die Rollen verfügen über unterschiedliche Berechtigungen']],
+      ],
+      tip: 'Unternehmensverifizierung: Nach der Verifizierung können externe Nutzer öffentliche Unternehmensdokumente leichter zuordnen und ihnen besser vertrauen.',
+      tipLink: 'Mehr zur Verifizierung',
+    },
+    regulator: {
+      title: 'Anleitung für Prüfstellen',
+      intro: 'Als Prüfer können Sie öffentliche Konformitätserklärungen, Zertifikate und weitere Produktdokumente schnell auffinden:',
+      sections: [
+        ['1. Unternehmen oder Produkte suchen', ['Geben Sie auf der Startseite Unternehmen, Produkt, Modell oder Zertifikatsnummer ein', 'Öffnen Sie ein Suchergebnis, um Produkt- oder Dokumentdetails anzuzeigen']],
+        ['2. Konformitätserklärungen ansehen', ['Öffnen Sie auf der Produktseite den Dokumenttyp „Konformitätserklärung“', 'Zeigen Sie die Originaldatei an oder laden Sie sie herunter', 'Sind mehrere Sprachversionen vorhanden, können Sie auf der Detailseite zwischen Dokumenten desselben Typs wechseln']],
+        ['3. Zertifikate prüfen', ['Prüfen Sie Zertifikatsnummer, ausstellende Stelle, Gültigkeitszeitraum und weitere Angaben', 'Öffnen Sie die Originaldatei zur Archivierung oder weiteren Verifizierung', 'Melden Sie auffällige oder fehlerhafte Angaben']],
+        ['4. Mehrsprachigkeit', ['Die Benutzeroberfläche unterstützt Chinesisch, Englisch und Deutsch', 'Vom Unternehmen bereitgestellte Inhalte werden in der eingegebenen Sprache oder im Original angezeigt und nicht automatisch übersetzt']],
+      ],
+      tip: 'Haftungsausschluss: EU-DOC dient ausschließlich der Anzeige von Dokumenten und übernimmt keine Gewähr für deren Echtheit. Wenden Sie sich zur Verifizierung direkt an das Unternehmen oder die ausstellende Stelle.',
+    },
+    faqTitle: 'Häufige Fragen',
+    faqs: [
+      ['F: Was kann ich tun, wenn sich ein Dokument nicht öffnen lässt?', 'A: Prüfen Sie Ihre Internetverbindung oder verwenden Sie einen anderen Browser. Wenden Sie sich an den Support, wenn das Problem weiterhin besteht.'],
+      ['F: Was kann ich tun, wenn Dokumentinformationen falsch erscheinen?', 'A: Senden Sie auf der Dokumentdetailseite eine Meldung. Wir kontaktieren das Unternehmen zur Klärung.'],
+      ['F: Wie werde ich Unternehmensnutzer?', 'A: Registrieren Sie ein Konto, erstellen Sie im Verwaltungsbereich ein Unternehmen und laden Sie Produktdokumente hoch.'],
+      ['F: Warum werden Unternehmensdokumente nicht übersetzt?', 'A: Unternehmensnamen, Produktnamen und Dokumenttitel stammen vom Unternehmen. EU-DOC übersetzt die Benutzeroberfläche, verändert aber keine Unternehmensinhalte.'],
+    ],
+    footerHome: 'Zur Startseite',
+    footerContact: 'Kontakt',
+  },
 };
 
 function TabButton({ active, onClick, children }) {
@@ -163,7 +215,7 @@ function GuideSection({ data, tone = 'rgba(59, 130, 246, 0.1)' }) {
 export default function GuidePage() {
   const [activeTab, setActiveTab] = useState('consumer');
   const { i18n } = useTranslation();
-  const ui = isEnglishLanguage(i18n.language) ? guides.en : guides.zh;
+  const ui = guides[getLanguageCode(i18n.resolvedLanguage)] || guides.en;
 
   return (
     <div className={styles.page}>

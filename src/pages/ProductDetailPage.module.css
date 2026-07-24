@@ -2316,3 +2316,29 @@
     min-height: 172px !important;
   }
 }
+
+.quickDocList,
+.quickDocList button,
+.emptyQuickDoc,
+.quickDocList span,
+.quickDocList strong {
+  min-width: 0;
+}
+
+.quickDocList span,
+.quickDocList strong {
+  overflow-wrap: break-word;
+}
+
+/* Keep long German document labels above their action/status text. */
+.quickDocList button,
+.emptyQuickDoc {
+  display: block;
+}
+
+.quickDocList button strong,
+.emptyQuickDoc strong {
+  width: auto;
+  max-width: none;
+  text-align: left;
+}

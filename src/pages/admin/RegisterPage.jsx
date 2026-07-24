@@ -84,7 +84,7 @@ export default function RegisterPage() {
         <p className={styles.subtitle}>{t('authFlow.registerSubtitle')}</p>
 
         {/* 注册表单 */}
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form className={styles.form} onSubmit={handleSubmit} data-tutorial="register-form">
           <div className={styles.field}>
             <label className={styles.label} htmlFor="email">{t('authFlow.email')} *</label>
             <input

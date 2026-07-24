@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getLanguageCode } from '../i18n/languages';
 import * as api from '../services/api';
 import ShareModal from '../components/ShareModal';
 import {
   documentTypeLabel,
   formatPublicDate,
-  isEnglishLanguage,
+  usesEnglishFallback,
   localizedField,
   publicStatusLabel,
   valueOrPending as localizedPending,
@@ -87,7 +88,8 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const isEn = isEnglishLanguage(i18n.language);
+  const language = getLanguageCode(i18n.resolvedLanguage);
+  const isEn = usesEnglishFallback(language);
   const ui = {
     back: isEn ? 'Back' : '返回',
     center: isEn ? 'Product Document Center' : '产品资料中心',
@@ -118,6 +120,39 @@ export default function ProductDetailPage() {
     shareSubtitle: isEn ? 'View product basics, applicable models, public documents, and document details.' : '查看产品基础信息、适用型号、公开资料和资料详情。',
     noLanguage: isEn ? 'Language not set' : '未设置语言',
   };
+  if (language === 'de') Object.assign(ui, {
+    back: 'Zurück',
+    center: 'Produktdokumentation',
+    intro: 'Diese Seite bündelt Produktinformationen, Modelle, Konformitätsdokumente und Anleitungen. Öffnen Sie ein Dokument, um die zugehörige Detailseite aufzurufen.',
+    productCode: 'Produkt-ID',
+    publicDocs: 'öffentliche Dokumente',
+    productImagePending: 'Produktbild nicht hinterlegt',
+    favorited: '★ Favorisiert',
+    favorite: '☆ Favorisieren',
+    shareProduct: 'Produkt teilen',
+    sourceTitle: 'Hinweis zur Quelle',
+    sourceText: 'Die Dokumente auf dieser Seite werden vom Unternehmen bereitgestellt, das für ihre Richtigkeit verantwortlich ist. EU-DOC stellt Anzeige- und Verwaltungsfunktionen bereit und ist keine Zertifizierungsstelle.',
+    productInfo: 'Produktinformationen',
+    productInfoDesc: 'Hilft Nutzern zu prüfen, ob dies das gesuchte Produkt ist.',
+    modelSection: 'Gültige Modelle',
+    modelDesc: 'Diese Dokumente gelten für die folgenden Modelle.',
+    resourceCenter: 'Dokumente',
+    resourceDesc: 'Die Produktseite bietet eine Übersicht. Öffnen Sie ein Dokument, um dessen Detailseite anzuzeigen.',
+    view: 'Ansehen',
+    notPublic: 'Noch nicht öffentlich',
+    enterDetail: 'Dokumentdetails öffnen →',
+    quickView: 'Schnellzugriff',
+    quickDesc: 'Schneller Zugriff auf Konformitätserklärungen, Zertifikate und Anleitungen.',
+    related: 'Weitere Produkte dieses Unternehmens',
+    relatedDesc: 'Weitere öffentliche Produktdokumente dieses Unternehmens ansehen.',
+    modelPending: 'Modell nicht angegeben',
+    shareType: 'Produkt teilen',
+    shareSubtitle: 'Produktinformationen, Modelle, öffentliche Dokumente und Dokumentdetails ansehen.',
+    noLanguage: 'Sprache nicht angegeben',
+    updated: 'Aktualisiert',
+    documentFallback: 'Dokument',
+    number: 'Nr.',
+  });
 
   const [product, setProduct] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -140,7 +175,7 @@ export default function ProductDetailPage() {
           fetch(`/eu-doc/api/v2/products/${id}/documents`).then((res) => res.json()),
           fetch(`/eu-doc/api/v2/products/${id}/related`).then((res) => res.json()).catch(() => ({ success: false, data: [] })),
         ]);
-        if (!productResponse.success) throw new Error(productResponse.message || t('productDetail.loadFailed'));
+        if (!productResponse.success) throw new Error(t('productDetail.productNotFound'));
         if (cancelled) return;
         setProduct(productResponse.data);
         const activeDocs = (documentsResponse.data || []).filter((doc) => (doc.status || 'active') !== 'deleted');
@@ -202,7 +237,7 @@ export default function ProductDetailPage() {
     { label: isEn ? 'Package contents' : '包装内容', value: product?.package_contents || product?.packageContents, required: false, group: 'usage' },
     { label: isEn ? 'Warranty / Service' : '保修/服务', value: product?.warranty, required: false, group: 'usage' },
     { label: isEn ? 'Origin' : '产地/生产地', value: product?.origin_country || product?.originCountry, required: false, group: 'record' },
-    { label: isEn ? 'Updated' : '资料更新', value: formatDate(latestUpdate, i18n.language), required: true, group: 'record' },
+    { label: language === 'de' ? ui.updated : isEn ? 'Updated' : '资料更新', value: formatDate(latestUpdate, i18n.language), required: true, group: 'record' },
   ].filter((item) => item.required || item.value);
   const shouldShowModelSection = models.length > 1 && models.join(', ') !== String(product?.model || '').trim();
 
@@ -337,8 +372,8 @@ export default function ProductDetailPage() {
                                   {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : isImageFile(filePath, doc.mime_type || doc.mimeType) ? <img src={toAssetUrl(filePath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : <span>{group.shortLabel}</span>}
                                 </div>
                                 <div>
-                                  <h3>{localizedField(doc, 'title', i18n.language) || doc.cert_no || `${isEn ? 'Document' : '资料'} ${doc.id}`}</h3>
-                                  <p>{documentTypeLabel(normalizeDocType(doc), i18n.language)} · {isEn ? 'No.' : '编号'}: {documentCode(doc)} · {doc.language ? doc.language.toUpperCase() : ui.noLanguage} · {compactDate(doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt, i18n.language)}</p>
+                                  <h3>{localizedField(doc, 'title', i18n.language) || doc.cert_no || `${language === 'de' ? ui.documentFallback : isEn ? 'Document' : '资料'} ${doc.id}`}</h3>
+                                  <p>{documentTypeLabel(normalizeDocType(doc), i18n.language)} · {language === 'de' ? ui.number : isEn ? 'No.' : '编号'}: {documentCode(doc)} · {doc.language ? doc.language.toUpperCase() : ui.noLanguage} · {compactDate(doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt, i18n.language)}</p>
                                 </div>
                                 <em>{ui.enterDetail}</em>
                               </button>

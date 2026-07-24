@@ -1,0 +1,276 @@
+/* 浮窗容器 */
+.tutorial-window {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 380px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
+  z-index: 9999;
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 拖动手柄 */
+.tutorial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: move;
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  user-select: none;
+}
+
+.tutorial-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.tutorial-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.tutorial-controls button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.tutorial-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 内容区 */
+.tutorial-content {
+  padding: 24px 20px;
+}
+
+.step-indicator {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.step-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.step-tip {
+  background: rgba(59, 130, 246, 0.05);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--accent-blue);
+  border-left: 3px solid var(--accent-blue);
+  line-height: 1.5;
+}
+
+.step-tip::before {
+  content: '💡 ';
+}
+
+/* 底部按钮区 */
+.tutorial-footer {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* 演示状态提示 */
+.demo-status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.demo-indicator {
+  font-size: 16px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.tutorial-footer button {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-prev {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-prev:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+}
+
+.btn-prev:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-next {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.btn-next:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-close-footer {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 10px;
+}
+
+.btn-close-footer:hover {
+  color: var(--text-secondary);
+  background: var(--bg-card-hover);
+}
+
+/* 最小化状态 */
+.tutorial-minimized {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  padding: 14px 24px;
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 9999;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.tutorial-minimized:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+/* 拖动时的样式 */
+.tutorial-window.dragging {
+  cursor: grabbing;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+}
+
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .tutorial-window {
+    width: calc(100% - 32px);
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .tutorial-minimized {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .tutorial-content {
+    padding: 20px 16px;
+  }
+
+  .tutorial-footer {
+    flex-wrap: wrap;
+  }
+
+  .btn-close-footer {
+    flex: 0 0 100%;
+    order: 3;
+  }
+}
+
+.step-target-warning {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.35));
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-secondary, rgba(148, 163, 184, 0.1));
+  color: var(--text-secondary, #475569);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-window,
+  .tutorial-minimized {
+    transition: none !important;
+  }
+}

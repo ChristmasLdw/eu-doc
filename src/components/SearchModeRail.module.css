@@ -11,14 +11,14 @@
   display: inline-flex;
   align-items: center;
   position: relative;
-  padding: 0 16px;
+  padding: 0 8px;
 }
 
 /* 模式轨道 */
 .rail {
   position: relative;
   display: flex;
-  gap: 20px;
+  gap: 12px;
   align-items: center;
   user-select: none;
   will-change: transform;
@@ -170,3 +170,29 @@
 
 
 
+
+@media (max-width: 640px) {
+  .container {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rail {
+    min-width: max-content;
+    gap: 8px;
+    padding: 2px 0;
+  }
+
+  .modeItem {
+    padding: 7px 12px;
+  }
+}

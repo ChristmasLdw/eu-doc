@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getLanguageCode } from '../i18n/languages';
 import ShareModal from '../components/ShareModal';
 import * as api from '../services/api';
-import { documentTypeLabel, formatPublicDate, isEnglishLanguage, localizedField, publicStatusLabel } from '../utils/languageContent';
+import { documentTypeLabel, formatPublicDate, usesEnglishFallback, localizedField, publicStatusLabel } from '../utils/languageContent';
 import styles from './DocumentDetailPage.module.css';
 
 function normalizeDocType(doc = {}) {
@@ -69,7 +70,8 @@ export default function DocumentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const isEn = isEnglishLanguage(i18n.language);
+  const language = getLanguageCode(i18n.resolvedLanguage);
+  const isEn = usesEnglishFallback(language);
   const ui = {
     back: isEn ? 'Back' : '返回',
     loading: isEn ? 'Loading document details...' : '正在加载资料详情...',
@@ -98,6 +100,49 @@ export default function DocumentDetailPage() {
     shareSubtitle: isEn ? 'View the public document details for this product.' : '查看公开资料详情。',
     noRecord: isEn ? 'Not recorded' : '未记录',
   };
+  if (language === 'de') Object.assign(ui, {
+    back: 'Zurück',
+    loading: 'Dokumentdetails werden geladen...',
+    notFound: 'Dokument nicht gefunden',
+    loadFailed: 'Dokument konnte nicht geladen werden',
+    directPage: 'Diese Seite führt direkt zu einem öffentlichen Produktdokument und eignet sich zum Prüfen, Teilen, Verifizieren und Herunterladen. Die vollständige Dokumentation finden Sie auf der Produktseite.',
+    openFile: 'Originaldatei öffnen',
+    favorited: '★ Favorisiert',
+    favorite: '☆ Favorisieren',
+    share: 'Dokument teilen',
+    switchTitle: ' wechseln',
+    otherCertificates: 'Weitere Zertifikate für dasselbe Produkt',
+    otherLanguages: 'Andere Sprachversionen desselben Dokumenttyps',
+    current: 'Aktuell',
+    switch: 'Wechseln',
+    info: 'Dokumentinformationen',
+    certInfo: 'Zertifikatsinformationen',
+    related: 'Zugehörige Seiten',
+    viewProduct: 'Produktdetails ansehen',
+    viewCompany: 'Unternehmensdetails ansehen',
+    preview: 'Dokumentvorschau',
+    previewFallback: 'Dieses Format kann nicht direkt angezeigt werden. Öffnen Sie die Originaldatei.',
+    noFile: 'Keine Datei verfügbar',
+    noFileDesc: 'Der Dokumenteintrag ist vorhanden, aber es ist keine zugängliche Datei hinterlegt.',
+    shareTypeSuffix: ' teilen',
+    shareSubtitle: 'Öffentliche Dokumentdetails zu diesem Produkt ansehen.',
+    noRecord: 'Nicht angegeben',
+    documentFallback: 'Dokument',
+    documentType: 'Dokumenttyp',
+    product: 'Produkt',
+    applicableModel: 'Gültiges Modell',
+    company: 'Unternehmen',
+    language: 'Sprache',
+    fileSize: 'Dateigröße',
+    uploaded: 'Hochgeladen',
+    updated: 'Aktualisiert',
+    publicStatus: 'Öffentlicher Status',
+    certificateNo: 'Zertifikatsnummer',
+    standard: 'Norm',
+    issuer: 'Ausstellende Stelle',
+    issueDate: 'Ausstellungsdatum',
+    validUntil: 'Gültig bis',
+  });
   const [documentData, setDocumentData] = useState(null);
   const [relatedDocs, setRelatedDocs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +158,7 @@ export default function DocumentDetailPage() {
       setError('');
       try {
         const response = await fetch(`/eu-doc/api/v2/documents/${id}`).then((res) => res.json());
-        if (!response.success) throw new Error(response.message || ui.notFound);
+        if (!response.success) throw new Error(ui.notFound);
         if (cancelled) return;
         setDocumentData(response.data);
 
@@ -158,7 +203,7 @@ export default function DocumentDetailPage() {
     const metaNo = doc.cert_no || doc.certNo || doc.certificate_metadata?.cert_no;
     const lang = doc.language ? String(doc.language).toUpperCase() : '';
     if (normalizeDocType(doc) === 'certificate') return metaNo || localizedField(doc, 'title', i18n.language) || `${documentTypeLabel(doc, i18n.language, 'short')} #${doc.id}`;
-    return [lang, localizedField(doc, 'title', i18n.language) || `${isEn ? 'Document' : '资料'} #${doc.id}`].filter(Boolean).join(' · ');
+    return [lang, localizedField(doc, 'title', i18n.language) || `${language === 'de' ? ui.documentFallback : isEn ? 'Document' : '资料'} #${doc.id}`].filter(Boolean).join(' · ');
   };
 
 
@@ -209,7 +254,7 @@ export default function DocumentDetailPage() {
   if (error || !documentData) {
     return (
       <div className={styles.statePage}>
-        <p>{error || '资料不存在'}</p>
+        <p>{error || ui.notFound}</p>
         <button onClick={() => navigate(-1)}>{ui.back}</button>
       </div>
     );
@@ -218,23 +263,23 @@ export default function DocumentDetailPage() {
   const productName = localizedField({ name: documentData.product_name || documentData.productName, name_en: documentData.product_name_en || documentData.productNameEn }, 'name', i18n.language);
   const companyName = localizedField({ name: documentData.company_name || documentData.companyName, name_en: documentData.company_name_en || documentData.companyNameEn }, 'name', i18n.language);
   const facts = [
-    { label: isEn ? 'Document type' : '资料类型', value: typeLabel },
-    { label: isEn ? 'Product' : '所属产品', value: productName },
-    { label: isEn ? 'Applicable model' : '适用型号', value: documentData.product_model || documentData.productModel },
-    { label: isEn ? 'Company' : '所属公司', value: companyName },
-    { label: isEn ? 'Language' : '语言', value: documentData.language ? String(documentData.language).toUpperCase() : ui.noRecord },
-    { label: isEn ? 'File size' : '文件大小', value: formatSize(documentData.file_size || documentData.fileSize) || ui.noRecord },
-    { label: isEn ? 'Uploaded' : '上传时间', value: formatDate(documentData.created_at || documentData.createdAt, i18n.language) },
-    { label: isEn ? 'Updated' : '更新时间', value: formatDate(documentData.updated_at || documentData.updatedAt, i18n.language) },
-    { label: isEn ? 'Public status' : '公开状态', value: documentPublicStatus },
+    { label: language === 'de' ? ui.documentType : isEn ? 'Document type' : '资料类型', value: typeLabel },
+    { label: language === 'de' ? ui.product : isEn ? 'Product' : '所属产品', value: productName },
+    { label: language === 'de' ? ui.applicableModel : isEn ? 'Applicable model' : '适用型号', value: documentData.product_model || documentData.productModel },
+    { label: language === 'de' ? ui.company : isEn ? 'Company' : '所属公司', value: companyName },
+    { label: language === 'de' ? ui.language : isEn ? 'Language' : '语言', value: documentData.language ? String(documentData.language).toUpperCase() : ui.noRecord },
+    { label: language === 'de' ? ui.fileSize : isEn ? 'File size' : '文件大小', value: formatSize(documentData.file_size || documentData.fileSize) || ui.noRecord },
+    { label: language === 'de' ? ui.uploaded : isEn ? 'Uploaded' : '上传时间', value: formatDate(documentData.created_at || documentData.createdAt, i18n.language) },
+    { label: language === 'de' ? ui.updated : isEn ? 'Updated' : '更新时间', value: formatDate(documentData.updated_at || documentData.updatedAt, i18n.language) },
+    { label: language === 'de' ? ui.publicStatus : isEn ? 'Public status' : '公开状态', value: documentPublicStatus },
   ];
 
   const certificateFacts = normalizeDocType(documentData) === 'certificate' ? [
-    { label: isEn ? 'Certificate No.' : '证书编号', value: certMeta.cert_no || documentData.cert_no },
-    { label: isEn ? 'Standard' : '认证标准', value: certMeta.standard || documentData.standard },
-    { label: isEn ? 'Issuer' : '发证机构', value: certMeta.issuer || documentData.issuer },
-    { label: isEn ? 'Issue date' : '签发日期', value: formatDate(certMeta.issue_date || documentData.issue_date, i18n.language) },
-    { label: isEn ? 'Valid until' : '有效期至', value: formatDate(certMeta.expiry_date || documentData.expiry_date, i18n.language) },
+    { label: language === 'de' ? ui.certificateNo : isEn ? 'Certificate No.' : '证书编号', value: certMeta.cert_no || documentData.cert_no },
+    { label: language === 'de' ? ui.standard : isEn ? 'Standard' : '认证标准', value: certMeta.standard || documentData.standard },
+    { label: language === 'de' ? ui.issuer : isEn ? 'Issuer' : '发证机构', value: certMeta.issuer || documentData.issuer },
+    { label: language === 'de' ? ui.issueDate : isEn ? 'Issue date' : '签发日期', value: formatDate(certMeta.issue_date || documentData.issue_date, i18n.language) },
+    { label: language === 'de' ? ui.validUntil : isEn ? 'Valid until' : '有效期至', value: formatDate(certMeta.expiry_date || documentData.expiry_date, i18n.language) },
   ].filter((item) => item.value && item.value !== ui.noRecord) : [];
 
   return (

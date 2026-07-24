@@ -138,7 +138,21 @@
     "productModel": "产品型号",
     "belongsToCompany": "所属公司",
     "language": "语言",
-    "viewDocument": "查看文档"
+    "viewDocument": "查看文档",
+    "modes": {
+      "all": "综合",
+      "product": "产品",
+      "document": "资料",
+      "company": "企业"
+    },
+    "documentTypes": {
+      "all": "全部资料",
+      "declaration_of_conformity": "DoC",
+      "certificate": "证书",
+      "manual": "说明书",
+      "test_report": "检测报告"
+    },
+    "keepScrolling": "继续滚动切换"
   },
   "certificate": {
     "dataSource": "数据来源",
@@ -152,18 +166,7 @@
     "wrongInfo": "信息有误",
     "outdatedInfo": "信息过时",
     "duplicateEntry": "重复录入",
-    "otherIssue": "其他问题",
     "reportNotice": "提交报告后，管理员将在1-3个工作日内审核处理。感谢您的反馈！",
-    "reportDescription": "详细描述（可选）",
-    "reportDescPlaceholder": "请描述您发现的具体问题...",
-    "reporterEmail": "您的邮箱（可选）",
-    "reporterEmailPlaceholder": "如需反馈处理结果，请留下邮箱",
-    "reporterName": "您的姓名（可选）",
-    "reporterNamePlaceholder": "您的姓名",
-    "submitReport": "提交报告",
-    "reportSubmitted": "报告已提交",
-    "reportSubmitSuccess": "感谢您的反馈！我们会尽快处理。",
-    "reportSubmitFailed": "提交失败，请稍后重试",
     "certFile": "证书文件",
     "docFile": "DoC 符合性声明",
     "userManual": "用户说明书",
@@ -1671,5 +1674,20 @@
     "uploader": "上传者",
     "viewer": "查看者",
     "fetchFailed": "获取企业列表失败"
+  },
+  "legal": {
+    "termsTitle": "用户服务协议",
+    "privacyTitle": "隐私政策",
+    "effectiveDate": "生效日期：2026年6月12日 | 版本：1.0",
+    "englishFallback": "德语法律文本尚在人工复核中，当前显示英文版本。",
+    "disclaimerTitle": "免责声明",
+    "enterpriseAgreementTitle": "企业入驻协议",
+    "uploadCommitmentTitle": "产品资料上传承诺书",
+    "updatedJune22": "最后更新：2026年6月22日",
+    "updatedJune24": "最后更新：2026年6月24日"
+  },
+  "meta": {
+    "siteTitle": "EU-DOC｜产品合规资料、DoC 声明与证书在线管理平台",
+    "siteDescription": "在线展示、查询与分享产品证书、DoC 符合性声明、说明书和检测报告等公开资料。"
   }
 }

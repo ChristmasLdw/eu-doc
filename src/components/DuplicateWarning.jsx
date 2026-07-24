@@ -46,7 +46,7 @@ export default function DuplicateWarning({ existingCert, onCancel, onContinue })
                 <span className={styles.value}>{existingCert.expiryDate || '-'}</span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.label}>{t('certificate.status')}:</span>
+                <span className={styles.label}>{t('certificate.statusLabel')}:</span>
                 <span className={`${styles.value} ${styles.statusBadge}`}>
                   {t(`certificate.${existingCert.status}`)}
                 </span>

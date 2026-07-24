@@ -7,15 +7,15 @@ import { useTranslation } from 'react-i18next';
 import styles from './DocumentTypeRail.module.css';
 
 const DOCUMENT_TYPES = [
-  { value: 'all', label: '全部资料', labelEn: 'All Documents' },
-  { value: 'declaration_of_conformity', label: 'DoC', labelEn: 'DoC' },
-  { value: 'certificate', label: '证书', labelEn: 'Certificates' },
-  { value: 'manual', label: '说明书', labelEn: 'Manuals' },
-  { value: 'test_report', label: '检测报告', labelEn: 'Test Reports' },
+  { value: 'all' },
+  { value: 'declaration_of_conformity' },
+  { value: 'certificate' },
+  { value: 'manual' },
+  { value: 'test_report' },
 ];
 
 export default function DocumentTypeRail({ currentType, onTypeChange, show }) {
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // 始终渲染容器，使用 CSS 控制显示/隐藏，避免布局跳动
   return (
@@ -23,7 +23,7 @@ export default function DocumentTypeRail({ currentType, onTypeChange, show }) {
       <div className={styles.types}>
         {DOCUMENT_TYPES.map((type) => {
           const isActive = currentType === type.value;
-          const label = i18n.language === 'en' ? type.labelEn : type.label;
+          const label = t(`search.documentTypes.${type.value}`);
 
           return (
             <button

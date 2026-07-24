@@ -4,7 +4,8 @@
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { isEnglishLanguage } from '../utils/languageContent';
+import { usesEnglishFallback } from '../utils/languageContent';
+import { getLanguageCode } from '../i18n/languages';
 import styles from './LegalPage.module.css';
 
 const content = {
@@ -55,14 +56,21 @@ function renderText(text) {
 }
 
 export default function UploadCommitmentPage() {
-  const { i18n } = useTranslation();
-  const ui = isEnglishLanguage(i18n.language) ? content.en : content.zh;
+  const { t, i18n } = useTranslation();
+  const language = getLanguageCode(i18n.resolvedLanguage);
+  const baseUi = usesEnglishFallback(language) ? content.en : content.zh;
+  const ui = language === 'de' ? { ...baseUi, title: t('legal.uploadCommitmentTitle'), updated: t('legal.updatedJune24') } : baseUi;
 
   return (
     <div className={styles.page}>
       <div className={styles.container}>
         <h1 className={styles.title}>{ui.title}</h1>
         <p className={styles.updateDate}>{ui.updated}</p>
+        {language === 'de' && (
+          <section className={styles.section}>
+            <p><strong>{t('legal.englishFallback')}</strong></p>
+          </section>
+        )}
         {ui.sections.map(([title, paragraphs, items]) => (
           <section className={styles.section} key={title}>
             <h2>{title}</h2>

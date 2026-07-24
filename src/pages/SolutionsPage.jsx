@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { isEnglishLanguage } from '../utils/languageContent';
+import { getLanguageCode } from '../i18n/languages';
 import styles from './SolutionsPage.module.css';
 
 const content = {
@@ -64,11 +64,41 @@ const content = {
     positionText1: 'EU-DOC is a product compliance documentation display and search tool. It is not a certification body and does not replace official verification by issuing organizations. Companies are responsible for the authenticity and legality of uploaded materials.',
     positionText2: 'The platform recommends uploading only product documentation intended for customers, consumers, buyers, or reviewers. Do not upload drawings, formulas, BOMs, supplier lists, quotations, internal processes, unreleased products, or other commercially sensitive information.',
   },
+  de: {
+    kicker: 'EU-DOC Solutions',
+    title: 'Öffentliche Produkt- und Konformitätsdokumente online verwalten, suchen und teilen',
+    intro: 'EU-DOC unterstützt Unternehmen dabei, Zertifikate, Konformitätserklärungen, Anleitungen und weitere öffentliche Produktdokumente übersichtlich bereitzustellen, damit externe Nutzer benötigte Unterlagen schnell finden.',
+    search: 'Öffentliche Dokumente suchen',
+    contact: 'Kontakt aufnehmen',
+    scenarioLabel: 'Anwendungsfälle',
+    scenarioTitle: 'Verteilte Dokumente, schwer auffindbare Anhänge und uneinheitliche Links vermeiden',
+    scenarios: [
+      {
+        title: 'Produktdokumente zentral bereitstellen',
+        text: 'Zertifikate, Konformitätserklärungen, Anleitungen und weitere öffentliche Unterlagen werden auf einer übersichtlichen Produktseite für Kunden, Einkäufer und Prüfstellen zusammengeführt.',
+      },
+      {
+        title: 'Öffentliche Dokumente online suchen',
+        text: 'Nutzer suchen nach Unternehmen, Produkt, Modell oder Zertifikatsnummer. Dadurch müssen Anhänge nicht wiederholt per E-Mail oder Chat versendet werden.',
+      },
+      {
+        title: 'Öffentliche Dokumentseiten für Unternehmen',
+        text: 'Unternehmen schaffen eindeutige Zugänge zu ihren Produktdokumenten und zeigen freigegebene Unterlagen zusammen mit grundlegenden Produktinformationen.',
+      },
+    ],
+    docLabel: 'Öffentliche Dokumenttypen',
+    docTitle: 'Dokumente nach Produkt organisieren',
+    docText: 'EU-DOC ist mehr als ein einzelner Zertifikatslink. Öffentliche Dokumente werden dem jeweiligen Produkt zugeordnet, sodass Nutzer zuerst das Produkt bestätigen und anschließend die relevanten Unterlagen öffnen können.',
+    documents: ['Zertifikate', 'Konformitätserklärungen', 'Bedienungsanleitungen', 'Prüfberichte', 'Produktinformationen'],
+    positionTitle: 'Position der Plattform',
+    positionText1: 'EU-DOC ist ein Werkzeug zur Anzeige und Suche von Produkt- und Konformitätsdokumenten. Die Plattform ist keine Zertifizierungsstelle und ersetzt keine offizielle Prüfung durch ausstellende Organisationen. Das hochladende Unternehmen ist für Echtheit und Rechtmäßigkeit verantwortlich.',
+    positionText2: 'Es sollten nur Produktdokumente hochgeladen werden, die für Kunden, Verbraucher, Einkäufer oder Prüfstellen bestimmt sind. Zeichnungen, Rezepturen, Stücklisten, Lieferantenlisten, Angebote, interne Prozesse, unveröffentlichte Produkte und andere vertrauliche Geschäftsinformationen gehören nicht auf die Plattform.',
+  },
 };
 
 export default function SolutionsPage() {
   const { i18n } = useTranslation();
-  const ui = isEnglishLanguage(i18n.language) ? content.en : content.zh;
+  const ui = content[getLanguageCode(i18n.resolvedLanguage)] || content.en;
 
   return (
     <main className={styles.page}>

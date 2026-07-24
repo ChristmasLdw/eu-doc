@@ -50,9 +50,11 @@ import DocumentDetailPage from './pages/DocumentDetailPage';
 import EmailVerifyPage from './pages/EmailVerifyPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import TutorialDemoPage from './pages/TutorialDemoPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminV2Page from './pages/admin/AdminV2Page';
+import PublicOnboardingGuide from './components/TutorialAssistant/PublicOnboardingGuide';
 import { useAdmin } from './contexts/AdminContext';
 
 function App() {
@@ -68,6 +70,8 @@ function App() {
     <>
       {/* 公共导航栏 - 除了认证页面，所有页面都显示 */}
       {!isAuthPage && <Navbar />}
+
+      {!isAuthPage && <PublicOnboardingGuide />}
 
       {/*
         Routes 定义 URL 路径与页面组件的映射关系
@@ -115,6 +119,9 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/solutions" element={<SolutionsPage />} />
+
+        {/* 用户引导内部审阅页面，不作为正式用户入口 */}
+        <Route path="/tutorial-demo" element={<TutorialDemoPage />} />
 
         {/* 用户认证相关页面 */}
         <Route path="/verify-email" element={<EmailVerifyPage />} />

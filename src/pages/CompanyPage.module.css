@@ -1366,3 +1366,34 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+.packageTypes,
+.packageTypes span {
+  min-width: 0;
+}
+
+.packageTypes span {
+  gap: 8px;
+  overflow-wrap: break-word;
+}
+
+.packageTypes strong {
+  flex-shrink: 0;
+}
+
+:global(html[lang='de']) .packageTypes span {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 4px;
+}
+
+:global(html[lang='de']) .packageTypes strong {
+  justify-self: start;
+  width: auto;
+  min-height: 24px;
+  height: auto !important;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: left;
+}

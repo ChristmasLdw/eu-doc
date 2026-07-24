@@ -94,14 +94,14 @@ export default function HomePage() {
   return (
     <div className={styles.page}>
       {/* 主搜索区域 */}
-      <section className={styles.hero}>
+      <section className={styles.hero} data-tutorial="home-purpose">
         <div className={styles.heroContent}>
           <div className={styles.titleSection}>
             <h1 className={styles.title}>{t('home.title')}</h1>
             <p className={styles.subtitle}>{t('home.subtitle')}</p>
           </div>
 
-          <form className={styles.searchForm} onSubmit={handleSearch}>
+          <form className={styles.searchForm} onSubmit={handleSearch} data-tutorial="home-search">
             <div className={styles.searchBox} ref={searchBoxRef}>
               <input
                 type="text"

@@ -15,6 +15,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getLanguageCode, LANGUAGE_OPTIONS } from '../i18n/languages';
 import { useAdmin } from '../contexts/AdminContext';
 import { useTheme } from '../contexts/ThemeContext';
 import styles from './Navbar.module.css';
@@ -134,7 +135,7 @@ export default function Navbar() {
           </Link>
           <Link
             to={personalPagePath('favorites')}
-            className={`${styles.navButton} ${location.pathname === '/favorites' ? styles.active : ''}`}
+            className={`${styles.navButton} ${styles.mobileSecondary} ${location.pathname === '/favorites' ? styles.active : ''}`}
             title={t('nav.favorites')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -143,7 +144,7 @@ export default function Navbar() {
           </Link>
           <Link
             to={personalPagePath('history')}
-            className={`${styles.navButton} ${location.pathname === '/history' ? styles.active : ''}`}
+            className={`${styles.navButton} ${styles.mobileSecondary} ${location.pathname === '/history' ? styles.active : ''}`}
             title={t('nav.history')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -196,20 +197,16 @@ export default function Navbar() {
             </button>
             {showLanguageMenu && (
               <div className={styles.languageDropdown}>
-                <button
-                  className={`${styles.languageOption} ${i18n.language === 'zh' ? styles.active : ''}`}
-                  onClick={() => changeLanguage('zh')}
-                >
-                  <span className={styles.flag}>🇨🇳</span>
-                  <span>简体中文</span>
-                </button>
-                <button
-                  className={`${styles.languageOption} ${i18n.language === 'en' ? styles.active : ''}`}
-                  onClick={() => changeLanguage('en')}
-                >
-                  <span className={styles.flag}>🇺🇸</span>
-                  <span>English</span>
-                </button>
+                {LANGUAGE_OPTIONS.map((language) => (
+                  <button
+                    key={language.code}
+                    className={`${styles.languageOption} ${getLanguageCode(i18n.resolvedLanguage) === language.code ? styles.active : ''}`}
+                    onClick={() => changeLanguage(language.code)}
+                  >
+                    <span className={styles.flag}>{language.flag}</span>
+                    <span>{language.label}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -219,6 +216,7 @@ export default function Navbar() {
             <Link
               to="/admin/login"
               className={`${styles.textButton} ${styles.loginButton}`}
+              data-tutorial="nav-login"
             >
               {t('auth.loginButton')}
             </Link>
@@ -231,6 +229,7 @@ export default function Navbar() {
               <button
                 type="button"
                 className={`${styles.textButton} ${styles.adminButton} ${(location.pathname.startsWith('/admin') || location.pathname.startsWith('/admin-v2')) ? styles.active : ''}`}
+                data-tutorial="nav-admin"
                 onClick={() => { setShowAdminMenu(false); navigate('/admin'); }}
               >
                 {isAdmin ? t('nav.admin') : t('nav.myUploads')}

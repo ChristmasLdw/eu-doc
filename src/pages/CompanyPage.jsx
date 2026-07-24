@@ -9,17 +9,19 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getLanguageCode } from '../i18n/languages';
 import { getCompany } from '../services/api';
 import * as api from '../services/api';
 import ShareModal from '../components/ShareModal';
-import { formatPublicDate, isEnglishLanguage, localizedField, publicStatusLabel } from '../utils/languageContent';
+import { categoryLabel, formatPublicDate, usesEnglishFallback, localizedField, publicStatusLabel } from '../utils/languageContent';
 import styles from './CompanyPage.module.css';
 
 export default function CompanyPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const isEn = isEnglishLanguage(i18n.language);
+  const language = getLanguageCode(i18n.resolvedLanguage);
+  const isEn = usesEnglishFallback(language);
   const ui = {
     center: isEn ? 'Company Document Center' : '企业资料中心',
     intro: isEn ? 'This page presents company basics, public product document packages, and compliance documents so users can confirm the company and open product document pages.' : '该页面集中展示企业基础信息、公开产品资料包与合规文件，方便用户确认企业并进入对应产品资料页。',
@@ -57,6 +59,43 @@ export default function CompanyPage() {
     shareType: isEn ? 'Company page share' : '企业主页分享',
     shareSubtitle: isEn ? 'View this company’s public product document packages, compliance documents, and company basics.' : '查看该企业公开的产品资料包、合规文件与企业基础信息。',
   };
+  if (language === 'de') Object.assign(ui, {
+    center: 'Unternehmensdokumentation',
+    intro: 'Diese Seite bündelt Unternehmensinformationen, öffentliche Produktdokumentation und Konformitätsunterlagen. So können Nutzer das Unternehmen prüfen und direkt zu den Produktseiten wechseln.',
+    productPackages: 'Produktdokumentation',
+    publicDocuments: 'Öffentliche Dokumente',
+    frontendStatus: 'Öffentlicher Status',
+    logoPending: 'Unternehmenslogo nicht hinterlegt',
+    favorited: '★ Favorisiert',
+    favorite: '☆ Favorisieren',
+    favoriteTitle: 'Unternehmen favorisieren',
+    unfavoriteTitle: 'Aus Favoriten entfernen',
+    shareCompany: 'Unternehmen teilen',
+    publicStatus: 'Öffentlicher Status',
+    verificationStatus: 'Verifizierung',
+    verified: 'Unternehmen verifiziert',
+    verificationPending: 'Verifizierung ausstehend',
+    mainCategory: 'Hauptkategorie',
+    contactEmail: 'E-Mail',
+    address: 'Adresse',
+    joined: 'Dabei seit',
+    notProvided: 'Vom Unternehmen nicht angegeben',
+    website: 'Website',
+    visitWebsite: 'Website besuchen',
+    searchPlaceholder: 'Produktname, Modell oder Dokument suchen',
+    publicCount: 'öffentliche Dokumente',
+    typeCount: 'Dokumenttypen',
+    certificate: 'Zertifikat',
+    doc: 'Konformitätserklärung',
+    manual: 'Bedienungsanleitung',
+    notPublic: 'Noch nicht öffentlich',
+    viewProduct: 'Produktdokumente ansehen →',
+    noMatched: 'Keine passenden Produktdokumente gefunden',
+    noPackages: 'Dieses Unternehmen hat noch keine Produktdokumente veröffentlicht',
+    clearSearch: 'Suche zurücksetzen',
+    shareType: 'Unternehmensseite teilen',
+    shareSubtitle: 'Öffentliche Produktdokumente, Konformitätsunterlagen und Unternehmensinformationen ansehen.',
+  });
 
   const [company, setCompany] = useState(null);
   const [products, setProducts] = useState([]);
@@ -101,7 +140,7 @@ export default function CompanyPage() {
       })
       .catch((err) => {
         console.error('Error loading company:', err);
-        setError(err.message || t('messages.networkError'));
+        setError(t('company.notFoundText'));
         setCompany(null);
       })
       .finally(() => setLoading(false));
@@ -298,7 +337,7 @@ export default function CompanyPage() {
   }
 
   const formatDate = (dateStr) => {
-    return formatPublicDate(dateStr, i18n.language, isEn ? 'Unknown' : '未知');
+    return formatPublicDate(dateStr, i18n.language, language === 'de' ? 'Unbekannt' : isEn ? 'Unknown' : '未知');
   };
   const displayValue = (value) => value || ui.notProvided;
   const companyPublicStatus = publicStatusLabel(company, 'company', i18n.language);
@@ -307,7 +346,7 @@ export default function CompanyPage() {
   const companyBasics = [
     { label: ui.publicStatus, value: companyPublicStatus },
     { label: ui.verificationStatus, value: company.verificationStatus === 'verified' || company.verification_status === 'verified' ? ui.verified : ui.verificationPending },
-    { label: ui.mainCategory, value: company.mainCategory || company.main_category },
+    { label: ui.mainCategory, value: categoryLabel(company.mainCategory || company.main_category, language) },
     { label: ui.contactEmail, value: company.contactEmail || company.contact_email },
     { label: ui.address, value: isEn ? (company.addressEn || company.address_en || company.address) : company.address },
     { label: ui.joined, value: formatDate(company.createdAt || company.created_at) },
@@ -442,8 +481,14 @@ export default function CompanyPage() {
                 {productPackages.map((product) => (
                   <Link key={product.id} to={`/products/${product.id}`} className={styles.productPackageCard}>
                     <div className={styles.packageTopline}>
-                      <span className={styles.packageStatusGood}>{isEn ? 'Public' : '已公开'} {product.docs.length} {ui.publicCount}</span>
-                      <span className={styles.packageTypeCount}>{product.publicTypeCount} {ui.typeCount}</span>
+                      <span className={styles.packageStatusGood}>
+                        {language === 'de'
+                          ? `${product.docs.length} ${product.docs.length === 1 ? 'öffentliches Dokument' : 'öffentliche Dokumente'}`
+                          : `${isEn ? 'Public' : '已公开'} ${product.docs.length} ${ui.publicCount}`}
+                      </span>
+                      <span className={styles.packageTypeCount}>
+                        {product.publicTypeCount} {language === 'de' && product.publicTypeCount === 1 ? 'Dokumenttyp' : ui.typeCount}
+                      </span>
                     </div>
                     <h3>{localizedField(product, 'name', i18n.language)}</h3>
                     <p>{product.model || localizedField({ name: product.categoryName || product.category_name, name_en: product.categoryNameEn || product.category_name_en }, 'name', i18n.language) || ui.productPackages}</p>

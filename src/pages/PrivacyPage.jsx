@@ -6,12 +6,14 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { getLanguageCode } from '../i18n/languages';
 import { Link } from 'react-router-dom';
 import styles from './LegalPage.module.css';
 
 export default function PrivacyPage() {
   const { t, i18n } = useTranslation();
-  const isZh = i18n.language === 'zh';
+  const language = getLanguageCode(i18n.resolvedLanguage);
+  const isZh = language === 'zh';
 
   return (
     <div className={styles.legalPage}>
@@ -21,14 +23,17 @@ export default function PrivacyPage() {
             ← {t('common.back')}
           </Link>
           <h1 className={styles.title}>
-            {isZh ? '隐私政策' : 'Privacy Policy'}
+            {t('legal.privacyTitle')}
           </h1>
           <p className={styles.meta}>
-            {isZh ? '生效日期：2026年6月12日 | 版本：1.0' : 'Effective Date: June 12, 2026 | Version: 1.0'}
+            {t('legal.effectiveDate')}
           </p>
         </div>
 
         <div className={styles.content}>
+          {language === 'de' && (
+            <p className={styles.highlight}><strong>{t('legal.englishFallback')}</strong></p>
+          )}
           {isZh ? (
             // 中文版本
             <>

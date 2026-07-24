@@ -1,0 +1,115 @@
+/* 元素高亮效果 */
+.tutorial-highlight {
+  position: relative;
+  z-index: 9998;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3), 0 0 0 1px var(--accent-blue) !important;
+  border-radius: var(--radius-sm);
+  animation: tutorialPulse 2s infinite;
+  transition: all 0.3s ease;
+}
+
+@keyframes tutorialPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3), 0 0 0 1px var(--accent-blue);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2), 0 0 0 1px var(--accent-blue);
+  }
+}
+
+/* 高亮时添加伪元素箭头（可选） */
+.tutorial-highlight::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* 暗色主题下的高亮 */
+.dark .tutorial-highlight {
+  box-shadow: 0 0 0 4px rgba(147, 197, 253, 0.3), 0 0 0 1px #60a5fa !important;
+}
+
+/* 帮助按钮样式 */
+.help-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.help-button:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--accent-blue);
+}
+
+.help-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  min-width: 200px;
+  padding: 8px;
+  z-index: 1000;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.help-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  border: none;
+  background: none;
+}
+
+.help-menu-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.help-menu-item span:first-child {
+  font-size: 16px;
+}

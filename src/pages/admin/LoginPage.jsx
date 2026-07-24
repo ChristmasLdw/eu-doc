@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.card}>
+      <div className={styles.card} data-tutorial="login-card">
         <div className={styles.logo}>
           <div className={styles.logoIcon}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -55,7 +55,7 @@ export default function LoginPage() {
         </div>
         <p className={styles.subtitle}>{t('authFlow.loginSubtitle')}</p>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form className={styles.form} onSubmit={handleSubmit} data-tutorial="login-form">
           <div className={styles.field}>
             <label className={styles.label} htmlFor="username">{t('auth.username')}</label>
             <input
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
         <div className={styles.footer}>
           {t('authFlow.noAccount')}
-          <Link to="/admin/register" className={styles.link}>{t('auth.goToRegister')}</Link>
+          <Link to="/admin/register" className={styles.link} data-tutorial="register-link">{t('auth.goToRegister')}</Link>
         </div>
       </div>
     </div>

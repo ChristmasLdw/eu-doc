@@ -1,0 +1,118 @@
+.business-guide-card {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10000;
+  width: min(380px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 16px;
+  background: #102a32;
+  color: #fff;
+  box-shadow: 0 28px 70px rgba(15, 42, 50, 0.32);
+  font-family: "Avenir Next", "Noto Sans SC", "PingFang SC", sans-serif;
+}
+
+.business-guide-progress {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 17px;
+}
+
+.business-guide-progress > span {
+  color: #efa33b;
+  font-family: "DIN Alternate", sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.business-guide-progress i {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.business-guide-progress i b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #efa33b;
+}
+
+.business-guide-progress small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+}
+
+.business-guide-kicker {
+  color: #8fc2bd;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.business-guide-card h2 {
+  margin: 8px 0 7px;
+  color: #fff;
+  font-size: 18px;
+}
+
+.business-guide-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.business-guide-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 17px;
+}
+
+.business-guide-actions button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.business-guide-actions button.primary {
+  border-color: #efa33b;
+  background: #efa33b;
+  color: #102a32;
+}
+
+.business-tutorial-target {
+  position: relative;
+  z-index: 9999;
+  outline: 3px solid #efa33b !important;
+  outline-offset: 4px;
+  border-radius: 8px;
+  animation: business-target-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes business-target-pulse {
+  50% { box-shadow: 0 0 0 9px rgba(239, 163, 59, 0.18); }
+}
+
+@media (max-width: 640px) {
+  .business-guide-card {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .business-tutorial-target { animation: none; }
+}

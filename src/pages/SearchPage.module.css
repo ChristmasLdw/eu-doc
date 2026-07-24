@@ -1184,3 +1184,57 @@
 .filterSelect:first-child {
   min-width: 190px;
 }
+
+/* German labels need more room than the original compact Chinese controls. */
+@media (max-width: 640px) {
+  .page {
+    padding-top: 56px;
+    overflow-x: clip;
+  }
+
+  .searchBar {
+    top: 56px;
+  }
+
+  .searchInput {
+    min-width: 0;
+    padding-right: 8px;
+  }
+
+  .searchButton {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .filterDropdowns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .filterSelect,
+  .filterSelect:first-child {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 40px;
+  }
+
+  .filterSelect:first-child,
+  .filterSelect:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .resultLeft {
+    min-width: 0;
+    flex-basis: auto;
+  }
+
+  .resultCount {
+    min-width: 0;
+  }
+
+  .resultInfo {
+    width: 100%;
+  }
+}

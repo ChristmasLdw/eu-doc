@@ -14,6 +14,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
+import { getLanguageLocale } from '../i18n/languages';
 import { getCertificates, getStats, getCompanies, getSearchSuggestions, getProducts, getDocuments } from '../services/api';
 import { categories as defaultCategories } from '../data/mockData';
 import { categoryLabel, localizedField } from '../utils/languageContent';
@@ -796,7 +797,7 @@ export default function SearchPage() {
         )}
 
         {/* 结果信息栏：数量 + 模式切换 + 排序 */}
-        <div className={styles.resultInfo}>
+        <div className={styles.resultInfo} data-tutorial="search-results">
           <div className={styles.resultLeft}>
             <span className={styles.resultCount}>
               {error ? (
@@ -864,7 +865,7 @@ export default function SearchPage() {
 
         {/* 公司卡片 */}
         {!error && matchedCompanies.length > 0 && (
-          <div className={styles.companyCards}>
+          <div className={styles.companyCards} data-tutorial="search-result-list">
             {matchedCompanies.map((company) => (
               <Link
                 to={`/companies/${company.id}`}
@@ -901,7 +902,7 @@ export default function SearchPage() {
         {/* 结果列表 */}
         {!error && results.length > 0 ? (
           <>
-            <div className={styles.resultList}>
+            <div className={styles.resultList} data-tutorial="search-result-list">
               {results.map((item) => {
                 // 产品模式：渲染产品卡片
                 if (searchMode === 'product') {
@@ -946,7 +947,7 @@ export default function SearchPage() {
 
                           <div className={styles.certFooter}>
                             <span className={styles.certIssuer}>
-                              {t('search.createdAt')}: {new Date(item.createdAt).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'zh-CN')}
+                              {t('search.createdAt')}: {new Date(item.createdAt).toLocaleDateString(getLanguageLocale(i18n.resolvedLanguage))}
                             </span>
                             <span className={styles.viewDetail}>{t('search.viewProduct')} →</span>
                           </div>

@@ -379,3 +379,55 @@
   transform: translateY(-105%);
   opacity: 0.08;
 }
+
+/* Long translated labels must size to their content instead of the old 60px Chinese baseline. */
+.textButton.loginButton {
+  width: auto;
+  min-width: 72px;
+  padding: 0 12px;
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding: 0;
+  }
+
+  .container {
+    height: 56px;
+    padding: 0 10px;
+  }
+
+  .logo {
+    gap: 0;
+  }
+
+  .logoIcon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .logoText,
+  .mobileSecondary {
+    display: none;
+  }
+
+  .navLinks {
+    gap: 4px;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .navButton,
+  .functionButton {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .textButton.loginButton {
+    min-width: 68px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}

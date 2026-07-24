@@ -8,14 +8,14 @@ import { useTranslation } from 'react-i18next';
 import styles from './SearchModeRail.module.css';
 
 const SEARCH_MODES = [
-  { value: 'all', label: '综合', labelEn: 'All', color: '#6b7280' },
-  { value: 'product', label: '产品', labelEn: 'Products', color: '#3b82f6' },
-  { value: 'document', label: '资料', labelEn: 'Documents', color: '#10b981' },
-  { value: 'company', label: '企业', labelEn: 'Companies', color: '#f59e0b' },
+  { value: 'all', color: '#6b7280' },
+  { value: 'product', color: '#3b82f6' },
+  { value: 'document', color: '#10b981' },
+  { value: 'company', color: '#f59e0b' },
 ];
 
 export default function SearchModeRail({ currentMode, onModeChange, counts = {} }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const railRef = useRef(null);
   const indicatorRef = useRef(null);
   const containerRef = useRef(null);
@@ -141,6 +141,7 @@ export default function SearchModeRail({ currentMode, onModeChange, counts = {} 
       className={styles.container}
       ref={containerRef}
       data-mode={currentMode}
+      data-tutorial="search-modes"
     >
       <div
         className={styles.rail}
@@ -155,7 +156,7 @@ export default function SearchModeRail({ currentMode, onModeChange, counts = {} 
         {SEARCH_MODES.map((mode) => {
           const isActive = currentMode === mode.value;
           const count = counts[mode.value];
-          const label = i18n.language === 'en' ? mode.labelEn : mode.label;
+          const label = t(`search.modes.${mode.value}`);
 
           return (
             <button
@@ -182,7 +183,7 @@ export default function SearchModeRail({ currentMode, onModeChange, counts = {} 
       {/* 滚动进度提示 */}
       {Math.abs(scrollProgress) > 10 && (
         <div className={styles.scrollHint}>
-          {scrollProgress > 0 ? '← 继续滚动切换' : '继续滚动切换 →'}
+          {scrollProgress > 0 ? `← ${t('search.keepScrolling')}` : `${t('search.keepScrolling')} →`}
         </div>
       )}
     </div>
