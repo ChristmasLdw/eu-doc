@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GuideCloud, GuideCursor } from './GuideVisuals';
 import './ContextualGuide.css';
+
+const DEFAULT_STEP_BEHAVIOR = {
+  showCursor: true,
+  cursorTarget: 'self',
+  cursorPosition: { x: 0.5, y: 0.5 },
+  requiredAction: 'click',
+};
 
 const STEP_DEFINITIONS = {
   'batch-nav': {
@@ -108,10 +116,36 @@ const STEP_DEFINITIONS = {
 function resolveStep(stepId) {
   const definition = STEP_DEFINITIONS[stepId];
   if (!definition) return null;
-  if (definition.resolve) return definition.resolve();
+  if (definition.resolve) {
+    const resolved = definition.resolve();
+    return resolved ? { ...DEFAULT_STEP_BEHAVIOR, ...definition, ...resolved } : null;
+  }
   const element = document.querySelector(definition.selector);
-  return element ? { ...definition, element } : null;
+  return element ? { ...DEFAULT_STEP_BEHAVIOR, ...definition, element } : null;
 }
+
+function resolveCursorElement(step) {
+  if (!step?.showCursor || !step.element) return null;
+  if (!step.cursorTarget || step.cursorTarget === 'self') return step.element;
+  return step.element.querySelector(step.cursorTarget)
+    || document.querySelector(step.cursorTarget);
+}
+
+function getCursorPoint(step) {
+  const element = resolveCursorElement(step);
+  if (!element) return null;
+  const cursorRect = element.getBoundingClientRect();
+  const { x = 0.5, y = 0.5 } = step.cursorPosition || {};
+  return {
+    left: cursorRect.left + cursorRect.width * x,
+    top: cursorRect.top + cursorRect.height * y,
+  };
+}
+
+const ACTION_HINTS = {
+  click: '请点击鼠标指向的真实页面位置，完成后会自动进入下一步。',
+  'input-and-submit': '请从鼠标指向的输入框开始填写，提交成功后会自动进入下一步。',
+};
 
 export function ContextualGuide() {
   const [taskMenuOpen, setTaskMenuOpen] = useState(() => !localStorage.getItem('eu-doc:guide:batch-upload:seen'));
@@ -213,6 +247,9 @@ export function ContextualGuide() {
     };
   }, [active, completeGuide, resolvedStep]);
 
+  const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
+  const actionHint = resolvedStep ? ACTION_HINTS[resolvedStep.requiredAction] : null;
+
   const popoverStyle = useMemo(() => {
     if (!rect) return {};
     const width = 330;
@@ -234,21 +271,27 @@ export function ContextualGuide() {
               <button disabled><strong>邀请团队成员</strong><small>后续加入</small></button>
             </div>
           )}
-          <button className="context-guide-trigger" onClick={() => setTaskMenuOpen((open) => !open)}>操作指引</button>
+          <button className="context-guide-trigger" onClick={() => setTaskMenuOpen((open) => !open)}>
+            <GuideCloud compact />
+            <span><small>EU-DOC 助手</small><strong>操作指引</strong></span>
+          </button>
         </div>
       )}
 
       {active && (
         <div className="context-guide-layer">
           {rect && <div className="context-guide-focus" style={{ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12 }} />}
-          {rect && <div className="context-guide-cursor" key={`${stepId}-${rect.left}-${rect.top}`} style={{ left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 }}><span /></div>}
+          {cursorPoint && <GuideCursor key={`${stepId}-${Math.round(cursorPoint.left)}-${Math.round(cursorPoint.top)}`} style={cursorPoint} />}
           <aside className={`context-guide-popover ${!rect ? 'waiting' : ''}`} style={rect ? popoverStyle : undefined}>
-            <div className="context-guide-head"><span>批量上传指引</span><button onClick={stopGuide}>×</button></div>
+            <div className="context-guide-head">
+              <div className="context-guide-agent"><GuideCloud compact /><span>批量上传指引</span></div>
+              <button onClick={stopGuide}>×</button>
+            </div>
             {resolvedStep ? (
               <>
                 <h3>{resolvedStep.title}</h3>
                 <p>{resolvedStep.description}</p>
-                <small>请在真实页面中点击高亮位置，完成后会自动进入下一步。</small>
+                {actionHint && <small>{actionHint}</small>}
               </>
             ) : (
               <>

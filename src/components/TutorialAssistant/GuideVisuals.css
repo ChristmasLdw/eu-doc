@@ -1,0 +1,200 @@
+.guide-cloud {
+  position: relative;
+  display: grid;
+  width: 62px;
+  height: 56px;
+  flex: 0 0 62px;
+  place-items: center;
+}
+
+.guide-cloud--floating { animation: guide-cloud-float 3.4s ease-in-out infinite; }
+
+.guide-cloud--spark::after {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f5b94c;
+  box-shadow: 0 0 0 4px rgba(245, 185, 76, .16);
+  content: "";
+  animation: guide-cloud-spark 2.2s ease-in-out infinite;
+}
+
+.guide-cloud__shape {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 58px;
+  height: 43px;
+  margin-top: 8px;
+  border: 2px solid rgba(76, 105, 201, .2);
+  border-radius: 48% 52% 45% 49% / 56% 55% 45% 44%;
+  background: linear-gradient(145deg, #fff 12%, #e9efff 100%);
+  box-shadow: 0 9px 19px rgba(71, 88, 156, .19), inset -6px -7px 12px rgba(111, 130, 208, .08);
+}
+
+.guide-cloud__shape::before,
+.guide-cloud__shape::after {
+  position: absolute;
+  z-index: -1;
+  border: 2px solid rgba(76, 105, 201, .18);
+  background: linear-gradient(145deg, #fff 10%, #edf2ff 100%);
+  content: "";
+}
+
+.guide-cloud__shape::before {
+  top: -13px;
+  left: 10px;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  border-bottom-color: transparent;
+  transform: rotate(-10deg);
+}
+
+.guide-cloud__shape::after {
+  top: -7px;
+  right: 4px;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+.guide-cloud__face {
+  position: absolute;
+  top: 14px;
+  left: 17px;
+  display: flex;
+  width: 26px;
+  justify-content: space-between;
+}
+
+.guide-cloud__face i {
+  display: block;
+  width: 5px;
+  height: 7px;
+  border-radius: 50%;
+  background: #26345d;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .55);
+  animation: guide-cloud-blink 4.4s infinite;
+}
+
+.guide-cloud__face b {
+  position: absolute;
+  top: 11px;
+  left: 9px;
+  width: 9px;
+  height: 5px;
+  border-bottom: 2px solid #53669f;
+  border-radius: 0 0 9px 9px;
+}
+
+.guide-cloud--compact {
+  width: 46px;
+  height: 38px;
+  flex-basis: 46px;
+  animation: guide-cloud-arrive .42s cubic-bezier(.2, .85, .25, 1);
+}
+
+.guide-cloud--compact .guide-cloud__shape {
+  width: 44px;
+  height: 31px;
+  margin-top: 6px;
+  border-width: 1.5px;
+  box-shadow: 0 6px 13px rgba(71, 88, 156, .16), inset -4px -5px 8px rgba(111, 130, 208, .07);
+}
+
+.guide-cloud--compact .guide-cloud__shape::before {
+  top: -9px;
+  left: 7px;
+  width: 22px;
+  height: 22px;
+  border-width: 1.5px;
+}
+
+.guide-cloud--compact .guide-cloud__shape::after {
+  top: -5px;
+  right: 3px;
+  width: 17px;
+  height: 17px;
+  border-width: 1.5px;
+}
+
+.guide-cloud--compact .guide-cloud__face {
+  top: 10px;
+  left: 12px;
+  width: 20px;
+}
+
+.guide-cloud--compact .guide-cloud__face i { width: 4px; height: 5px; }
+.guide-cloud--compact .guide-cloud__face b { top: 8px; left: 6px; width: 8px; height: 4px; }
+
+.guide-cursor {
+  position: fixed;
+  z-index: 12004;
+  width: 26px;
+  height: 33px;
+  pointer-events: none;
+  transform: translate(-3px, -3px);
+  transform-origin: 3px 3px;
+  animation: guide-cursor-arrive .8s cubic-bezier(.2, .8, .2, 1), guide-cursor-click 1.5s .85s ease-in-out infinite;
+}
+
+.guide-cursor svg {
+  display: block;
+  width: 26px;
+  height: 33px;
+  filter: drop-shadow(0 1px 0 rgba(31, 42, 88, .34)) drop-shadow(0 3px 4px rgba(24, 35, 76, .4));
+}
+
+.guide-cursor__ripple {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #f5b94c;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(245, 185, 76, .14), 0 0 9px rgba(245, 185, 76, .35);
+  animation: guide-cursor-ripple 1.5s .85s ease-out infinite;
+}
+
+@keyframes guide-cloud-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-3px) rotate(1deg); }
+}
+
+@keyframes guide-cloud-spark {
+  0%, 100% { opacity: .5; transform: scale(.75); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes guide-cloud-blink {
+  0%, 44%, 48%, 100% { transform: scaleY(1); }
+  46% { transform: scaleY(.12); }
+}
+
+@keyframes guide-cloud-arrive {
+  from { opacity: 0; transform: translateX(-8px) scale(.88); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes guide-cursor-arrive {
+  from { opacity: 0; transform: translate(-90px, -70px); }
+  to { opacity: 1; transform: translate(-3px, -3px); }
+}
+
+@keyframes guide-cursor-click { 50% { transform: translate(-1.5px, -1.5px) scale(.94); } }
+@keyframes guide-cursor-ripple { 0% { opacity: .9; transform: scale(.4); } 70%, 100% { opacity: 0; transform: scale(2.2); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-cloud,
+  .guide-cloud::after,
+  .guide-cloud__face i,
+  .guide-cursor,
+  .guide-cursor__ripple { animation: none !important; transition: none !important; }
+}

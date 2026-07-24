@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { GuideCloud, GuideCursor } from './GuideVisuals';
 import './PublicOnboardingGuide.css';
 
 const SEEN_KEY = 'eu-doc:guide:public:seen';
@@ -11,6 +12,16 @@ const GUIDE_STEPS = {
     eyebrow: '先认识 EU-DOC',
     title: '这里展示企业、产品与合规资料',
     description: '采购方和审核机构可以查找公开资料；企业上传后，也会以公司、产品和资料相互关联的方式展示在这里。',
+    showCursor: false,
+    requiredAction: 'manual',
+  },
+  'business-purpose': {
+    selector: '[data-tutorial="home-purpose"]',
+    eyebrow: '企业资料入口',
+    title: '把产品资料一次上传，再由系统辅助整理',
+    description: '接下来会直接带你注册或登录企业工作台，并完成公司申请、批量上传、问卷确认和产品编辑。上传后的资料会按企业与产品关系组织展示。',
+    showCursor: false,
+    requiredAction: 'manual',
   },
   'home-search': {
     selector: '[data-tutorial="home-search"]',
@@ -18,13 +29,22 @@ const GUIDE_STEPS = {
     title: '先看看资料最终如何被找到',
     description: '你可以输入公司名、产品名、型号或资料编号并点击搜索，也可以用示例词直接查看真实搜索结果。',
     event: 'submit',
+    showCursor: true,
+    cursorTarget: 'input',
+    cursorPosition: { x: 0.82, y: 0.5 },
+    requiredAction: 'input-or-example',
   },
   'search-modes': {
     selector: '[data-tutorial="search-modes"]',
     eyebrow: '搜索结果',
     title: '按需要切换查找对象',
-    description: '“综合、产品、资料、企业”对应不同核验视角。点击任一分类，页面会显示真实的筛选结果。',
+    description: '“综合、产品、资料、企业”对应不同核验视角。请点击真实页面中的“产品”，查看资料如何围绕产品组织。',
     event: 'click',
+    showCursor: true,
+    cursorTarget: 'button[data-mode="product"]',
+    actionTarget: 'button[data-mode="product"]',
+    cursorPosition: { x: 0.5, y: 0.5 },
+    requiredAction: 'click',
   },
   'search-results': {
     resolve: () => {
@@ -35,6 +55,8 @@ const GUIDE_STEPS = {
     eyebrow: '公开展示结果',
     title: '上传的资料会围绕产品被组织起来',
     description: '用户不是在杂乱的文件夹里找文件，而是先找到企业或产品，再查看关联的证书、DoC、说明书和检测报告。',
+    showCursor: false,
+    requiredAction: 'manual',
   },
   'nav-login': {
     resolve: () => {
@@ -47,12 +69,18 @@ const GUIDE_STEPS = {
     title: '从这里进入企业工作台',
     description: '已有账号请登录；如果你已经登录，点击“我的上传 / 管理后台”即可继续。进入后台后会自动接续批量上传指引。',
     event: 'click',
+    showCursor: true,
+    cursorTarget: 'self',
+    cursorPosition: { x: 0.5, y: 0.5 },
+    requiredAction: 'click',
   },
   'auth-choice': {
     selector: '[data-tutorial="login-card"]',
     eyebrow: '登录或注册',
     title: '第一次使用，请先建立账号',
     description: '已有账号可以直接填写登录表单；新企业用户先进入注册页。注册成功后会自动登录并进入企业工作台。',
+    showCursor: false,
+    requiredAction: 'manual',
   },
   'register-link': {
     selector: '[data-tutorial="register-link"]',
@@ -60,6 +88,10 @@ const GUIDE_STEPS = {
     title: '点击这里创建账号',
     description: '注册只需要邮箱、显示名称和密码。完成后不需要再次登录，会直接进入后台。',
     event: 'click',
+    showCursor: true,
+    cursorTarget: 'self',
+    cursorPosition: { x: 0.5, y: 0.5 },
+    requiredAction: 'click',
   },
   'login-form': {
     selector: '[data-tutorial="login-form"]',
@@ -67,6 +99,10 @@ const GUIDE_STEPS = {
     title: '使用真实账号登录',
     description: '填写账号和密码并提交。登录成功后，指引会在真实后台继续带你创建公司并批量上传资料。',
     event: 'submit',
+    showCursor: true,
+    cursorTarget: '#username',
+    cursorPosition: { x: 0.82, y: 0.5 },
+    requiredAction: 'input-and-submit',
   },
   'register-form': {
     selector: '[data-tutorial="register-form"]',
@@ -74,6 +110,10 @@ const GUIDE_STEPS = {
     title: '填写注册信息并同意协议',
     description: '完成注册后会自动登录。下一段指引将在后台继续，不会让你回到单独的教程页面。',
     event: 'submit',
+    showCursor: true,
+    cursorTarget: '#email',
+    cursorPosition: { x: 0.82, y: 0.5 },
+    requiredAction: 'input-and-submit',
   },
 };
 
@@ -94,6 +134,33 @@ function resolveGuideStep(stepId) {
   return element ? { ...definition, element } : null;
 }
 
+function resolveNestedElement(step, selector) {
+  if (!step?.element || !selector || selector === 'self') return step?.element || null;
+  return step.element.querySelector(selector) || document.querySelector(selector);
+}
+
+function resolveCursorElement(step) {
+  if (!step?.showCursor) return null;
+  return resolveNestedElement(step, step.cursorTarget);
+}
+
+function getCursorPoint(step) {
+  const element = resolveCursorElement(step);
+  if (!element) return null;
+  const cursorRect = element.getBoundingClientRect();
+  const { x = 0.5, y = 0.5 } = step.cursorPosition || {};
+  return {
+    left: cursorRect.left + cursorRect.width * x,
+    top: cursorRect.top + cursorRect.height * y,
+  };
+}
+
+const ACTION_HINTS = {
+  click: '请点击鼠标指向的真实页面位置，完成后指引会自动接续。',
+  'input-and-submit': '请从鼠标指向的输入框开始填写，提交成功后指引会自动接续。',
+  'input-or-example': '你可以从鼠标指向的输入框开始搜索，也可以直接使用下方示例。',
+};
+
 export default function PublicOnboardingGuide() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -105,6 +172,7 @@ export default function PublicOnboardingGuide() {
   const [resolvedStep, setResolvedStep] = useState(null);
   const [rect, setRect] = useState(null);
   const targetRef = useRef(null);
+  const launcherRef = useRef(null);
 
   const protectedAdminPage = isProtectedAdminPath(location.pathname);
 
@@ -128,7 +196,7 @@ export default function PublicOnboardingGuide() {
     if (nextFlow === 'business') localStorage.setItem(PENDING_KEY, 'batch-upload');
     else localStorage.removeItem(PENDING_KEY);
     setFlow(nextFlow);
-    setStepId('home-purpose');
+    setStepId(nextFlow === 'business' ? 'business-purpose' : 'home-purpose');
     setWelcomeOpen(false);
     setMenuOpen(false);
     setActive(true);
@@ -147,6 +215,7 @@ export default function PublicOnboardingGuide() {
 
   const advanceManualStep = useCallback(() => {
     if (stepId === 'home-purpose') setStepId('home-search');
+    else if (stepId === 'business-purpose') setStepId('nav-login');
     else if (stepId === 'search-modes') setStepId('search-results');
     else if (stepId === 'search-results') {
       if (flow === 'business') setStepId('nav-login');
@@ -167,6 +236,24 @@ export default function PublicOnboardingGuide() {
       setActive(true);
     }
   }, [active, location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const closeMenuFromOutside = (event) => {
+      if (!launcherRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    const closeMenuWithKeyboard = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeMenuFromOutside, true);
+    document.addEventListener('keydown', closeMenuWithKeyboard);
+    return () => {
+      document.removeEventListener('pointerdown', closeMenuFromOutside, true);
+      document.removeEventListener('keydown', closeMenuWithKeyboard);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!active || protectedAdminPage) return undefined;
@@ -211,6 +298,8 @@ export default function PublicOnboardingGuide() {
   useEffect(() => {
     if (!active || !resolvedStep?.element || !resolvedStep.event) return undefined;
     const element = resolvedStep.element;
+    const actionElement = resolveNestedElement(resolvedStep, resolvedStep.actionTarget);
+    if (!actionElement) return undefined;
 
     const handleAction = () => {
       window.setTimeout(() => {
@@ -226,8 +315,8 @@ export default function PublicOnboardingGuide() {
       }, 400);
     };
 
-    element.addEventListener(resolvedStep.event, handleAction, { once: true });
-    return () => element.removeEventListener(resolvedStep.event, handleAction);
+    actionElement.addEventListener(resolvedStep.event, handleAction, { once: true });
+    return () => actionElement.removeEventListener(resolvedStep.event, handleAction);
   }, [active, closeGuide, resolvedStep, stepId]);
 
   useEffect(() => {
@@ -243,6 +332,9 @@ export default function PublicOnboardingGuide() {
     };
   }, [active]);
 
+  const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
+  const actionHint = resolvedStep ? ACTION_HINTS[resolvedStep.requiredAction] : null;
+
   const popoverStyle = useMemo(() => {
     if (!rect) return undefined;
     const width = Math.min(370, window.innerWidth - 32);
@@ -251,10 +343,10 @@ export default function PublicOnboardingGuide() {
     }
     const roomRight = window.innerWidth - rect.right;
     if (roomRight > width + 28) {
-      return { left: rect.right + 16, top: Math.max(16, Math.min(rect.top, window.innerHeight - 300)), width };
+      return { left: rect.right + 16, top: Math.max(52, Math.min(rect.top, window.innerHeight - 300)), width };
     }
     const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
-    const top = window.innerHeight - rect.bottom > 250 ? rect.bottom + 16 : Math.max(16, rect.top - 230);
+    const top = window.innerHeight - rect.bottom > 250 ? rect.bottom + 16 : Math.max(52, rect.top - 230);
     return { left, top, width };
   }, [rect]);
 
@@ -263,21 +355,33 @@ export default function PublicOnboardingGuide() {
   return (
     <>
       {!active && !welcomeOpen && (
-        <div className="public-guide-launcher">
+        <div ref={launcherRef} className={`public-guide-launcher ${menuOpen ? 'is-open' : ''}`}>
           {menuOpen && (
             <div className="public-guide-menu">
-              <span>第一次来？选择你要完成的事</span>
+              <span>想让我帮你做什么？</span>
               <button type="button" onClick={() => startFlow('explore')}>
                 <strong>查找和核验资料</strong>
                 <small>了解网站、搜索产品和查看公开资料</small>
               </button>
               <button type="button" onClick={() => startFlow('business')}>
                 <strong>企业上传资料</strong>
-                <small>从公开展示一路进入批量上传和整理</small>
+                <small>直接进入登录、注册、批量上传和整理</small>
               </button>
             </div>
           )}
-          <button type="button" className="public-guide-trigger" onClick={() => setMenuOpen((open) => !open)}>新手指引</button>
+          <button
+            type="button"
+            className="public-guide-trigger"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-label="打开 EU-DOC 新手指引"
+          >
+            <GuideCloud floating spark />
+            <span className="public-guide-pet-prompt">
+              <small>EU-DOC 助手</small>
+              <strong>{menuOpen ? '请选择需要的帮助' : '需要我帮你吗？'}</strong>
+            </span>
+          </button>
         </div>
       )}
 
@@ -309,10 +413,13 @@ export default function PublicOnboardingGuide() {
       {active && (
         <div className="public-guide-layer">
           {rect && <div className="public-guide-focus" style={{ left: rect.left - 7, top: rect.top - 7, width: rect.width + 14, height: rect.height + 14 }} />}
-          {rect && <div className="public-guide-cursor" key={`${stepId}-${Math.round(rect.left)}-${Math.round(rect.top)}`} style={{ left: rect.left + Math.min(rect.width * 0.72, rect.width - 18), top: rect.top + Math.min(rect.height * 0.55, rect.height - 14) }}><span /></div>}
+          {cursorPoint && <GuideCursor key={`${stepId}-${Math.round(cursorPoint.left)}-${Math.round(cursorPoint.top)}`} style={cursorPoint} />}
           <aside className={`public-guide-popover ${!rect ? 'waiting' : ''}`} style={popoverStyle}>
             <div className="public-guide-popover-head">
-              <span>{resolvedStep?.eyebrow || '正在衔接真实页面'}</span>
+              <div className="public-guide-popover-agent">
+                <GuideCloud compact />
+                <span className="public-guide-popover-eyebrow">{resolvedStep?.eyebrow || '正在衔接真实页面'}</span>
+              </div>
               <button type="button" onClick={() => closeGuide()}>×</button>
             </div>
             {resolvedStep ? (
@@ -321,8 +428,8 @@ export default function PublicOnboardingGuide() {
                 <p>{resolvedStep.description}</p>
                 <div className="public-guide-actions">
                   {stepId === 'home-purpose' && <button type="button" className="primary" onClick={advanceManualStep}>知道了，看看怎么查</button>}
+                  {stepId === 'business-purpose' && <button type="button" className="primary" onClick={advanceManualStep}>开始：进入企业工作台</button>}
                   {stepId === 'home-search' && <button type="button" className="primary" onClick={goToExample}>用示例 F66 查看</button>}
-                  {stepId === 'search-modes' && <button type="button" className="primary" onClick={advanceManualStep}>继续看展示结果</button>}
                   {stepId === 'search-results' && flow === 'explore' && <button type="button" className="primary" onClick={advanceManualStep}>我已经了解</button>}
                   {stepId === 'search-results' && flow === 'business' && <button type="button" className="primary" onClick={advanceManualStep}>继续：上传企业资料</button>}
                   {stepId === 'auth-choice' && (
@@ -332,9 +439,7 @@ export default function PublicOnboardingGuide() {
                     </>
                   )}
                 </div>
-                {resolvedStep.event && !['home-search', 'search-modes'].includes(stepId) && (
-                  <small>请操作高亮的真实页面区域，完成后指引会自动接续。</small>
-                )}
+                {actionHint && <small>{actionHint}</small>}
               </>
             ) : (
               <>
