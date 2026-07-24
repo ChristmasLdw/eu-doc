@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import * as api from '../../services/api';
 import styles from './AdminV2Page.module.css';
+import { ContextualGuide } from '../../components/TutorialAssistant/ContextualGuide';
 
 const fallbackCompanies = [];
 
@@ -738,6 +739,7 @@ export default function AdminV2Page() {
   const [memberError, setMemberError] = useState('');
   const [memberFilters, setMemberFilters] = useState({ query: '', role: 'all', status: 'all' });
   const [memberInviteModal, setMemberInviteModal] = useState({ open: false, email: '', role: 'viewer' });
+  const [memberInviteSubmitting, setMemberInviteSubmitting] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [companyActivity, setCompanyActivity] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -797,9 +799,10 @@ export default function AdminV2Page() {
   };
   const [productModal, setProductModal] = useState(emptyProductModal);
   const [documentModal, setDocumentModal] = useState(() => emptyDocumentModalState());
-  const [documentPreview, setDocumentPreview] = useState({ open: false, url: '', title: '', objectUrl: '' });
+  const [documentPreview, setDocumentPreview] = useState({ open: false, url: '', title: '', objectUrl: '', mimeType: '', loading: false, error: '' });
   const [passwordModal, setPasswordModal] = useState({ open: false, oldPassword: '', newPassword: '', confirmPassword: '' });
   const [companyModal, setCompanyModal] = useState({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' });
+  const [companySubmitting, setCompanySubmitting] = useState(false);
   const [verificationHistoryModal, setVerificationHistoryModal] = useState({ open: false, history: [] });
   const [verificationForm, setVerificationForm] = useState({ businessLicenseNo: '', contactPerson: '', contactEmail: '' });
   const [verificationItems, setVerificationItems] = useState([]);
@@ -1793,11 +1796,13 @@ export default function AdminV2Page() {
   };
 
   const previewPendingDocument = async (document) => {
+    setDocumentPreview({ open: true, url: '', title: document.title || '待审核资料', objectUrl: '', mimeType: '', loading: true, error: '' });
     try {
       const blob = await api.getDocumentReviewFile(document.id);
       const objectUrl = URL.createObjectURL(blob);
-      setDocumentPreview({ open: true, url: objectUrl, title: document.title || '待审核资料', objectUrl });
+      setDocumentPreview({ open: true, url: objectUrl, title: document.title || '待审核资料', objectUrl, mimeType: blob.type || '', loading: false, error: '' });
     } catch (error) {
+      setDocumentPreview({ open: true, url: '', title: document.title || '待审核资料', objectUrl: '', mimeType: '', loading: false, error: error.message || '资料预览失败' });
       showAction(error.message || '资料预览失败');
     }
   };
@@ -1818,11 +1823,14 @@ export default function AdminV2Page() {
   };
 
   const previewVerificationMaterial = async (material) => {
+    const title = material.documentType === 'business_license' ? '营业执照' : '授权书';
+    setDocumentPreview({ open: true, url: '', title, objectUrl: '', mimeType: '', loading: true, error: '' });
     try {
       const blob = await api.getCompanyVerificationFile(material.id);
       const objectUrl = URL.createObjectURL(blob);
-      setDocumentPreview({ open: true, url: objectUrl, title: material.documentType === 'business_license' ? '营业执照' : '授权书', objectUrl });
+      setDocumentPreview({ open: true, url: objectUrl, title, objectUrl, mimeType: blob.type || '', loading: false, error: '' });
     } catch (error) {
+      setDocumentPreview({ open: true, url: '', title, objectUrl: '', mimeType: '', loading: false, error: error.message || '认证材料预览失败' });
       showAction(error.message || '认证材料预览失败');
     }
   };
@@ -2194,7 +2202,8 @@ export default function AdminV2Page() {
         categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
         complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
       });
-      showAction('已按同一产品整理这些资料');
+      const remainingPendingCount = Math.max(0, importItems.filter((item) => item.status === 'pending' && !itemsToOrganize.some((target) => String(target.id) === String(item.id))).length);
+      showAction(remainingPendingCount > 0 ? `已归档这组资料，还有 ${remainingPendingCount} 份待整理资料` : '已按同一产品整理这些资料，待整理区已清空');
       setActiveImportGroupKey(null);
       await Promise.all([refreshImportItems(), refreshCompanyAssets()]);
     } catch (error) {
@@ -2248,11 +2257,13 @@ export default function AdminV2Page() {
   };
 
   const inviteMember = async () => {
+    if (memberInviteSubmitting) return;
     const email = memberInviteModal.email.trim();
     if (!email) {
       showAction(t('admin.memberManagement.enterRegisteredEmail'));
       return;
     }
+    setMemberInviteSubmitting(true);
     try {
       await api.inviteCompanyMember(activeCompany, email, memberInviteModal.role);
       setMemberInviteModal({ open: false, email: '', role: 'viewer' });
@@ -2260,6 +2271,8 @@ export default function AdminV2Page() {
       await Promise.all([refreshCompanyMembers(), refreshCompanyActivity()]);
     } catch (error) {
       showAction(error.message || t('admin.memberManagement.addFailed'));
+    } finally {
+      setMemberInviteSubmitting(false);
     }
   };
 
@@ -2414,6 +2427,7 @@ export default function AdminV2Page() {
   };
 
   const submitCompanyModal = async () => {
+    if (companySubmitting) return;
     if (companyModal.mode === 'claim') {
       showAction('认领公司需要提交认证材料，后续接入企业认证流程');
       return;
@@ -2422,6 +2436,7 @@ export default function AdminV2Page() {
       showAction('请填写公司名称');
       return;
     }
+    setCompanySubmitting(true);
     try {
       const result = await api.createCompany({
         name: companyModal.name,
@@ -2447,7 +2462,10 @@ export default function AdminV2Page() {
       showAction('公司申请草稿已创建，可以先批量上传产品资料');
       api.getMe().catch(() => null);
     } catch (error) {
-      showAction(error.message || '公司创建失败');
+      const message = error.message || '公司创建失败';
+      showAction(message.includes('已存在') ? message : message);
+    } finally {
+      setCompanySubmitting(false);
     }
   };
 
@@ -2723,12 +2741,12 @@ export default function AdminV2Page() {
   const openDocumentPreview = () => {
     if (documentModal.file) {
       const objectUrl = URL.createObjectURL(documentModal.file);
-      setDocumentPreview({ open: true, url: objectUrl, title: documentModal.file.name, objectUrl });
+      setDocumentPreview({ open: true, url: objectUrl, title: documentModal.file.name, objectUrl, mimeType: documentModal.file.type || '', loading: false, error: '' });
       return;
     }
     const docUrl = getDocumentAssetUrl(documentModal.doc);
     if (docUrl) {
-      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || t('admin.fileManagement.previewTitle'), objectUrl: '' });
+      setDocumentPreview({ open: true, url: docUrl, title: documentModal.doc.name || t('admin.fileManagement.previewTitle'), objectUrl: '', mimeType: '', loading: false, error: '' });
       return;
     }
     showAction(hasDocumentRecord(documentModal.doc) ? t('admin.fileManagement.noPreviewReplaceHint') : t('admin.fileManagement.selectOrUploadFirst'));
@@ -2847,7 +2865,7 @@ export default function AdminV2Page() {
             </select>
           </label>
           <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
-          <button className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择资料批量上传</button>
+          <button data-tutorial="batch-upload-trigger" className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择资料批量上传</button>
           <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
           <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新</button>
         </div>
@@ -3316,7 +3334,7 @@ export default function AdminV2Page() {
               <div className={styles.importBlockedCard}>
                 <h3>请先创建或选择公司</h3>
                 <p>批量导入的资料必须归属于某一家公司。请先创建公司，或者选择左侧已有公司后再上传。</p>
-                <button className={styles.primaryBtn} onClick={() => setCompanyModal({ open: true, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>创建 / 认领公司</button>
+                <button data-tutorial="create-company-from-import" className={styles.primaryBtn} onClick={() => setCompanyModal({ open: true, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>创建 / 认领公司</button>
               </div>
             </div>
           </Section>
@@ -3365,7 +3383,7 @@ export default function AdminV2Page() {
                     const typeValue = form.documentType || inferImportType(group.items[0], group.type);
                     const confidence = getImportConfidence(group);
                     return (
-                      <button key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复资料卡片，可直接删除重复资料'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
+                      <button data-tutorial={!group.isDuplicateGroup ? 'import-group-card' : undefined} key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复资料卡片，可直接删除重复资料'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
                         <div className={styles.importMiniTop}>
                           <span className={styles.fileTypeIcon}>{typeValue.slice(0, 3)}</span>
                           <span className={`${styles.confidenceDot} ${styles[confidence.tone]}`} />
@@ -3455,7 +3473,7 @@ export default function AdminV2Page() {
                               <h4>确认这些资料是否属于同一个产品</h4>
                               <p>如果属于同一个产品就继续；如果系统分错了，直接拆分成单份资料整理。</p>
                               <div className={styles.finalActions}>
-                                <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>{(form.confirmedStep || 0) >= 1 ? '已确认同一产品' : '确认是同一产品'}</button>
+                                <button data-tutorial="import-question-1" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>{(form.confirmedStep || 0) >= 1 ? '已确认同一产品' : '确认是同一产品'}</button>
                                 {group.items.length > 1 && <button className={styles.secondaryBtn} onClick={() => { setSplitImportGroups((state) => ({ ...state, [group.key]: true })); setActiveImportGroupKey(null); }}>识别错误？拆分整理</button>}
                               </div>
                             </div>
@@ -3547,7 +3565,7 @@ export default function AdminV2Page() {
                                   </div>
                                 </div>
                               ) : <p className={styles.matchHint}>已选择已有产品，将沿用该产品当前分类；如需调整分类，请到产品编辑里修改。</p>}
-                              <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{(form.confirmedStep || 0) >= 2 ? '已确认产品信息' : '确认产品信息'}</button>
+                              <button data-tutorial="import-question-2" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{(form.confirmedStep || 0) >= 2 ? '已确认产品信息' : '确认产品信息'}</button>
                             </div>
                           </section>
 
@@ -3563,7 +3581,7 @@ export default function AdminV2Page() {
                                   <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
                                 </div>)}
                               </div>
-                              <button className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{(form.confirmedStep || 0) >= 3 ? '已确认资料信息' : '确认资料信息'}</button>
+                              <button data-tutorial="import-question-3" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{(form.confirmedStep || 0) >= 3 ? '已确认资料信息' : '确认资料信息'}</button>
                             </div>
                           </section>
 
@@ -3573,7 +3591,7 @@ export default function AdminV2Page() {
                               <h4>最终提交</h4>
                               <p>将{hasSelectedProduct ? '关联到已有产品' : '创建新产品'}，并归档 {group.items.filter((item) => !item.isDuplicate).length || group.items.length} 份保留资料。</p>
                               <div className={styles.finalActions}>
-                                <button className={styles.primaryBtn} onClick={() => organizeImportGroup(group)}>确认提交归档</button>
+                                <button data-tutorial="import-question-submit" className={styles.primaryBtn} onClick={() => organizeImportGroup(group)}>确认提交归档</button>
                                 {group.items.some((item) => item.isDuplicate) && <button className={styles.dangerSoftBtn} onClick={() => deleteDuplicateImportItems(group)}>只删除重复资料</button>}
                                 <button className={styles.secondaryBtn} onClick={() => { showAction('已保留在待整理池，之后可继续处理'); setActiveImportGroupKey(null); }}>跳过整理，稍后处理</button>
                                 <button className={styles.dangerSoftBtn} onClick={() => deletePendingImportGroup(group)}>删除整组资料</button>
@@ -3591,7 +3609,7 @@ export default function AdminV2Page() {
                   {organizedItems.map((item) => {
                     const linkedDoc = companyDocuments.find((doc) => String(doc.id) === String(item.documentId));
                     return (
-                      <button key={item.id} className={`${styles.importMiniCard} ${styles.importCompletedCard}`} onClick={() => linkedDoc ? editDocumentInfo(linkedDoc) : openPage('company', 'files', activeCompany)}>
+                      <button data-tutorial="organized-card" key={item.id} className={`${styles.importMiniCard} ${styles.importCompletedCard}`} onClick={() => linkedDoc ? editDocumentInfo(linkedDoc) : openPage('company', 'files', activeCompany)}>
                         <div className={styles.importMiniTop}>
                           <span className={styles.fileTypeIcon}>{(item.guessedType || 'other').slice(0, 3)}</span>
                           <span className={styles.completedBadge}>已完成</span>
@@ -3869,7 +3887,7 @@ export default function AdminV2Page() {
                       )}
                       {workspaceViewMode !== 'overview' && <div className={styles.stackCardActions}>
                         <button onClick={(event) => { event.stopPropagation(); manageProductFiles(product); }}>{t('admin.productManagement.manageDocuments')}</button>
-                        <button onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>{t('admin.productManagement.editProduct')}</button>
+                        <button data-tutorial="product-edit" onClick={(event) => { event.stopPropagation(); openProductModal(product); }}>{t('admin.productManagement.editProduct')}</button>
                         <button onClick={(event) => { event.stopPropagation(); navigate(`/products/${product.id}`); }}>{t('admin.productManagement.preview')}</button>
                       </div>}
                     </article>
@@ -4800,7 +4818,7 @@ export default function AdminV2Page() {
           onScroll={handleSidebarScroll}
         >
           <div className={styles.quickImportBox}>
-            <button className={activeGroup === 'import' ? styles.quickImportActive : ''} onClick={() => openPage('import', 'bulk-import', activeCompany || companies[0]?.id)}>
+            <button data-tutorial="batch-upload-nav" className={activeGroup === 'import' ? styles.quickImportActive : ''} onClick={() => openPage('import', 'bulk-import', activeCompany || companies[0]?.id)}>
               <MenuIcon type="import" />
               <span>批量上传</span>
             </button>
@@ -4812,6 +4830,7 @@ export default function AdminV2Page() {
             {companies.map((company) => (
               <div key={company.id} className={styles.companyBlock}>
                 <button
+                  data-tutorial={String(activeCompany) === String(company.id) ? 'company-nav-toggle' : undefined}
                   className={`${styles.companyBtn} ${expandedCompanies.includes(company.id) ? styles.companyActive : ''}`}
                   onClick={() => setExpandedCompanies((current) => current.includes(company.id) ? current.filter((id) => id !== company.id) : [...current, company.id])}
                 >
@@ -4823,6 +4842,7 @@ export default function AdminV2Page() {
                     {companyMenus.map((item) => (
                       <button
                         key={item.id}
+                        data-tutorial={item.id === 'products' && String(activeCompany) === String(company.id) ? 'products-nav' : undefined}
                         className={activeGroup === 'company' && String(activeCompany) === String(company.id) && activePage === item.id ? styles.activeItem : ''}
                         onClick={() => openPage('company', item.id, company.id)}
                       >
@@ -4977,8 +4997,8 @@ export default function AdminV2Page() {
                   </div>
                 )}
                 <div className={styles.modalActions}>
-                  <button className={styles.secondaryBtn} onClick={() => setCompanyModal({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>取消</button>
-                  <button className={styles.primaryBtn} onClick={submitCompanyModal}>{companyModal.mode === 'create' ? '创建申请草稿' : '提交认领申请'}</button>
+                  <button className={styles.secondaryBtn} disabled={companySubmitting} onClick={() => setCompanyModal({ open: false, mode: 'create', name: '', nameEn: '', contactEmail: '' })}>取消</button>
+                  <button data-tutorial={companyModal.mode === 'create' ? 'create-company-submit' : undefined} className={styles.primaryBtn} disabled={companySubmitting} onClick={submitCompanyModal}>{companySubmitting ? t('admin.common.processing') : (companyModal.mode === 'create' ? '创建申请草稿' : '提交认领申请')}</button>
                 </div>
               </div>
             </div>
@@ -5010,8 +5030,8 @@ export default function AdminV2Page() {
                 </div>
                 <div className={styles.profileNote}>{t('admin.memberManagement.registeredOnlyNote')}</div>
                 <div className={styles.modalActions}>
-                  <button className={styles.secondaryBtn} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>{t('admin.common.cancel')}</button>
-                  <button className={styles.primaryBtn} onClick={inviteMember}>{t('admin.memberManagement.confirmAdd')}</button>
+                  <button className={styles.secondaryBtn} disabled={memberInviteSubmitting} onClick={() => setMemberInviteModal({ open: false, email: '', role: 'viewer' })}>{t('admin.common.cancel')}</button>
+                  <button className={styles.primaryBtn} disabled={memberInviteSubmitting} onClick={inviteMember}>{memberInviteSubmitting ? t('admin.common.processing') : t('admin.memberManagement.confirmAdd')}</button>
                 </div>
               </div>
             </div>
@@ -5373,10 +5393,25 @@ export default function AdminV2Page() {
                   <button className={styles.iconCloseBtn} onClick={closeDocumentPreview}>×</button>
                 </div>
                 <div className={styles.previewFrameWrap}>
-                  {documentPreview.url.match(/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i) || documentPreview.objectUrl ? (
+                  {documentPreview.loading ? (
+                    <div className={styles.previewStateBox}>
+                      <strong>正在加载预览...</strong>
+                      <p>文件较大时可能需要几秒钟，请稍等。</p>
+                    </div>
+                  ) : documentPreview.error ? (
+                    <div className={styles.previewStateBox}>
+                      <strong>无法预览该文件</strong>
+                      <p>{documentPreview.error}</p>
+                    </div>
+                  ) : documentPreview.url && (documentPreview.mimeType?.startsWith('image/') || documentPreview.url.match(/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i)) ? (
                     <img src={documentPreview.url} alt={documentPreview.title || t('admin.fileManagement.previewTitle')} />
-                  ) : (
+                  ) : documentPreview.url ? (
                     <iframe src={documentPreview.url} title={documentPreview.title || t('admin.fileManagement.previewTitle')} />
+                  ) : (
+                    <div className={styles.previewStateBox}>
+                      <strong>暂无可预览文件</strong>
+                      <p>请确认文件是否仍存在于服务器。</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -5384,6 +5419,7 @@ export default function AdminV2Page() {
           )}
         </div>
       </main>
+      <ContextualGuide />
     </div>
   );
 }

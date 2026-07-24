@@ -114,7 +114,7 @@ router.post('/login', (req, res) => {
   const loginId = email || username;
 
   if (!loginId || !password) {
-    return res.status(400).json({ success: false, message: '请提供邮箱/用户名和密码' });
+    return res.status(400).json({ success: false, message: '请输入注册邮箱和密码；平台管理员可继续使用管理员账号登录' });
   }
 
   // 先查 users 表（邮箱登录）
@@ -131,7 +131,7 @@ router.post('/login', (req, res) => {
           detail: { loginId, reason: 'bad_legacy_password', userAgent: getUserAgent(req) },
           req,
         });
-        return res.status(401).json({ success: false, message: '用户名或密码错误' });
+        return res.status(401).json({ success: false, message: '管理员账号或密码错误' });
       }
 
       // 兼容旧账号 admin：通过后映射到正式平台管理员账号。
@@ -145,7 +145,7 @@ router.post('/login', (req, res) => {
       detail: { loginId, reason: 'user_not_found', userAgent: getUserAgent(req) },
       req,
     });
-    return res.status(401).json({ success: false, message: '邮箱/用户名或密码错误' });
+    return res.status(401).json({ success: false, message: '账号不存在。企业用户请使用注册邮箱登录；如果还没有账号，请先注册。' });
   }
 
   const isMatch = bcrypt.compareSync(password, user.password_hash);
@@ -157,7 +157,7 @@ router.post('/login', (req, res) => {
       detail: { loginId, reason: 'bad_password', userAgent: getUserAgent(req) },
       req,
     });
-    return res.status(401).json({ success: false, message: '邮箱/用户名或密码错误' });
+    return res.status(401).json({ success: false, message: '密码错误。请确认输入的是该注册邮箱对应的密码。' });
   }
 
   if (user.status !== 'active') {

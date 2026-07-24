@@ -59,10 +59,10 @@ router.get('/', authMiddleware, (req, res) => {
     data: members,
     operatorRole: membership?.role || 'platform_admin',
     permissions: isPlatformAdmin(req) ? {
-      canInvite: false,
-      canChangeRoles: false,
-      canRemoveMembers: false,
-      readOnly: true,
+      canInvite: true,
+      canChangeRoles: true,
+      canRemoveMembers: true,
+      readOnly: false,
     } : {
       canInvite: ['applicant', 'owner', 'admin'].includes(membership.role),
       canChangeRoles: ['applicant', 'owner'].includes(membership.role),
@@ -140,10 +140,11 @@ router.post('/invite', authMiddleware, (req, res) => {
     return res.status(400).json({ success: false, message: '无效的角色' });
   }
 
-  // 检查操作者是否是该企业的 owner 或 admin
+  // 企业 owner/admin 或平台管理员都可以代为添加成员。
   const operatorMembership = getActiveMembership(req.admin.id, companyId);
+  const platformAdmin = isPlatformAdmin(req);
 
-  if (!operatorMembership || !['applicant', 'owner', 'admin'].includes(operatorMembership.role)) {
+  if (!platformAdmin && (!operatorMembership || !['applicant', 'owner', 'admin'].includes(operatorMembership.role))) {
     return res.status(403).json({ success: false, message: '只有企业所有者或管理员可以邀请成员' });
   }
 
@@ -194,10 +195,11 @@ router.put('/:id/role', authMiddleware, (req, res) => {
     return res.status(404).json({ success: false, message: '成员不存在' });
   }
 
-  // 企业申请人在认证前承担所有者职责；认证通过后会自动转为 owner。
+  // 企业申请人在认证前承担所有者职责；平台管理员可代为处理成员权限。
   const operatorMembership = getActiveMembership(req.admin.id, member.company_id);
+  const platformAdmin = isPlatformAdmin(req);
 
-  if (!operatorMembership || !['applicant', 'owner'].includes(operatorMembership.role)) {
+  if (!platformAdmin && (!operatorMembership || !['applicant', 'owner'].includes(operatorMembership.role))) {
     return res.status(403).json({ success: false, message: '只有企业所有者可以修改成员角色' });
   }
 
@@ -230,14 +232,15 @@ router.delete('/:id', authMiddleware, (req, res) => {
     return res.status(400).json({ success: false, message: '不能移除企业所有者' });
   }
 
-  // 检查权限：owner/admin 可以移除成员，成员也可以自己退出
+  // owner/admin 可以移除成员，成员可自己退出；平台管理员可代为处理。
   const operatorMembership = getActiveMembership(req.admin.id, member.company_id);
+  const platformAdmin = isPlatformAdmin(req);
 
-  if (!operatorMembership) {
+  if (!platformAdmin && !operatorMembership) {
     return res.status(403).json({ success: false, message: '无权操作' });
   }
 
-  if (member.user_id !== req.admin.id && !['applicant', 'owner', 'admin'].includes(operatorMembership.role)) {
+  if (!platformAdmin && member.user_id !== req.admin.id && !['applicant', 'owner', 'admin'].includes(operatorMembership.role)) {
     return res.status(403).json({ success: false, message: '无权移除该成员' });
   }
 

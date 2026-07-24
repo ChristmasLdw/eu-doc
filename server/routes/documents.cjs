@@ -135,8 +135,8 @@ const DOCUMENT_EDITOR_ROLES = ['applicant', 'owner', 'admin', 'uploader'];
 
 function requireDocumentEditor(req, res, next) {
   const document = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
-  if (!document) {
-    return res.status(404).json({ success: false, message: '文档不存在' });
+  if (!document || document.status === 'deleted') {
+    return res.status(404).json({ success: false, message: '文档不存在或已删除' });
   }
 
   if (!hasCompanyRole(req, document.company_id, DOCUMENT_EDITOR_ROLES)) {
@@ -171,7 +171,8 @@ const upload = multer({
 
 // GET /api/v2/documents - 获取资料列表
 router.get('/', (req, res) => {
-  const needsPrivateAuth = req.query.mine === '1' || req.query.status === 'all' || req.query.reviewStatus === 'all';
+  const reviewStatus = String(req.query.reviewStatus || '');
+  const needsPrivateAuth = req.query.mine === '1' || req.query.status === 'all' || (reviewStatus && reviewStatus !== 'approved');
   if (needsPrivateAuth) {
     return authMiddleware(req, res, () => listDocuments(req, res));
   }
@@ -212,7 +213,7 @@ function listDocuments(req, res) {
     const hasToken = authHeader && authHeader.startsWith('Bearer ');
 
     const mineOnly = req.query.mine === '1';
-    const privateStatusRequested = status === 'all' || reviewStatus === 'all';
+    const privateStatusRequested = status === 'all' || (reviewStatus && reviewStatus !== 'approved');
 
     if (mineOnly) {
       if (req.admin.role !== 'admin' && req.admin.role !== 'platform_admin') {
@@ -424,12 +425,12 @@ router.post('/:id/review', authMiddleware, requireAdmin, (req, res) => {
   }
 
   const document = db.prepare(`
-    SELECT d.id, d.title, d.document_type, d.review_status, d.company_id, d.uploaded_by, c.name AS company_name
+    SELECT d.id, d.title, d.document_type, d.status, d.review_status, d.company_id, d.uploaded_by, c.name AS company_name
     FROM documents d
     LEFT JOIN companies c ON c.id = d.company_id
     WHERE d.id = ?
   `).get(req.params.id);
-  if (!document) return res.status(404).json({ success: false, message: '文档不存在' });
+  if (!document || document.status === 'deleted') return res.status(404).json({ success: false, message: '文档不存在或已删除' });
   if (document.review_status !== 'pending') {
     return res.status(400).json({ success: false, message: '该资料已完成审核，请刷新列表' });
   }

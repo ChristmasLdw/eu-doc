@@ -38,6 +38,11 @@ const BASE_URL = '/eu-doc/api';
  * 创建请求头
  * 自动从 localStorage 读取 JWT token 并附加到 Authorization 头
  */
+function hasValidAuthToken() {
+  const token = localStorage.getItem('admin_token');
+  return Boolean(token && !/[\r\n]/.test(token));
+}
+
 function createHeaders(customHeaders = {}, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
@@ -456,7 +461,16 @@ export async function getCompanyVerificationFile(documentId) {
   const headers = createHeaders();
   delete headers['Content-Type'];
   const response = await fetch(`${BASE_URL}/v2/company-verifications/documents/${documentId}/file`, { headers });
-  if (!response.ok) throw new Error('认证材料读取失败');
+  if (!response.ok) {
+    let message = '认证材料读取失败';
+    try {
+      const payload = await response.json();
+      message = payload.message || message;
+    } catch {
+      // Non-JSON file errors keep the default message.
+    }
+    throw new Error(message);
+  }
   return response.blob();
 }
 
@@ -699,6 +713,7 @@ export function addFavorite(itemType, itemId, title, meta, description) {
 }
 
 export function checkFavorite(itemType, itemId) {
+  if (!hasValidAuthToken()) return Promise.resolve({ isFavorited: false, favoriteId: null });
   return request(`/personal/favorites/check?itemType=${encodeURIComponent(itemType)}&itemId=${itemId}`, { silentAuth: true })
     .then(keysToCamelCase)
     .catch((error) => {
@@ -735,6 +750,7 @@ export function updateHistorySetting(historyEnabled) {
 
 
 export function recordHistory(itemType, itemId, title, company = '', actionLabel = '查看') {
+  if (!hasValidAuthToken()) return Promise.resolve(null);
   return request('/personal/history', {
     method: 'POST',
     silentAuth: true,
@@ -868,7 +884,7 @@ export function updatePlatformSettings(data) {
 }
 
 export function getPendingDocumentReviews() {
-  return request('/v2/documents?status=all&reviewStatus=pending&pageSize=500', { raw: true }).then((response) => {
+  return request('/v2/documents?status=active&reviewStatus=pending&pageSize=500', { raw: true }).then((response) => {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
     return response;
   });

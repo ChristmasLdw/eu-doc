@@ -435,7 +435,7 @@ router.post('/', authMiddleware, (req, res) => {
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({
         success: false,
-        message: '企业名称已存在',
+        message: '该公司名称已存在。请先在左侧企业列表或搜索中查看是否已创建；如果是同一家公司，请不要重复提交。',
       });
     }
     throw err;

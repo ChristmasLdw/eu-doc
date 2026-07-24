@@ -11459,3 +11459,26 @@ button.documentPreviewCard:hover {
   color: var(--text-secondary);
   font-size: 14px;
 }
+
+.previewStateBox {
+  min-height: 52vh;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  border: 1px dashed var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.previewStateBox strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.previewStateBox p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
