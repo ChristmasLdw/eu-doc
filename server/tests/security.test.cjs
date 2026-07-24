@@ -254,6 +254,17 @@ test('company writes reject outsiders and allow platform admins', async () => {
   assert.equal(allowed.status, 200);
 });
 
+test('company verification history resolves operators from current users', async () => {
+  db.prepare(`
+    INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail)
+    VALUES (3, 'approve_verification', 'company', 1, '{}')
+  `).run();
+
+  const result = await request('/api/companies/1/verification-history', { token: adminToken });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data[0].operatorName, 'Admin');
+});
+
 test('document writes reject outsiders and allow uploader members', async () => {
   const denied = await request('/api/v2/documents/1', {
     method: 'PUT',

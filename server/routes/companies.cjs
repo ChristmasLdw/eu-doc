@@ -256,9 +256,9 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
         al.action,
         al.detail,
         al.created_at,
-        u.username as operator_name
+        COALESCE(u.display_name, u.email, '未知用户') as operator_name
       FROM audit_logs al
-      LEFT JOIN admins u ON al.admin_id = u.id
+      LEFT JOIN users u ON al.admin_id = u.id
       WHERE al.target_type = 'company'
         AND al.target_id = ?
         AND al.action IN ('submit_verification', 'approve_verification', 'reject_verification')
