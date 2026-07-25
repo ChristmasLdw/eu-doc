@@ -19,7 +19,7 @@ export default function DocumentTypeRail({ currentType, onTypeChange, show }) {
 
   // 始终渲染容器，使用 CSS 控制显示/隐藏，避免布局跳动
   return (
-    <div className={`${styles.container} ${show ? styles.show : ''}`}>
+    <div className={`${styles.container} ${show ? styles.show : ''}`} data-tutorial="search-document-types">
       <div className={styles.types}>
         {DOCUMENT_TYPES.map((type) => {
           const isActive = currentType === type.value;
@@ -30,6 +30,7 @@ export default function DocumentTypeRail({ currentType, onTypeChange, show }) {
               key={type.value}
               type="button"
               className={`${styles.typeBtn} ${isActive ? styles.active : ''}`}
+              data-document-type={type.value}
               onClick={() => onTypeChange(type.value)}
             >
               {label}

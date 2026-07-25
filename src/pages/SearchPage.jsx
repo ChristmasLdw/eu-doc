@@ -903,7 +903,7 @@ export default function SearchPage() {
         {!error && results.length > 0 ? (
           <>
             <div className={styles.resultList} data-tutorial="search-result-list">
-              {results.map((item) => {
+              {results.map((item, resultIndex) => {
                 // 产品模式：渲染产品卡片
                 if (searchMode === 'product') {
                   return (
@@ -911,6 +911,8 @@ export default function SearchPage() {
                       to={`/products/${item.id}`}
                       key={`product-${item.id}`}
                       className={styles.certCard}
+                      data-tutorial={resultIndex === 0 ? 'search-result-card' : undefined}
+                      data-result-kind="product"
                     >
                       <div className={styles.certBody}>
                         <div className={styles.certContent}>
@@ -983,6 +985,8 @@ export default function SearchPage() {
                         to={`/documents/${item.id}`}
                         key={`cert-${item.id}`}
                         className={styles.certCard}
+                        data-tutorial={resultIndex === 0 ? 'search-result-card' : undefined}
+                        data-result-kind="certificate"
                       >
                         <div className={styles.certBody}>
                           <div className={styles.certContent}>
@@ -1035,6 +1039,8 @@ export default function SearchPage() {
                       to={`/documents/${item.id}`}
                       key={`doc-${item.id}`}
                       className={styles.certCard}
+                      data-tutorial={resultIndex === 0 ? 'search-result-card' : undefined}
+                      data-result-kind="document"
                     >
                       <div className={styles.certBody}>
                         <div className={styles.certContent}>
@@ -1116,6 +1122,8 @@ export default function SearchPage() {
                     to={item.productId ? `/products/${item.productId}` : `/documents/${item.id}`}
                     key={item.id}
                     className={styles.certCard}
+                    data-tutorial={resultIndex === 0 ? 'search-result-card' : undefined}
+                    data-result-kind="certificate"
                   >
                     <div className={styles.certBody}>
                       {/* 信息区域 */}

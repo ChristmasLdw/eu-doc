@@ -28,6 +28,11 @@
   margin-bottom: 24px;
 }
 
+.titleCopy {
+  display: inline-block;
+  max-width: 100%;
+}
+
 .title {
   font-size: 36px;
   font-weight: 700;

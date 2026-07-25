@@ -44,16 +44,18 @@ export default function LoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card} data-tutorial="login-card">
-        <div className={styles.logo}>
-          <div className={styles.logoIcon}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
+        <div data-tutorial="login-choice-heading">
+          <div className={styles.logo}>
+            <div className={styles.logoIcon}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </div>
+            <h1 className={styles.title}>EU-DOC</h1>
           </div>
-          <h1 className={styles.title}>EU-DOC</h1>
+          <p className={styles.subtitle}>{t('authFlow.loginSubtitle')}</p>
         </div>
-        <p className={styles.subtitle}>{t('authFlow.loginSubtitle')}</p>
 
         <form className={styles.form} onSubmit={handleSubmit} data-tutorial="login-form">
           <div className={styles.field}>

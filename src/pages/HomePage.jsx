@@ -97,8 +97,10 @@ export default function HomePage() {
       <section className={styles.hero} data-tutorial="home-purpose">
         <div className={styles.heroContent}>
           <div className={styles.titleSection}>
-            <h1 className={styles.title}>{t('home.title')}</h1>
-            <p className={styles.subtitle}>{t('home.subtitle')}</p>
+            <div className={styles.titleCopy} data-tutorial="home-purpose-copy">
+              <h1 className={styles.title}>{t('home.title')}</h1>
+              <p className={styles.subtitle}>{t('home.subtitle')}</p>
+            </div>
           </div>
 
           <form className={styles.searchForm} onSubmit={handleSearch} data-tutorial="home-search">
