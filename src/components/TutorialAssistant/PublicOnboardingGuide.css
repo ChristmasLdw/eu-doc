@@ -242,8 +242,9 @@
   border-radius: 12px;
   box-shadow: 0 0 0 9999px rgba(17, 25, 48, .6), 0 0 0 8px rgba(99, 116, 219, .22);
   pointer-events: none;
-  transition: left .24s ease, top .24s ease, width .24s ease, height .24s ease;
+  transition: left .24s ease, top .24s ease, width .24s ease, height .24s ease, box-shadow .24s ease;
 }
+.public-guide-layer.is-soft .public-guide-focus { box-shadow: 0 0 0 9999px rgba(17, 25, 48, .34), 0 0 0 8px rgba(99, 116, 219, .18); }
 
 .public-guide-target { outline: 2px solid #7185ee !important; outline-offset: 5px; }
 .public-guide-popover {
@@ -258,6 +259,7 @@
   color: #202b49;
   box-shadow: 0 28px 80px rgba(31, 44, 91, .25);
   font-family: "Avenir Next", "Noto Sans SC", sans-serif;
+  overflow-y: auto;
   pointer-events: auto;
 }
 

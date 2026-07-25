@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GuideCloud, GuideCursor } from './GuideVisuals';
+import { getGuidePopoverStyle, useGuideTargetRect } from './useGuideTargetRect';
 import './ContextualGuide.css';
+
+const BATCH_STEP_KEY = 'eu-doc:guide:batch-upload:step';
 
 const DEFAULT_STEP_BEHAVIOR = {
   showCursor: true,
@@ -55,29 +58,56 @@ const STEP_DEFINITIONS = {
     waiting: '正在等待文件上传和系统识别完成…',
     next: 'question-1',
   },
+  'split-group': {
+    selector: '[data-tutorial="import-group-card"]',
+    title: '已拆分，逐份重新检查',
+    description: '系统已经把刚才的资料组拆成单份卡片。请打开第一张正常资料卡片，从产品归属开始分别整理。',
+    waiting: '正在等待拆分后的资料卡片准备完成…',
+    next: 'question-1',
+  },
   'question-1': {
     selector: '[data-tutorial="import-question-1"]',
-    title: '问题 1：是否属于同一个产品？',
-    description: '确认这组文件是否属于同一产品。如果系统分错了，可以选择拆分整理。',
-    next: 'question-2',
+    title: '问题 1：先核对这一组文件',
+    description: '先逐份查看文件名、系统识别的类型和语言，再判断它们是否属于同一个产品。两种选择都可以继续，不需要默认确认。',
+    showCursor: false,
+    requiredAction: 'product-group-choice',
+    resolveNext: (event) => {
+      const choice = event.target.closest('[data-import-choice]')?.dataset.importChoice;
+      if (choice === 'same-product') return 'question-2';
+      if (choice === 'split') return 'split-group';
+      return null;
+    },
   },
   'question-2': {
     selector: '[data-tutorial="import-question-2"]',
-    title: '问题 2：确认归属产品',
-    description: '选择已有产品，或者直接创建新产品，并确认产品系列名称与适用型号。',
+    actionTarget: '[data-tutorial="import-question-2-confirm"]',
+    title: '问题 2：检查产品归属和基础信息',
+    description: '先检查是关联已有产品还是创建新产品，再核对产品名称、适用型号和分类；需要时直接修改，最后再确认。',
+    showCursor: false,
+    requiredAction: 'review-and-confirm',
     next: 'question-3',
   },
   'question-3': {
     selector: '[data-tutorial="import-question-3"]',
-    title: '问题 3：核对类型和语言',
-    description: '逐份确认资料属于证书、DoC、说明书还是其他资料，并检查语言。',
+    actionTarget: '[data-tutorial="import-question-3-confirm"]',
+    title: '问题 3：逐份检查资料类型和语言',
+    description: '不要直接确认。请逐行核对文件名、资料类型和语言，修改系统识别错误的项目后再继续。',
+    showCursor: false,
+    requiredAction: 'review-and-confirm',
     next: 'question-4',
   },
   'question-4': {
-    selector: '[data-tutorial="import-question-submit"]',
-    title: '问题 4：确认提交归档',
-    description: '系统会按前面的回答创建或关联产品，并一次归档这一组资料。',
-    next: 'expand-company-or-products',
+    selector: '[data-tutorial="import-question-4"]',
+    title: '问题 4：检查归档结果后选择',
+    description: '最后确认将关联已有产品还是创建新产品，以及本次归档的资料数量。你可以提交、稍后处理或删除整组资料。',
+    showCursor: false,
+    requiredAction: 'final-review-and-submit',
+    resolveNext: (event) => {
+      const choice = event.target.closest('[data-import-final-choice]')?.dataset.importFinalChoice;
+      if (choice === 'submit') return 'expand-company-or-products';
+      if (choice === 'later' || choice === 'delete-group') return 'stop-guide';
+      return null;
+    },
   },
   'expand-company-or-products': {
     resolve: () => {
@@ -107,9 +137,11 @@ const STEP_DEFINITIONS = {
   },
   'product-edit': {
     selector: '[data-tutorial="product-edit"]',
-    title: '后续可以继续编辑产品',
-    description: '点击“编辑产品”可修改名称、型号、分类和描述，也可以继续补充或批量导入资料。',
-    next: 'complete',
+    title: '本批资料已经归档完成',
+    description: '当前产品已经可以查看和编辑。你可以打开产品编辑，或直接回到批量上传入口继续处理下一批资料。',
+    showCursor: false,
+    requiredAction: 'manual',
+    spotlight: 'soft',
   },
 };
 
@@ -124,11 +156,14 @@ function resolveStep(stepId) {
   return element ? { ...DEFAULT_STEP_BEHAVIOR, ...definition, element } : null;
 }
 
+function resolveNestedElement(step, selector) {
+  if (!step?.element || !selector || selector === 'self') return step?.element || null;
+  return step.element.querySelector(selector) || document.querySelector(selector);
+}
+
 function resolveCursorElement(step) {
-  if (!step?.showCursor || !step.element) return null;
-  if (!step.cursorTarget || step.cursorTarget === 'self') return step.element;
-  return step.element.querySelector(step.cursorTarget)
-    || document.querySelector(step.cursorTarget);
+  if (!step?.showCursor) return null;
+  return resolveNestedElement(step, step.cursorTarget);
 }
 
 function getCursorPoint(step) {
@@ -142,46 +177,57 @@ function getCursorPoint(step) {
   };
 }
 
-const ACTION_HINTS = {
-  click: '请点击鼠标指向的真实页面位置，完成后会自动进入下一步。',
-  'input-and-submit': '请从鼠标指向的输入框开始填写，提交成功后会自动进入下一步。',
-};
-
 export function ContextualGuide() {
   const [taskMenuOpen, setTaskMenuOpen] = useState(() => !localStorage.getItem('eu-doc:guide:batch-upload:seen'));
   const [active, setActive] = useState(false);
   const [stepId, setStepId] = useState('batch-nav');
   const [resolvedStep, setResolvedStep] = useState(null);
-  const [rect, setRect] = useState(null);
   const [waitingText, setWaitingText] = useState('');
+  const [hasPausedGuide, setHasPausedGuide] = useState(() => Boolean(localStorage.getItem(BATCH_STEP_KEY)));
   const targetRef = useRef(null);
+  const rect = useGuideTargetRect(active, resolvedStep?.element);
 
-  const stopGuide = useCallback(() => {
+  const pauseGuide = useCallback(() => {
     targetRef.current?.classList.remove('context-guide-target');
     targetRef.current = null;
     setActive(false);
     setResolvedStep(null);
-    setRect(null);
     setWaitingText('');
     setTaskMenuOpen(false);
+    setHasPausedGuide(Boolean(localStorage.getItem(BATCH_STEP_KEY)));
   }, []);
+
+  const stopGuide = useCallback(() => {
+    localStorage.removeItem(BATCH_STEP_KEY);
+    setHasPausedGuide(false);
+    pauseGuide();
+  }, [pauseGuide]);
 
   const completeGuide = useCallback(() => {
     localStorage.setItem('eu-doc:guide:batch-upload:completed', new Date().toISOString());
-    stopGuide();
-  }, [stopGuide]);
+    localStorage.removeItem(BATCH_STEP_KEY);
+    setHasPausedGuide(false);
+    pauseGuide();
+  }, [pauseGuide]);
 
-  const startBatchGuide = useCallback(() => {
+  const startBatchGuide = useCallback((restart = false) => {
     localStorage.setItem('eu-doc:guide:batch-upload:seen', new Date().toISOString());
+    const savedStep = restart ? null : localStorage.getItem(BATCH_STEP_KEY);
     setTaskMenuOpen(false);
-    setStepId('batch-nav');
+    setStepId(savedStep && STEP_DEFINITIONS[savedStep] ? savedStep : 'batch-nav');
     setActive(true);
   }, []);
 
   useEffect(() => {
+    if (!active) return;
+    localStorage.setItem(BATCH_STEP_KEY, stepId);
+    setHasPausedGuide(true);
+  }, [active, stepId]);
+
+  useEffect(() => {
     if (localStorage.getItem('eu-doc:guide:pending') !== 'batch-upload') return;
     localStorage.removeItem('eu-doc:guide:pending');
-    startBatchGuide();
+    startBatchGuide(true);
   }, [startBatchGuide]);
 
   useEffect(() => {
@@ -195,20 +241,21 @@ export function ContextualGuide() {
       if (cancelled) return;
       const nextResolved = resolveStep(stepId);
       if (!nextResolved) {
+        targetRef.current?.classList.remove('context-guide-target');
+        targetRef.current = null;
         setResolvedStep(null);
-        setRect(null);
         setWaitingText(STEP_DEFINITIONS[stepId]?.waiting || '正在等待当前页面准备完成…');
         return;
       }
 
       setWaitingText('');
-      targetRef.current?.classList.remove('context-guide-target');
-      targetRef.current = nextResolved.element;
-      nextResolved.element.classList.add('context-guide-target');
-      nextResolved.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setResolvedStep(nextResolved);
-      const nextRect = nextResolved.element.getBoundingClientRect();
-      setRect(nextRect);
+      if (targetRef.current !== nextResolved.element) {
+        targetRef.current?.classList.remove('context-guide-target');
+        targetRef.current = nextResolved.element;
+        nextResolved.element.classList.add('context-guide-target');
+        setResolvedStep(nextResolved);
+        nextResolved.element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }
     };
 
     attach();
@@ -221,6 +268,7 @@ export function ContextualGuide() {
       observer?.disconnect();
       window.clearInterval(timeoutId);
       targetRef.current?.classList.remove('context-guide-target');
+      targetRef.current = null;
     };
   }, [active, stepId]);
 
@@ -228,36 +276,27 @@ export function ContextualGuide() {
     if (!active || !resolvedStep?.element) return undefined;
 
     const element = resolvedStep.element;
-    const handleTargetClick = () => {
-      const nextStep = resolvedStep.next;
+    const actionElement = resolveNestedElement(resolvedStep, resolvedStep.actionTarget);
+    if (!actionElement) return undefined;
+
+    const handleTargetClick = (event) => {
+      const nextStep = resolvedStep.resolveNext
+        ? resolvedStep.resolveNext(event)
+        : resolvedStep.next;
+      if (!nextStep) return;
+
       window.setTimeout(() => {
         if (nextStep === 'complete') completeGuide();
+        else if (nextStep === 'stop-guide') stopGuide();
         else setStepId(nextStep);
       }, 350);
     };
-    const updateRect = () => setRect(element.getBoundingClientRect());
-
-    element.addEventListener('click', handleTargetClick, { once: true });
-    window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect, true);
-    return () => {
-      element.removeEventListener('click', handleTargetClick);
-      window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect, true);
-    };
-  }, [active, completeGuide, resolvedStep]);
+    actionElement.addEventListener('click', handleTargetClick);
+    return () => actionElement.removeEventListener('click', handleTargetClick);
+  }, [active, completeGuide, resolvedStep, stopGuide]);
 
   const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
-  const actionHint = resolvedStep ? ACTION_HINTS[resolvedStep.requiredAction] : null;
-
-  const popoverStyle = useMemo(() => {
-    if (!rect) return {};
-    const width = 330;
-    const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
-    const roomBelow = window.innerHeight - rect.bottom;
-    const top = roomBelow > 230 ? rect.bottom + 16 : Math.max(16, rect.top - 190);
-    return { left, top, width };
-  }, [rect]);
+  const popoverStyle = useMemo(() => getGuidePopoverStyle(rect, { width: 350, height: 285 }), [rect]);
 
   return (
     <>
@@ -266,7 +305,8 @@ export function ContextualGuide() {
           {taskMenuOpen && (
             <div className="context-guide-menu">
               <span>我想要…</span>
-              <button onClick={startBatchGuide}><strong>批量上传产品资料</strong><small>从入口、上传到问卷归档和产品编辑</small></button>
+              <button onClick={() => startBatchGuide(false)}><strong>{hasPausedGuide ? '继续上次批量上传指引' : '批量上传产品资料'}</strong><small>{hasPausedGuide ? '从上次关闭的位置继续；页面状态不会被重置' : '从入口、上传到问卷归档和产品编辑'}</small></button>
+              {hasPausedGuide && <button onClick={() => startBatchGuide(true)}><strong>重新开始这条指引</strong><small>从左侧批量上传入口重新讲解</small></button>}
               <button disabled><strong>申请企业认证</strong><small>后续加入</small></button>
               <button disabled><strong>邀请团队成员</strong><small>后续加入</small></button>
             </div>
@@ -279,19 +319,25 @@ export function ContextualGuide() {
       )}
 
       {active && (
-        <div className="context-guide-layer">
+        <div className={`context-guide-layer ${resolvedStep?.spotlight === 'soft' ? 'is-soft' : ''}`}>
           {rect && <div className="context-guide-focus" style={{ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12 }} />}
-          {cursorPoint && <GuideCursor key={`${stepId}-${Math.round(cursorPoint.left)}-${Math.round(cursorPoint.top)}`} style={cursorPoint} />}
+          {cursorPoint && <GuideCursor style={cursorPoint} />}
           <aside className={`context-guide-popover ${!rect ? 'waiting' : ''}`} style={rect ? popoverStyle : undefined}>
             <div className="context-guide-head">
               <div className="context-guide-agent"><GuideCloud compact /><span>批量上传指引</span></div>
-              <button onClick={stopGuide}>×</button>
+              <button onClick={pauseGuide}>×</button>
             </div>
             {resolvedStep ? (
               <>
                 <h3>{resolvedStep.title}</h3>
                 <p>{resolvedStep.description}</p>
-                {actionHint && <small>{actionHint}</small>}
+                {stepId === 'product-edit' && (
+                  <div className="context-guide-actions">
+                    <button type="button" className="primary" onClick={() => { resolvedStep.element.click(); completeGuide(); }}>查看 / 编辑当前产品</button>
+                    <button type="button" onClick={() => setStepId('batch-nav')}>继续上传下一批</button>
+                    <button type="button" onClick={completeGuide}>完成指引</button>
+                  </div>
+                )}
               </>
             ) : (
               <>

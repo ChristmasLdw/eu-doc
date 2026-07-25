@@ -1,62 +1,102 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GuideCloud, GuideCursor } from './GuideVisuals';
+import { getGuidePopoverStyle, useGuideTargetRect } from './useGuideTargetRect';
 import './PublicOnboardingGuide.css';
 
 const SEEN_KEY = 'eu-doc:guide:public:seen';
 const PENDING_KEY = 'eu-doc:guide:pending';
 
+// 示例搜索输入配置
+const EXAMPLE_SEARCH = {
+  sequence: ['F', 'F6', 'F66'],  // 逐步输入的字符序列
+  interval: 190,                  // 每个字符之间的间隔（毫秒）
+};
+
 const GUIDE_STEPS = {
   'home-purpose': {
-    selector: '[data-tutorial="home-purpose"]',
+    selector: '[data-tutorial="home-purpose-copy"]',
     eyebrow: '先认识 EU-DOC',
     title: '这里展示企业、产品与合规资料',
     description: '采购方和审核机构可以查找公开资料；企业上传后，也会以公司、产品和资料相互关联的方式展示在这里。',
     showCursor: false,
     requiredAction: 'manual',
+    spotlight: 'soft',
   },
   'business-purpose': {
-    selector: '[data-tutorial="home-purpose"]',
+    selector: '[data-tutorial="home-purpose-copy"]',
     eyebrow: '企业资料入口',
-    title: '把产品资料一次上传，再由系统辅助整理',
-    description: '接下来会直接带你注册或登录企业工作台，并完成公司申请、批量上传、问卷确认和产品编辑。上传后的资料会按企业与产品关系组织展示。',
+    title: '一次上传整批资料，系统帮你整理到产品',
+    description: '登录企业工作台后，可以批量上传证书、DoC、说明书和报告，再通过问卷快速确认资料归属。',
     showCursor: false,
     requiredAction: 'manual',
+    spotlight: 'soft',
   },
-  'home-search': {
+  'home-search-input': {
     selector: '[data-tutorial="home-search"]',
     eyebrow: '真实搜索入口',
-    title: '先看看资料最终如何被找到',
-    description: '你可以输入公司名、产品名、型号或资料编号并点击搜索，也可以用示例词直接查看真实搜索结果。',
+    title: '先输入想查找的内容',
+    description: '可以输入公司名、产品名、型号或资料编号。停止输入后，鼠标会移动到真实搜索按钮；也可以直接播放示例 F66。',
     event: 'submit',
     showCursor: true,
     cursorTarget: 'input',
     cursorPosition: { x: 0.82, y: 0.5 },
     requiredAction: 'input-or-example',
   },
+  'home-search-submit': {
+    selector: '[data-tutorial="home-search"]',
+    eyebrow: '提交真实搜索',
+    title: '点击搜索按钮查看结果',
+    description: '关键词已经填写完成。请点击真实页面中的搜索按钮，页面会通过原有表单进入搜索结果。',
+    event: 'submit',
+    showCursor: true,
+    cursorTarget: 'button[type="submit"]',
+    cursorPosition: { x: 0.5, y: 0.5 },
+    requiredAction: 'submit-search',
+  },
   'search-modes': {
     selector: '[data-tutorial="search-modes"]',
     eyebrow: '搜索结果',
     title: '按需要切换查找对象',
-    description: '“综合、产品、资料、企业”对应不同核验视角。请点击真实页面中的“产品”，查看资料如何围绕产品组织。',
+    description: '“综合、产品、资料、企业”对应不同核验视角。请点击真实页面中的“资料”，查看用户如何核验一份具体文件。',
     event: 'click',
     showCursor: true,
-    cursorTarget: 'button[data-mode="product"]',
-    actionTarget: 'button[data-mode="product"]',
+    cursorTarget: 'button[data-mode="document"]',
+    actionTarget: 'button[data-mode="document"]',
+    cursorPosition: { x: 0.5, y: 0.5 },
+    requiredAction: 'click',
+  },
+  'search-document-types': {
+    selector: '[data-tutorial="search-document-types"]',
+    eyebrow: '资料类型筛选',
+    title: '选择证书查看完整核验信息',
+    description: '资料还可以按 DoC、证书、说明书和检测报告筛选。请点击“证书”，查看资料编号、状态、有效期和文件预览。',
+    event: 'click',
+    showCursor: true,
+    cursorTarget: 'button[data-document-type="certificate"]',
+    actionTarget: 'button[data-document-type="certificate"]',
     cursorPosition: { x: 0.5, y: 0.5 },
     requiredAction: 'click',
   },
   'search-results': {
     resolve: () => {
-      const element = document.querySelector('[data-tutorial="search-result-list"]')
-        || document.querySelector('[data-tutorial="search-results"]');
-      return element ? { element } : null;
+      const certificate = document.querySelector('[data-tutorial="search-result-card"][data-result-kind="certificate"]');
+      const element = certificate
+        || document.querySelector('[data-tutorial="search-result-card"]');
+      if (!element) return null;
+      const isCertificate = element.dataset.resultKind === 'certificate';
+      return {
+        element,
+        title: isCertificate ? '这是一张真实的资料核验卡片' : '这是一张真实的公开资料卡片',
+        description: isCertificate
+          ? '卡片集中显示企业和产品、适用型号、资料编号、当前状态、标准和有效期；点击卡片或“查看”可以进入文件详情与预览。'
+          : '卡片显示资料名称、所属产品与企业、语言和文件信息；点击卡片或“查看资料”可以进入详情与预览。',
+      };
     },
-    eyebrow: '公开展示结果',
-    title: '上传的资料会围绕产品被组织起来',
-    description: '用户不是在杂乱的文件夹里找文件，而是先找到企业或产品，再查看关联的证书、DoC、说明书和检测报告。',
+    eyebrow: '第一张真实结果',
     showCursor: false,
     requiredAction: 'manual',
+    spotlight: 'soft',
   },
   'nav-login': {
     resolve: () => {
@@ -75,12 +115,19 @@ const GUIDE_STEPS = {
     requiredAction: 'click',
   },
   'auth-choice': {
-    selector: '[data-tutorial="login-card"]',
+    resolve: () => {
+      const selector = window.innerWidth <= 700
+        ? '[data-tutorial="login-choice-heading"]'
+        : '[data-tutorial="login-card"]';
+      const element = document.querySelector(selector);
+      return element ? { element } : null;
+    },
     eyebrow: '登录或注册',
-    title: '第一次使用，请先建立账号',
-    description: '已有账号可以直接填写登录表单；新企业用户先进入注册页。注册成功后会自动登录并进入企业工作台。',
+    title: '你是否已经有企业账号？',
+    description: '有账号可以直接登录；没有账号就先创建一个。注册成功后会自动登录并进入企业工作台，不需要再返回登录页。',
     showCursor: false,
     requiredAction: 'manual',
+    spotlight: 'soft',
   },
   'register-link': {
     selector: '[data-tutorial="register-link"]',
@@ -155,12 +202,6 @@ function getCursorPoint(step) {
   };
 }
 
-const ACTION_HINTS = {
-  click: '请点击鼠标指向的真实页面位置，完成后指引会自动接续。',
-  'input-and-submit': '请从鼠标指向的输入框开始填写，提交成功后指引会自动接续。',
-  'input-or-example': '你可以从鼠标指向的输入框开始搜索，也可以直接使用下方示例。',
-};
-
 export default function PublicOnboardingGuide() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -170,11 +211,18 @@ export default function PublicOnboardingGuide() {
   const [flow, setFlow] = useState(null);
   const [stepId, setStepId] = useState('home-purpose');
   const [resolvedStep, setResolvedStep] = useState(null);
-  const [rect, setRect] = useState(null);
   const targetRef = useRef(null);
   const launcherRef = useRef(null);
-
+  const examplePlaybackRef = useRef(false);
+  const exampleTimersRef = useRef([]);
   const protectedAdminPage = isProtectedAdminPath(location.pathname);
+  const rect = useGuideTargetRect(active && !protectedAdminPage, resolvedStep?.element);
+
+  const clearExamplePlayback = useCallback(() => {
+    exampleTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    exampleTimersRef.current = [];
+    examplePlaybackRef.current = false;
+  }, []);
 
   const clearTarget = useCallback(() => {
     targetRef.current?.classList.remove('public-guide-target');
@@ -182,16 +230,17 @@ export default function PublicOnboardingGuide() {
   }, []);
 
   const closeGuide = useCallback(({ keepPending = false } = {}) => {
+    clearExamplePlayback();
     clearTarget();
     setActive(false);
     setWelcomeOpen(false);
     setMenuOpen(false);
     setResolvedStep(null);
-    setRect(null);
     if (!keepPending) localStorage.removeItem(PENDING_KEY);
-  }, [clearTarget]);
+  }, [clearExamplePlayback, clearTarget]);
 
   const startFlow = useCallback((nextFlow) => {
+    clearExamplePlayback();
     localStorage.setItem(SEEN_KEY, new Date().toISOString());
     if (nextFlow === 'business') localStorage.setItem(PENDING_KEY, 'batch-upload');
     else localStorage.removeItem(PENDING_KEY);
@@ -201,20 +250,38 @@ export default function PublicOnboardingGuide() {
     setMenuOpen(false);
     setActive(true);
     if (location.pathname !== '/') navigate('/');
-  }, [location.pathname, navigate]);
+  }, [clearExamplePlayback, location.pathname, navigate]);
 
   const completePublicFlow = useCallback(() => {
     localStorage.setItem(`${SEEN_KEY}:completed`, new Date().toISOString());
     closeGuide();
   }, [closeGuide]);
 
+  const continueToBusiness = useCallback(() => {
+    localStorage.setItem(PENDING_KEY, 'batch-upload');
+    setFlow('business');
+    setStepId('nav-login');
+  }, []);
+
   const goToExample = useCallback(() => {
-    setStepId('search-modes');
-    navigate('/search?q=F66');
-  }, [navigate]);
+    clearExamplePlayback();
+    const input = document.querySelector('[data-tutorial="home-search"] input');
+    if (!input) return;
+
+    examplePlaybackRef.current = true;
+    input.focus();
+    const nativeValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    EXAMPLE_SEARCH.sequence.forEach((value, index) => {
+      const timer = window.setTimeout(() => {
+        nativeValueSetter?.call(input, value);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, index * EXAMPLE_SEARCH.interval);
+      exampleTimersRef.current.push(timer);
+    });
+  }, [clearExamplePlayback]);
 
   const advanceManualStep = useCallback(() => {
-    if (stepId === 'home-purpose') setStepId('home-search');
+    if (stepId === 'home-purpose') setStepId('home-search-input');
     else if (stepId === 'business-purpose') setStepId('nav-login');
     else if (stepId === 'search-modes') setStepId('search-results');
     else if (stepId === 'search-results') {
@@ -256,6 +323,19 @@ export default function PublicOnboardingGuide() {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!active) return undefined;
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        closeGuide();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [active, closeGuide]);
+
+  useEffect(() => {
     if (!active || protectedAdminPage) return undefined;
 
     let cancelled = false;
@@ -268,7 +348,6 @@ export default function PublicOnboardingGuide() {
       if (!nextResolved) {
         clearTarget();
         setResolvedStep(null);
-        setRect(null);
         return;
       }
 
@@ -276,10 +355,9 @@ export default function PublicOnboardingGuide() {
         clearTarget();
         targetRef.current = nextResolved.element;
         nextResolved.element.classList.add('public-guide-target');
-        nextResolved.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setResolvedStep(nextResolved);
+        nextResolved.element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       }
-      setResolvedStep(nextResolved);
-      setRect(nextResolved.element.getBoundingClientRect());
     };
 
     attach();
@@ -296,6 +374,38 @@ export default function PublicOnboardingGuide() {
   }, [active, clearTarget, protectedAdminPage, stepId]);
 
   useEffect(() => {
+    if (!active || stepId !== 'home-search-input' || !resolvedStep?.element) return undefined;
+    const input = resolvedStep.element.querySelector('input');
+    if (!input) return undefined;
+
+    let settleTimer;
+    const handleInput = () => {
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        if (input.value.trim()) setStepId('home-search-submit');
+      }, 480);
+    };
+
+    input.addEventListener('input', handleInput);
+    return () => {
+      window.clearTimeout(settleTimer);
+      input.removeEventListener('input', handleInput);
+    };
+  }, [active, resolvedStep, stepId]);
+
+  useEffect(() => {
+    if (!active || stepId !== 'home-search-submit' || !examplePlaybackRef.current || !resolvedStep?.element) return undefined;
+    const form = resolvedStep.element;
+    const timer = window.setTimeout(() => {
+      if (!examplePlaybackRef.current) return;
+      examplePlaybackRef.current = false;
+      const submitButton = form.querySelector('button[type="submit"]');
+      form.requestSubmit(submitButton || undefined);
+    }, 850);
+    return () => window.clearTimeout(timer);
+  }, [active, resolvedStep, stepId]);
+
+  useEffect(() => {
     if (!active || !resolvedStep?.element || !resolvedStep.event) return undefined;
     const element = resolvedStep.element;
     const actionElement = resolveNestedElement(resolvedStep, resolvedStep.actionTarget);
@@ -303,11 +413,15 @@ export default function PublicOnboardingGuide() {
 
     const handleAction = () => {
       window.setTimeout(() => {
-        if (stepId === 'home-search') {
+        if (['home-search-input', 'home-search-submit'].includes(stepId)) {
           const query = element.querySelector('input')?.value.trim();
-          if (query) setStepId('search-modes');
+          if (query) {
+            examplePlaybackRef.current = false;
+            setStepId('search-modes');
+          }
         }
-        else if (stepId === 'search-modes') setStepId('search-results');
+        else if (stepId === 'search-modes') setStepId('search-document-types');
+        else if (stepId === 'search-document-types') setStepId('search-results');
         else if (stepId === 'nav-login') {
           if (element.matches('[data-tutorial="nav-admin"]')) closeGuide({ keepPending: true });
           else setStepId('auth-choice');
@@ -319,36 +433,8 @@ export default function PublicOnboardingGuide() {
     return () => actionElement.removeEventListener(resolvedStep.event, handleAction);
   }, [active, closeGuide, resolvedStep, stepId]);
 
-  useEffect(() => {
-    if (!active) return undefined;
-    const updateRect = () => {
-      if (targetRef.current) setRect(targetRef.current.getBoundingClientRect());
-    };
-    window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect, true);
-    return () => {
-      window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect, true);
-    };
-  }, [active]);
-
   const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
-  const actionHint = resolvedStep ? ACTION_HINTS[resolvedStep.requiredAction] : null;
-
-  const popoverStyle = useMemo(() => {
-    if (!rect) return undefined;
-    const width = Math.min(370, window.innerWidth - 32);
-    if (rect.width > window.innerWidth * 0.62 || rect.height > window.innerHeight * 0.48) {
-      return { right: 20, bottom: 20, width };
-    }
-    const roomRight = window.innerWidth - rect.right;
-    if (roomRight > width + 28) {
-      return { left: rect.right + 16, top: Math.max(52, Math.min(rect.top, window.innerHeight - 300)), width };
-    }
-    const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
-    const top = window.innerHeight - rect.bottom > 250 ? rect.bottom + 16 : Math.max(52, rect.top - 230);
-    return { left, top, width };
-  }, [rect]);
+  const popoverStyle = useMemo(() => getGuidePopoverStyle(rect, { width: 370, height: 285 }), [rect]);
 
   if (protectedAdminPage) return null;
 
@@ -411,9 +497,9 @@ export default function PublicOnboardingGuide() {
       )}
 
       {active && (
-        <div className="public-guide-layer">
+        <div className={`public-guide-layer ${resolvedStep?.spotlight === 'soft' ? 'is-soft' : ''}`}>
           {rect && <div className="public-guide-focus" style={{ left: rect.left - 7, top: rect.top - 7, width: rect.width + 14, height: rect.height + 14 }} />}
-          {cursorPoint && <GuideCursor key={`${stepId}-${Math.round(cursorPoint.left)}-${Math.round(cursorPoint.top)}`} style={cursorPoint} />}
+          {cursorPoint && <GuideCursor style={cursorPoint} />}
           <aside className={`public-guide-popover ${!rect ? 'waiting' : ''}`} style={popoverStyle}>
             <div className="public-guide-popover-head">
               <div className="public-guide-popover-agent">
@@ -428,9 +514,19 @@ export default function PublicOnboardingGuide() {
                 <p>{resolvedStep.description}</p>
                 <div className="public-guide-actions">
                   {stepId === 'home-purpose' && <button type="button" className="primary" onClick={advanceManualStep}>知道了，看看怎么查</button>}
-                  {stepId === 'business-purpose' && <button type="button" className="primary" onClick={advanceManualStep}>开始：进入企业工作台</button>}
-                  {stepId === 'home-search' && <button type="button" className="primary" onClick={goToExample}>用示例 F66 查看</button>}
-                  {stepId === 'search-results' && flow === 'explore' && <button type="button" className="primary" onClick={advanceManualStep}>我已经了解</button>}
+                  {stepId === 'business-purpose' && (
+                    <>
+                      <button type="button" className="primary" onClick={advanceManualStep}>直接进入企业工作台</button>
+                      <button type="button" onClick={() => setStepId('home-purpose')}>先了解资料如何公开展示</button>
+                    </>
+                  )}
+                  {stepId === 'home-search-input' && <button type="button" className="primary" onClick={goToExample}>直接看示例 F66</button>}
+                  {stepId === 'search-results' && flow === 'explore' && (
+                    <>
+                      <button type="button" className="primary" onClick={completePublicFlow}>开始自己搜索</button>
+                      <button type="button" onClick={continueToBusiness}>继续企业上传</button>
+                    </>
+                  )}
                   {stepId === 'search-results' && flow === 'business' && <button type="button" className="primary" onClick={advanceManualStep}>继续：上传企业资料</button>}
                   {stepId === 'auth-choice' && (
                     <>
@@ -439,7 +535,6 @@ export default function PublicOnboardingGuide() {
                     </>
                   )}
                 </div>
-                {actionHint && <small>{actionHint}</small>}
               </>
             ) : (
               <>

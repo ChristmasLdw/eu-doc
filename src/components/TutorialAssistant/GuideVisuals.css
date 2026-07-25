@@ -141,6 +141,7 @@
   pointer-events: none;
   transform: translate(-3px, -3px);
   transform-origin: 3px 3px;
+  transition: left .55s cubic-bezier(.2, .8, .2, 1), top .55s cubic-bezier(.2, .8, .2, 1);
   animation: guide-cursor-arrive .8s cubic-bezier(.2, .8, .2, 1), guide-cursor-click 1.5s .85s ease-in-out infinite;
 }
 
