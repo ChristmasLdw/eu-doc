@@ -68,13 +68,17 @@ PUBLIC_FILE_BASE_URL=https://your-domain.com
 JWT_SECRET=<生成一个强随机密钥>
 APP_ENV=production
 
-# SMTP 配置（必填）
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=noreply@your-domain.com
-SMTP_PASS=your-smtp-password
-SMTP_FROM=EU-DOC <noreply@your-domain.com>
+# Resend 邮件配置（必填）
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM=EU-DOC <noreply@auth.your-domain.com>
+FRONTEND_URL=https://your-domain.com/eu-doc
+
+# 邮件频率限制
+EMAIL_RATE_LIMIT_COOLDOWN_SECONDS=60
+EMAIL_RATE_LIMIT_PER_EMAIL_HOUR=5
+EMAIL_RATE_LIMIT_PER_EMAIL_DAY=20
+EMAIL_RATE_LIMIT_PER_IP_HOUR=30
+EMAIL_RATE_LIMIT_HASH_SECRET=change-to-a-random-secret
 
 # 前端地址（用于邮件链接）
 FRONTEND_URL=https://your-domain.com/eu-doc
