@@ -196,7 +196,7 @@ async function request(route, { method = 'GET', token, body } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json();
-  return { status: response.status, body: payload };
+  return { status: response.status, body: payload, headers: response.headers };
 }
 
 test.before(async () => {
@@ -219,6 +219,64 @@ test('production forgot-password response never exposes reset token', async () =
   });
   assert.equal(result.status, 200);
   assert.equal(Object.hasOwn(result.body, 'resetToken'), false);
+});
+
+test('production forgot-password sends the reset link through Resend', async () => {
+  const realFetch = global.fetch;
+  const previousKey = process.env.RESEND_API_KEY;
+  const previousFrom = process.env.RESEND_FROM;
+  const previousFrontendUrl = process.env.FRONTEND_URL;
+  let resendRequest;
+
+  process.env.RESEND_API_KEY = 're_test_key';
+  process.env.RESEND_FROM = 'EU-DOC <noreply@auth.example.com>';
+  process.env.FRONTEND_URL = 'https://example.com/eu-doc';
+  global.fetch = async (url, options) => {
+    if (String(url) === 'https://api.resend.com/emails') {
+      resendRequest = JSON.parse(options.body);
+      return new Response(JSON.stringify({ id: 'email_reset' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return realFetch(url, options);
+  };
+
+  try {
+    const result = await request('/api/auth/forgot-password', {
+      method: 'POST',
+      body: { email: 'outsider@example.com' },
+    });
+    assert.equal(result.status, 200);
+    assert.equal(Object.hasOwn(result.body, 'resetToken'), false);
+    assert.deepEqual(resendRequest.to, ['outsider@example.com']);
+    assert.match(resendRequest.text, /https:\/\/example\.com\/eu-doc\/reset-password\?token=/);
+  } finally {
+    global.fetch = realFetch;
+    if (previousKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = previousKey;
+    if (previousFrom === undefined) delete process.env.RESEND_FROM;
+    else process.env.RESEND_FROM = previousFrom;
+    if (previousFrontendUrl === undefined) delete process.env.FRONTEND_URL;
+    else process.env.FRONTEND_URL = previousFrontendUrl;
+  }
+});
+
+test('forgot-password rate limit returns 429 and Retry-After for repeated requests', async () => {
+  const first = await request('/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: 'uploader@example.com' },
+  });
+  const second = await request('/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: 'uploader@example.com' },
+  });
+
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 429);
+  assert.equal(second.body.success, false);
+  assert.ok(second.body.retryAfter >= 30);
+  assert.equal(second.headers.get('retry-after'), String(second.body.retryAfter));
 });
 
 test('reset-password invalidates JWT issued before the password reset', async () => {

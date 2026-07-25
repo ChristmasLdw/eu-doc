@@ -365,6 +365,24 @@ function initDatabase() {
       console.log('  [数据库] 创建 email_verifications 表');
     }
 
+    // 邮件发送频率记录：只保存邮箱与 IP 的哈希，避免在限流日志中重复存储个人信息。
+    if (!existingTables.includes('email_send_events')) {
+      db.exec(`
+        CREATE TABLE email_send_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email_hash TEXT NOT NULL,
+          ip_hash TEXT NOT NULL,
+          mail_type TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_email_send_events_email
+          ON email_send_events(email_hash, mail_type, created_at);
+        CREATE INDEX idx_email_send_events_ip
+          ON email_send_events(ip_hash, created_at);
+      `);
+      console.log('  [数据库] 创建 email_send_events 表');
+    }
+
     // 文档缩略图字段：产品详情页优先展示缩略图，避免直接加载 PDF 导致部分浏览器自动下载。
     const documentColumns = db.prepare('PRAGMA table_info(documents)').all().map(col => col.name);
     if (!documentColumns.includes('thumbnail_path')) {

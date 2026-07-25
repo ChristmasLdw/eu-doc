@@ -9,6 +9,8 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin, generateToken } = require('../middleware/auth.cjs');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/mailer.cjs');
+const { consumeEmailSendLimit } = require('../utils/emailRateLimit.cjs');
 
 const router = Router();
 
@@ -30,11 +32,31 @@ function recordAuthAudit({ userId = null, action, targetId = null, detail, req }
     .run(userId, action, 'user', targetId, detail ? JSON.stringify(detail) : null, getClientIp(req));
 }
 
+function enforceEmailSendLimit(req, res, email, mailType) {
+  const result = consumeEmailSendLimit({
+    db,
+    email,
+    ipAddress: getClientIp(req),
+    mailType,
+  });
+
+  if (result.allowed) return true;
+
+  const retryAfter = Math.max(1, Math.ceil(result.retryAfterSeconds / 30) * 30);
+  res.set('Retry-After', String(retryAfter));
+  res.status(429).json({
+    success: false,
+    message: '邮件请求过于频繁，请稍后再试',
+    retryAfter,
+  });
+  return false;
+}
+
 /**
  * POST /api/auth/register
  * 用户注册（邮箱）
  */
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const { email, password, displayName } = req.body;
 
   if (!email || !password) {
@@ -50,6 +72,8 @@ router.post('/register', (req, res) => {
   if (password.length < 6) {
     return res.status(400).json({ success: false, message: '密码长度不能少于6位' });
   }
+
+  if (!enforceEmailSendLimit(req, res, email, 'verify')) return;
 
   // 检查邮箱是否已存在
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
@@ -88,9 +112,22 @@ router.post('/register', (req, res) => {
       req,
     });
 
+    let emailSent = false;
+    try {
+      const mailResult = await sendVerificationEmail({
+        to: email,
+        token: verifyToken,
+        displayName: displayName || email.split('@')[0],
+      });
+      emailSent = mailResult.sent;
+    } catch (mailError) {
+      console.error('邮箱验证邮件发送失败:', mailError.message);
+    }
+
     const response = {
       success: true,
-      message: '注册成功，请查收验证邮件',
+      message: emailSent ? '注册成功，请查收验证邮件' : '注册成功，验证邮件暂未发送，请稍后重试',
+      emailSent,
       token,
       user: { id: user.id, email: user.email, displayName: user.display_name, role: user.platform_role },
     };
@@ -249,12 +286,14 @@ router.post('/verify-email', (req, res) => {
  * POST /api/auth/forgot-password
  * 忘记密码 - 发送重置令牌
  */
-router.post('/forgot-password', (req, res) => {
+router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
     return res.status(400).json({ success: false, message: '请提供邮箱' });
   }
+
+  if (!enforceEmailSendLimit(req, res, email, 'password_reset')) return;
 
   const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (!user) {
@@ -269,6 +308,12 @@ router.post('/forgot-password', (req, res) => {
     INSERT INTO email_verifications (user_id, email, token, type, expires_at)
     VALUES (?, ?, ?, 'reset', ?)
   `).run(user.id, email, resetToken, expiresAt);
+
+  try {
+    await sendPasswordResetEmail({ to: email, token: resetToken });
+  } catch (mailError) {
+    console.error('密码重置邮件发送失败:', mailError.message);
+  }
 
   const response = {
     success: true,
