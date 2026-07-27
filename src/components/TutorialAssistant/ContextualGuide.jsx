@@ -16,7 +16,7 @@ const STEP_DEFINITIONS = {
   'batch-nav': {
     selector: '[data-tutorial="batch-upload-nav"]',
     title: '进入批量上传',
-    description: '点击左侧“批量上传”。这里可以一次选择多份文件或整个资料文件夹。',
+    description: '点击左侧“批量上传”。这里可以一次选择多份文件，或按住 Shift 点击选择整个文件夹。',
     next: 'company-or-upload',
   },
   'company-or-upload': {
@@ -34,7 +34,7 @@ const STEP_DEFINITIONS = {
       return upload ? {
         element: upload,
         title: '一次选择多份资料',
-        description: '点击这里多选 PDF、图片，或者使用旁边的“上传整个文件夹”。文件会先进入待整理区。',
+        description: '点击这里多选 PDF、图片，或按住 Shift 点击选择整个文件夹。文件会先进入待整理区。',
         next: 'import-group',
       } : null;
     },

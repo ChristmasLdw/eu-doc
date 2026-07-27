@@ -2123,16 +2123,6 @@ export default function AdminV2Page() {
     }
   };
 
-  const selectImportFolder = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.webkitdirectory = true;
-    input.directory = true;
-    input.onchange = () => uploadImportFiles(input.files);
-    input.click();
-  };
-
   const organizeImportItem = async (item) => {
     const form = importSelection[item.id] || {};
     const suggestedClassification = item.suggestedClassification || {};
@@ -2847,8 +2837,8 @@ export default function AdminV2Page() {
       <div className={`${styles.workspaceUploadPanel} ${compact ? styles.workspaceUploadCompact : ''}`}>
         <div>
           <h3>上传资料</h3>
-          <p>支持批量上传 PDF / 图片或整个文件夹。上传后会先进入待整理资料池，不会自动公开，确认归档后再由企业控制展示状态。</p>
-          <p>请仅上传适合对外展示的产品资料，例如证书、DoC 声明、说明书和公开检测报告；不要上传图纸、配方、BOM、报价、供应商或内部工艺等商业敏感资料。</p>
+          <p>支持批量上传 PDF / 图片或整个文件夹（按住 Shift 点击按钮可选择文件夹）。上传后会先进入待整理资料池，不会自动公开，确认归档后再由企业控制展示状态。</p>
+          <p>请仅上传适合对外展示的产品资料，例如证书、DoC 声明、说明书及其他公开资料；不要上传图纸、配方、BOM、报价、供应商或内部工艺等商业敏感资料。</p>
           <div className={styles.importStats}>
             <span><strong>{importItems.length}</strong>全部资料</span>
             <span><strong>{pendingCount}</strong>待整理</span>
@@ -2863,8 +2853,20 @@ export default function AdminV2Page() {
             </select>
           </label>
           <input ref={importInputRef} type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx" className={styles.hiddenInput} onChange={(event) => uploadImportFiles(event.target.files)} />
-          <button data-tutorial="batch-upload-trigger" className={styles.primaryBtn} onClick={() => importInputRef.current?.click()}>选择资料批量上传</button>
-          <button className={styles.secondaryBtn} onClick={selectImportFolder}>上传整个文件夹</button>
+          <button data-tutorial="batch-upload-trigger" className={styles.primaryBtn} onClick={(e) => {
+            if (e.shiftKey) {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.multiple = true;
+              input.webkitdirectory = true;
+              input.directory = true;
+              input.accept = 'application/pdf,image/png,image/jpeg,image/webp,.doc,.docx';
+              input.onchange = () => uploadImportFiles(input.files);
+              input.click();
+            } else {
+              importInputRef.current?.click();
+            }
+          }}>批量上传资料</button>
           <button className={styles.secondaryBtn} onClick={refreshImportItems}>刷新</button>
         </div>
       </div>
