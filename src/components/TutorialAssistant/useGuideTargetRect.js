@@ -82,7 +82,7 @@ export function useGuideTargetRect(active, element) {
     }
 
     const scrollParent = findScrollableAncestor(element);
-    const settleTimers = [0, 80, 240, 520].map((delay) => window.setTimeout(measure, delay));
+    const settleTimers = [0, 60, 160, 320].map((delay) => window.setTimeout(measure, delay));
     const handleLayoutMotion = (event) => {
       if (isRelatedLayoutTarget(event.target, element)) measure();
     };

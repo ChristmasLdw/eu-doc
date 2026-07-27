@@ -212,9 +212,11 @@ export function ContextualGuide() {
 
   const startBatchGuide = useCallback((restart = false) => {
     localStorage.setItem('eu-doc:guide:batch-upload:seen', new Date().toISOString());
-    const savedStep = restart ? null : localStorage.getItem(BATCH_STEP_KEY);
+    // 清除保存的步骤，确保从头开始
+    localStorage.removeItem(BATCH_STEP_KEY);
+    setHasPausedGuide(false);
     setTaskMenuOpen(false);
-    setStepId(savedStep && STEP_DEFINITIONS[savedStep] ? savedStep : 'batch-nav');
+    setStepId('batch-nav');
     setActive(true);
   }, []);
 
@@ -260,8 +262,8 @@ export function ContextualGuide() {
 
     attach();
     observer = new MutationObserver(attach);
-    observer.observe(document.body, { childList: true, subtree: true });
-    timeoutId = window.setInterval(attach, 700);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-tutorial', 'class', 'hidden'] });
+    timeoutId = window.setInterval(attach, 250);
 
     return () => {
       cancelled = true;
@@ -279,20 +281,25 @@ export function ContextualGuide() {
     const actionElement = resolveNestedElement(resolvedStep, resolvedStep.actionTarget);
     if (!actionElement) return undefined;
 
+    let advanceFrameId;
     const handleTargetClick = (event) => {
       const nextStep = resolvedStep.resolveNext
         ? resolvedStep.resolveNext(event)
         : resolvedStep.next;
       if (!nextStep) return;
 
-      window.setTimeout(() => {
+      window.cancelAnimationFrame(advanceFrameId);
+      advanceFrameId = window.requestAnimationFrame(() => {
         if (nextStep === 'complete') completeGuide();
         else if (nextStep === 'stop-guide') stopGuide();
         else setStepId(nextStep);
-      }, 350);
+      });
     };
     actionElement.addEventListener('click', handleTargetClick);
-    return () => actionElement.removeEventListener('click', handleTargetClick);
+    return () => {
+      window.cancelAnimationFrame(advanceFrameId);
+      actionElement.removeEventListener('click', handleTargetClick);
+    };
   }, [active, completeGuide, resolvedStep, stopGuide]);
 
   const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
@@ -305,8 +312,7 @@ export function ContextualGuide() {
           {taskMenuOpen && (
             <div className="context-guide-menu">
               <span>我想要…</span>
-              <button onClick={() => startBatchGuide(false)}><strong>{hasPausedGuide ? '继续上次批量上传指引' : '批量上传产品资料'}</strong><small>{hasPausedGuide ? '从上次关闭的位置继续；页面状态不会被重置' : '从入口、上传到问卷归档和产品编辑'}</small></button>
-              {hasPausedGuide && <button onClick={() => startBatchGuide(true)}><strong>重新开始这条指引</strong><small>从左侧批量上传入口重新讲解</small></button>}
+              <button onClick={() => startBatchGuide(false)}><strong>{hasPausedGuide ? '继续批量上传指引' : '批量上传产品资料'}</strong><small>{hasPausedGuide ? '从批量上传入口重新开始指引' : '从入口、上传到问卷归档和产品编辑'}</small></button>
               <button disabled><strong>申请企业认证</strong><small>后续加入</small></button>
               <button disabled><strong>邀请团队成员</strong><small>后续加入</small></button>
             </div>

@@ -10,7 +10,7 @@ const PENDING_KEY = 'eu-doc:guide:pending';
 // 示例搜索输入配置
 const EXAMPLE_SEARCH = {
   sequence: ['F', 'F6', 'F66'],  // 逐步输入的字符序列
-  interval: 190,                  // 每个字符之间的间隔（毫秒）
+  interval: 110,                  // 保留输入演示感，同时避免步骤等待过久
 };
 
 const GUIDE_STEPS = {
@@ -362,8 +362,8 @@ export default function PublicOnboardingGuide() {
 
     attach();
     observer = new MutationObserver(attach);
-    observer.observe(document.body, { childList: true, subtree: true });
-    intervalId = window.setInterval(attach, 700);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-tutorial', 'class', 'hidden'] });
+    intervalId = window.setInterval(attach, 250);
 
     return () => {
       cancelled = true;
@@ -383,7 +383,7 @@ export default function PublicOnboardingGuide() {
       window.clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
         if (input.value.trim()) setStepId('home-search-submit');
-      }, 480);
+      }, 180);
     };
 
     input.addEventListener('input', handleInput);
@@ -401,7 +401,7 @@ export default function PublicOnboardingGuide() {
       examplePlaybackRef.current = false;
       const submitButton = form.querySelector('button[type="submit"]');
       form.requestSubmit(submitButton || undefined);
-    }, 850);
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [active, resolvedStep, stepId]);
 
@@ -411,8 +411,10 @@ export default function PublicOnboardingGuide() {
     const actionElement = resolveNestedElement(resolvedStep, resolvedStep.actionTarget);
     if (!actionElement) return undefined;
 
+    let advanceFrameId;
     const handleAction = () => {
-      window.setTimeout(() => {
+      window.cancelAnimationFrame(advanceFrameId);
+      advanceFrameId = window.requestAnimationFrame(() => {
         if (['home-search-input', 'home-search-submit'].includes(stepId)) {
           const query = element.querySelector('input')?.value.trim();
           if (query) {
@@ -426,11 +428,14 @@ export default function PublicOnboardingGuide() {
           if (element.matches('[data-tutorial="nav-admin"]')) closeGuide({ keepPending: true });
           else setStepId('auth-choice');
         } else if (stepId === 'register-link') setStepId('register-form');
-      }, 400);
+      });
     };
 
     actionElement.addEventListener(resolvedStep.event, handleAction, { once: true });
-    return () => actionElement.removeEventListener(resolvedStep.event, handleAction);
+    return () => {
+      window.cancelAnimationFrame(advanceFrameId);
+      actionElement.removeEventListener(resolvedStep.event, handleAction);
+    };
   }, [active, closeGuide, resolvedStep, stepId]);
 
   const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
