@@ -941,7 +941,8 @@ export function getDocuments(params = {}) {
       response.data = response.data.map((doc) => {
         const mapped = keysToCamelCase(doc);
         // 明确以 API 的 document_type 为准，避免同名 camelCase 字段碰撞后覆盖真实类型。
-        mapped.documentType = doc.document_type ?? doc.documentType ?? mapped.documentType ?? 'other';
+        const rawDocumentType = doc.document_type ?? doc.documentType ?? mapped.documentType ?? 'other';
+        mapped.documentType = ['certificate', 'declaration_of_conformity', 'manual'].includes(rawDocumentType) ? rawDocumentType : 'other';
         // 处理文件路径
         if (mapped.filePath !== undefined) {
           mapped.fileUrl = withBasename(mapped.filePath);

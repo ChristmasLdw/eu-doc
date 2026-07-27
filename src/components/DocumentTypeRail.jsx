@@ -11,7 +11,7 @@ const DOCUMENT_TYPES = [
   { value: 'declaration_of_conformity' },
   { value: 'certificate' },
   { value: 'manual' },
-  { value: 'test_report' },
+  { value: 'other' },
 ];
 
 export default function DocumentTypeRail({ currentType, onTypeChange, show }) {

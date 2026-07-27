@@ -30,9 +30,8 @@ import styles from './SearchPage.module.css';
 const PAGE_SIZE = 8;
 
 function normalizeDocumentTypeFilter(value) {
-  if (value === 'doc' || value === 'declaration') return 'declaration_of_conformity';
-  if (value === 'report') return 'test_report';
-  return value || 'all';
+  const normalized = value === 'doc' || value === 'declaration' ? 'declaration_of_conformity' : value;
+  return ['certificate', 'declaration_of_conformity', 'manual', 'other'].includes(normalized) ? normalized : 'all';
 }
 
 export default function SearchPage() {
@@ -1053,11 +1052,8 @@ export default function SearchPage() {
                             </div>
                             <span className={styles.status} style={{
                               background: docType === 'declaration_of_conformity' ? '#d1ecf1' :
-                                         docType === 'manual' ? '#d1f2eb' :
-                                         docType === 'test_report' ? '#e8daef' : '#e2e8f0',
-                              color: docType === 'declaration_of_conformity' ? '#0c5460' :
-                                     docType === 'manual' ? '#0c5460' :
-                                     docType === 'test_report' ? '#6c3483' : '#495057',
+                                         docType === 'manual' ? '#d1f2eb' : '#e2e8f0',
+                              color: docType === 'declaration_of_conformity' || docType === 'manual' ? '#0c5460' : '#495057',
                               padding: '4px 12px',
                               borderRadius: '999px',
                               fontSize: '12px',
@@ -1065,7 +1061,7 @@ export default function SearchPage() {
                             }}>
                               {docType === 'declaration_of_conformity' ? 'DoC' :
                                docType === 'manual' ? t('search.manual') :
-                               docType === 'test_report' ? t('search.report') : t('search.document')}
+                               docType === 'other' ? t('search.documentTypes.other') : t('search.document')}
                             </span>
                           </div>
 

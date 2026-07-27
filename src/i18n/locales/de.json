@@ -37,7 +37,7 @@
   },
   "home": {
     "title": "EU-DOC – öffentliche Plattform für Produktdokumente",
-    "subtitle": "Vom Unternehmen freigegebene Zertifikate, Konformitätserklärungen und Anleitungen als durchsuchbare und teilbare Produktdokumentation.",
+    "subtitle": "Vom Unternehmen freigegebene Zertifikate, Konformitätserklärungen, Anleitungen und sonstige öffentliche Dokumente als durchsuchbare und teilbare Produktdokumentation.",
     "searchPlaceholder": "Zertifikatsnummer, Unternehmen, Produkt oder Modell eingeben",
     "searchButton": "Suchen",
     "features": {
@@ -132,7 +132,6 @@
     "viewProduct": "Produkt ansehen",
     "certificate": "Zertifikat",
     "manual": "Anleitung",
-    "report": "Prüfbericht",
     "document": "Dokument",
     "documentStandard": "Angewandte Norm",
     "productModel": "Produktmodell",
@@ -150,7 +149,7 @@
       "declaration_of_conformity": "DoC",
       "certificate": "Zertifikate",
       "manual": "Handbücher",
-      "test_report": "Testberichte"
+      "other": "Sonstige"
     },
     "keepScrolling": "Scrollen Sie weiter, um zu wechseln"
   },
@@ -1586,7 +1585,7 @@
     "certificate": "Zertifikat",
     "doc": "DoC-Erklärung",
     "manual": "Handbuch",
-    "report": "Testbericht",
+    "other": "Sonstige Dokumente",
     "allTime": "Alle Zeiten",
     "today": "Heute",
     "yesterday": "Gestern",
@@ -1688,6 +1687,6 @@
   },
   "meta": {
     "siteTitle": "EU-DOC | Öffentliche Produkt- und Konformitätsdokumente",
-    "siteDescription": "Produktzertifikate, Konformitätserklärungen, Anleitungen und öffentliche Prüfberichte online bereitstellen, suchen und teilen."
+    "siteDescription": "Produktzertifikate, Konformitätserklärungen, Anleitungen und sonstige öffentliche Dokumente online bereitstellen, suchen und teilen."
   }
 }

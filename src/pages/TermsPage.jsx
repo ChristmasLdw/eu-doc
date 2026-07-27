@@ -40,13 +40,13 @@ export default function TermsPage() {
               <section>
                 <h2>一、服务说明</h2>
                 <h3>1.1 服务定位</h3>
-                <p>EU-DOC（以下简称"本平台"）是一个<strong>产品公开资料管理与分享平台</strong>，为用户提供产品证书、DoC 声明、说明书、公开检测报告等资料的在线管理、展示和分享服务。</p>
+                <p>EU-DOC（以下简称"本平台"）是一个<strong>产品公开资料管理与分享平台</strong>，为用户提供产品证书、DoC 声明、说明书及其他公开资料的在线管理、展示和分享服务。</p>
                 <p className={styles.highlight}><strong>重要声明：本平台不是认证机构，不对产品资料或证书的真实性、有效性进行认证或背书。</strong></p>
 
                 <h3>1.2 服务内容</h3>
                 <ul>
                   <li>产品公开资料的在线管理</li>
-                  <li>证书、DoC 声明、说明书等资料的展示和查询</li>
+                  <li>证书、DoC 声明、说明书及其他公开资料的展示和查询</li>
                   <li>产品资料分享链接和二维码生成</li>
                   <li>资料到期提醒（付费功能）</li>
                   <li>产品资料批量管理（付费功能）</li>
@@ -115,13 +115,13 @@ export default function TermsPage() {
               <section>
                 <h2>1. Service Description</h2>
                 <h3>1.1 Platform Positioning</h3>
-                <p>EU-DOC (the "Platform") is a <strong>public product documentation management and sharing platform</strong> that provides online management, display, and sharing services for certificates, DoC declarations, manuals, public test reports, and related product documents.</p>
+                <p>EU-DOC (the "Platform") is a <strong>public product documentation management and sharing platform</strong> that provides online management, display, and sharing services for certificates, DoC declarations, manuals, and other public product documents.</p>
                 <p className={styles.highlight}><strong>Important Notice: This platform is not a certification authority and does not authenticate or endorse the authenticity or validity of product documentation or certificates.</strong></p>
 
                 <h3>1.2 Services Provided</h3>
                 <ul>
                   <li>Online management of public product documents</li>
-                  <li>Display and query of certificates, DoC declarations, manuals, and related documents</li>
+                  <li>Display and query of certificates, DoC declarations, manuals, and other public documents</li>
                   <li>Product document sharing link and QR code generation</li>
                   <li>Documentation expiry reminders (paid feature)</li>
                   <li>Batch product document management (paid feature)</li>

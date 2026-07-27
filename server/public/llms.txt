@@ -4,7 +4,7 @@ EU-DOC is a product compliance document platform for organizing and sharing publ
 
 ## What EU-DOC is for
 
-EU-DOC helps companies present product-related documents such as certificates, DoC declarations, user manuals, test reports, and basic product information through searchable web pages.
+EU-DOC helps companies present product-related documents such as certificates, DoC declarations, user manuals, and basic product information through searchable web pages.
 
 Typical use cases:
 - Store and share public product compliance documents online.

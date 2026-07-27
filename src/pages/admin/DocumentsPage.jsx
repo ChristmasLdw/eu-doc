@@ -100,7 +100,6 @@ export default function DocumentsPage() {
       'certificate': '证书',
       'declaration_of_conformity': 'DoC',
       'manual': '说明书',
-      'test_report': '检测报告',
       'other': '其他'
     };
     return typeMap[type] || type;
@@ -155,7 +154,6 @@ export default function DocumentsPage() {
             <option value="certificate">证书</option>
             <option value="declaration_of_conformity">DoC</option>
             <option value="manual">说明书</option>
-            <option value="test_report">检测报告</option>
             <option value="other">其他</option>
           </select>
           <select

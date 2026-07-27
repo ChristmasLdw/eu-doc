@@ -37,7 +37,7 @@
   },
   "home": {
     "title": "EU-DOC Public Product Documentation Platform",
-    "subtitle": "Turn company-approved certificates, DoC declarations, and manuals into searchable, shareable product document pages",
+    "subtitle": "Turn company-approved certificates, DoC declarations, manuals, and other public documents into searchable, shareable product document pages",
     "searchPlaceholder": "Enter certificate number, company name, product model...",
     "searchButton": "Search",
     "features": {
@@ -132,7 +132,6 @@
     "viewProduct": "View product",
     "certificate": "Certificate",
     "manual": "Manual",
-    "report": "Test Report",
     "document": "Document",
     "documentStandard": "Compliant Standard",
     "productModel": "Product Model",
@@ -150,7 +149,7 @@
       "declaration_of_conformity": "DoC",
       "certificate": "Certificates",
       "manual": "Manuals",
-      "test_report": "Test Reports"
+      "other": "Other"
     },
     "keepScrolling": "Keep scrolling to switch"
   },
@@ -1586,7 +1585,7 @@
     "certificate": "Certificate",
     "doc": "DoC Declaration",
     "manual": "Manual",
-    "report": "Test report",
+    "other": "Other documents",
     "allTime": "All time",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -1688,6 +1687,6 @@
   },
   "meta": {
     "siteTitle": "EU-DOC | Public Product Compliance Documentation",
-    "siteDescription": "Publish, search, and share product certificates, declarations of conformity, manuals, and public test reports."
+    "siteDescription": "Publish, search, and share product certificates, declarations of conformity, manuals, and other public documents."
   }
 }

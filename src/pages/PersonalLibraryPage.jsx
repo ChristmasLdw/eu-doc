@@ -17,7 +17,7 @@ const fileTypeOptions = [
   { value: 'certificate', labelKey: 'personalLibrary.certificate' },
   { value: 'doc', labelKey: 'personalLibrary.doc' },
   { value: 'manual', labelKey: 'personalLibrary.manual' },
-  { value: 'report', labelKey: 'personalLibrary.report' },
+  { value: 'other', labelKey: 'personalLibrary.other' },
 ];
 
 const rangeOptions = [
@@ -49,8 +49,8 @@ function normalizeFileType(item) {
   const text = `${item.title || ''} ${item.meta || ''} ${item.description || ''}`.toLowerCase();
   if (['declaration_of_conformity', 'doc', 'declaration'].includes(raw) || /doc|声明|conformity/i.test(text)) return 'doc';
   if (['manual', 'user_manual'].includes(raw) || /说明书|manual|instruction/i.test(text)) return 'manual';
-  if (['report', 'test_report'].includes(raw) || /报告|report|test/i.test(text)) return 'report';
-  return 'certificate';
+  if (['certificate', 'certification', 'cert'].includes(raw)) return 'certificate';
+  return 'other';
 }
 
 function parseNote(note = '') {

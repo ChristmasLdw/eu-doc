@@ -18,14 +18,13 @@ const RESOURCE_TYPES = [
   { key: 'certificate', tone: 'blue' },
   { key: 'declaration_of_conformity', tone: 'indigo' },
   { key: 'manual', tone: 'cyan' },
-  { key: 'test_report', tone: 'slate' },
+  { key: 'other', tone: 'slate' },
 ];
 
 function normalizeDocType(doc) {
   const type = doc.document_type || doc.documentType || 'other';
-  if (type === 'declaration') return 'declaration_of_conformity';
-  if (type === 'report') return 'test_report';
-  return type;
+  const normalized = type === 'declaration' ? 'declaration_of_conformity' : type;
+  return ['certificate', 'declaration_of_conformity', 'manual'].includes(normalized) ? normalized : 'other';
 }
 
 function docFilePath(doc) {
@@ -210,8 +209,8 @@ export default function ProductDetailPage() {
     const docs = documents.filter((doc) => normalizeDocType(doc) === type.key);
     const languages = [...new Set(docs.map((doc) => doc.language).filter(Boolean))];
     const hints = isEn
-      ? { certificate: 'CE, UKCA, and certification documents', declaration_of_conformity: 'Declaration of conformity, responsible party, and language versions', manual: 'Installation, use, maintenance, and safety instructions', test_report: 'Laboratory testing and technical verification documents' }
-      : { certificate: 'CE、UKCA、检测认证等', declaration_of_conformity: '符合性声明、责任主体与语言版本', manual: '安装、使用、维护和安全说明', test_report: '实验室测试和技术验证资料' };
+      ? { certificate: 'CE, UKCA, and certification documents', declaration_of_conformity: 'Declaration of conformity, responsible party, and language versions', manual: 'Installation, use, maintenance, and safety instructions', other: 'Other public product documents and attachments' }
+      : { certificate: 'CE、UKCA、检测认证等', declaration_of_conformity: '符合性声明、责任主体与语言版本', manual: '安装、使用、维护和安全说明', other: '其他适合公开展示的产品资料与附件' };
     return { ...type, label: documentTypeLabel(type.key, i18n.language), shortLabel: documentTypeLabel(type.key, i18n.language, 'short'), hint: hints[type.key], docs, languages };
   }), [documents, i18n.language, isEn]);
 

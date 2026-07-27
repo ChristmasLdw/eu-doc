@@ -8,6 +8,11 @@ const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_CO
 const { suggestProductClassification } = require('../utils/classificationRules.cjs');
 
 const router = Router();
+const SUPPORTED_DOCUMENT_TYPES = new Set(['certificate', 'declaration_of_conformity', 'manual', 'other']);
+
+function normalizeImportDocumentType(value) {
+  return SUPPORTED_DOCUMENT_TYPES.has(value) ? value : 'other';
+}
 
 function ensureImportTables() {
   db.exec(`
@@ -391,7 +396,7 @@ router.post('/organize-group', authMiddleware, (req, res) => {
       compliance_category_ids.forEach((categoryId) => insertCompliance.run(productId, categoryId));
     }
 
-    const docType = document_type || items[0].guessed_type || 'other';
+    const docType = normalizeImportDocumentType(document_type || items[0].guessed_type || 'other');
     const created = [];
     const insertDocument = db.prepare(`
       INSERT INTO documents (company_id, product_id, document_type, title, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
@@ -402,7 +407,7 @@ router.post('/organize-group', authMiddleware, (req, res) => {
 
     for (const item of items) {
       const languageOverride = languages_by_id && languages_by_id[String(item.id)];
-      const itemDocType = (document_types_by_id && document_types_by_id[String(item.id)]) || docType;
+      const itemDocType = normalizeImportDocumentType((document_types_by_id && document_types_by_id[String(item.id)]) || docType);
       const docResult = insertDocument.run(companyId, productId, itemDocType, item.original_name, languageOverride || item.guessed_language || 'en', item.file_path, item.file_size, item.mime_type, importReviewStatus(req), req.admin.id);
       const documentId = docResult.lastInsertRowid;
       if (itemDocType === 'certificate') {
@@ -480,7 +485,7 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
       compliance_category_ids.forEach((categoryId) => insertCompliance.run(productId, categoryId));
     }
 
-    const docType = document_type || item.guessed_type || 'other';
+    const docType = normalizeImportDocumentType(document_type || item.guessed_type || 'other');
     const docTitle = title || item.original_name;
     const docLang = language || item.guessed_language || 'en';
     const docResult = db.prepare(`

@@ -61,7 +61,7 @@ Examples:
 - Certificate
 - Declaration of Conformity / DoC
 - User Manual
-- Test Report
+- Other Public Product Document
 - Installation Guide
 - Warranty File
 - Other

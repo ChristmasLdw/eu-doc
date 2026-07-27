@@ -112,27 +112,24 @@ export function documentTypeLabel(typeOrDoc = {}, language = 'zh', variant = 'lo
   const rawType = typeof typeOrDoc === 'string'
     ? typeOrDoc
     : (typeOrDoc.document_type || typeOrDoc.documentType || 'other');
-  const type = rawType === 'declaration' ? 'declaration_of_conformity' : rawType === 'report' ? 'test_report' : rawType;
+  const type = rawType === 'declaration' ? 'declaration_of_conformity' : rawType;
   const labels = {
     zh: {
       certificate: variant === 'short' ? '证书' : '资质证书',
       declaration_of_conformity: 'DoC 声明',
       manual: variant === 'short' ? '说明书' : '使用说明书',
-      test_report: variant === 'short' ? '报告' : '检测报告',
       other: '其他资料',
     },
     en: {
       certificate: 'Certificate',
       declaration_of_conformity: 'DoC Declaration',
       manual: variant === 'short' ? 'Manual' : 'User Manual',
-      test_report: variant === 'short' ? 'Report' : 'Test Report',
       other: 'Other Document',
     },
     de: {
       certificate: 'Zertifikat',
       declaration_of_conformity: 'Konformitätserklärung',
       manual: variant === 'short' ? 'Anleitung' : 'Bedienungsanleitung',
-      test_report: variant === 'short' ? 'Prüfbericht' : 'Prüfbericht',
       other: 'Sonstiges Dokument',
     },
   };

@@ -260,7 +260,9 @@ function listDocuments(req, res) {
       params.push(Number(productId));
     }
 
-    if (documentType) {
+    if (documentType === 'other') {
+      conditions.push("d.document_type NOT IN ('certificate', 'declaration_of_conformity', 'manual')");
+    } else if (documentType) {
       conditions.push('d.document_type = ?');
       params.push(documentType);
     }
@@ -540,7 +542,7 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   }
 
   // 文档类型校验
-  const validTypes = ['certificate', 'declaration_of_conformity', 'manual', 'test_report', 'other'];
+  const validTypes = ['certificate', 'declaration_of_conformity', 'manual', 'other'];
   if (!validTypes.includes(document_type)) {
     if (req.file) fs.unlinkSync(req.file.path);
     return res.status(400).json({

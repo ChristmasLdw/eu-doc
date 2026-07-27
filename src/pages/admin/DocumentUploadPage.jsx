@@ -200,7 +200,6 @@ export default function DocumentUploadPage() {
                 <option value="certificate">证书</option>
                 <option value="declaration_of_conformity">DoC 声明</option>
                 <option value="manual">说明书</option>
-                <option value="test_report">检测报告</option>
                 <option value="other">其他</option>
               </select>
             </div>

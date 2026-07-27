@@ -1172,13 +1172,13 @@ export default function AdminV2Page() {
   }, [filteredHistoryRows]);
 
 
-  const favoriteTypeOptions = ['全部收藏', '公司', '产品', '资质证书', 'DoC 声明', '说明书', '检测报告', '有提醒', '最近取消'];
+  const favoriteTypeOptions = ['全部收藏', '公司', '产品', '资质证书', 'DoC 声明', '说明书', '其他资料', '有提醒', '最近取消'];
   const favoriteFileTypeOptions = [
     { value: 'all', label: '全部资料' },
     { value: 'certificate', label: '资质证书' },
     { value: 'doc', label: 'DoC 声明' },
     { value: 'manual', label: '说明书' },
-    { value: 'report', label: '检测报告' },
+    { value: 'other', label: '其他资料' },
   ];
   const favoriteStatusOptions = [
     { value: 'all', label: '全部状态' },
@@ -1217,18 +1217,16 @@ export default function AdminV2Page() {
       // 优先根据 documentType 字段判断，这是数据库中的准确类型
       if (['declaration_of_conformity', 'doc', 'declaration', 'declaration-of-conformity'].includes(normalizedFileType)) fileType = 'doc';
       else if (['manual', 'user_manual', 'instruction_manual', 'instructions'].includes(normalizedFileType)) fileType = 'manual';
-      else if (['report', 'test_report', 'test-report'].includes(normalizedFileType)) fileType = 'report';
       else if (['certificate', 'certification', 'cert'].includes(normalizedFileType)) fileType = 'certificate';
       // 只有在 documentType 为空或无法识别时，才使用文本模糊匹配作为后备
       else if (!normalizedFileType) {
         // 注意：这里的正则顺序很重要，"使用说明书"中包含"说明"，所以要先匹配"说明书"，避免被"声明"误匹配
         if (/说明书|使用说明|manual|instruction/i.test(text)) fileType = 'manual';
         else if (/doc(?![一-龥])|声明(?!书)|conformity/i.test(text)) fileType = 'doc';
-        else if (/报告|report|test/i.test(text)) fileType = 'report';
         else if (/证书|certificate|cert/i.test(text)) fileType = 'certificate';
-        else fileType = 'certificate'; // 默认值
+        else fileType = 'other';
       } else {
-        fileType = normalizedFileType || 'certificate';
+        fileType = ['certificate', 'doc', 'manual', 'other'].includes(normalizedFileType) ? normalizedFileType : 'other';
       }
     }
     return { ...base, fileType, text };
@@ -1249,7 +1247,7 @@ export default function AdminV2Page() {
       certificate: files.filter((item) => item.fileType === 'certificate').length,
       doc: files.filter((item) => item.fileType === 'doc').length,
       manual: files.filter((item) => item.fileType === 'manual').length,
-      report: files.filter((item) => item.fileType === 'report').length,
+      other: files.filter((item) => item.fileType === 'other').length,
       warning: normal.filter((item) => item.status !== '正常').length,
       deleted: recentlyDeletedItems.length,
     };
@@ -1291,7 +1289,7 @@ export default function AdminV2Page() {
         console.log(`  过滤: ${item.title}, type=${item.type}, fileType=${item.fileType}`);
         return false;
       }
-      if (favoriteFilter === '检测报告' && (item.type !== '文件' || item.fileType !== 'report')) return false;
+      if (favoriteFilter === '其他资料' && (item.type !== '文件' || item.fileType !== 'other')) return false;
       if (favoriteFilter === '有提醒' && item.status === '正常') return false;
       // 只对资料类型进行资料类型筛选
       if (favoriteFileType !== 'all' && item.type === '文件' && item.fileType !== favoriteFileType) return false;
@@ -3082,7 +3080,7 @@ export default function AdminV2Page() {
                       资质证书: favoriteStats.certificate,
                       'DoC 声明': favoriteStats.doc,
                       说明书: favoriteStats.manual,
-                      检测报告: favoriteStats.report,
+                      其他资料: favoriteStats.other,
                       有提醒: favoriteStats.warning,
                       最近取消: favoriteStats.deleted
                     };
@@ -4262,7 +4260,7 @@ export default function AdminV2Page() {
             title: '使用 EU-DOC',
             tag: '资料入口成本',
             total: '¥99-9,999/年',
-            note: '围绕产品组织证书、DoC、说明书和检测报告，支持搜索、分享、二维码和持续更新。',
+            note: '围绕产品组织证书、DoC、说明书及其他公开资料，支持搜索、分享、二维码和持续更新。',
             items: [
               ['产品资料页', '已包含'],
               ['资料分类展示', '已包含'],
@@ -4756,7 +4754,7 @@ export default function AdminV2Page() {
         }
         : {
           title: '审核/合规分类',
-          desc: '用于审核机构按法规、认证路径、标准号快速定位 DoC、证书、测试报告。',
+          desc: '用于审核机构按法规、认证路径、标准号快速定位 DoC、证书及其他公开资料。',
           hint: '一个产品可关联多个合规分类，资料类型仍由 documentType 单独管理。',
         };
       const normalizedCategorySearch = categorySearch.trim().toLowerCase();
@@ -5505,7 +5503,7 @@ function StacklandsProductsTestPage({ onBack }) {
       updated: '昨天 18:20',
       files: [
         { id: 'f20-cert-1', type: '资质证书', name: 'F20 CE Certificate.pdf', lang: 'EN', status: '已归档' },
-        { id: 'f20-cert-2', type: '资质证书', name: 'F20 Test Report.pdf', lang: 'EN', status: '已归档' },
+        { id: 'f20-cert-2', type: '资质证书', name: 'F20 Certificate Annex.pdf', lang: 'EN', status: '已归档' },
         { id: 'f20-doc-1', type: 'DoC声明', name: 'F20 DoC EN.pdf', lang: 'EN', status: '已归档' },
         { id: 'f20-doc-2', type: 'DoC声明', name: 'F20 DoC FR.pdf', lang: 'FR', status: '已归档' },
         { id: 'f20-manual-1', type: '说明书', name: 'F20 User Manual.pdf', lang: 'EN', status: '已归档' },

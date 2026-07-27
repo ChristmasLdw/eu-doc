@@ -21,7 +21,7 @@ const uploadedFiles = [
   ['F66_DoC_EN.pdf', '620 KB'],
   ['F66_DoC_DE.pdf', '635 KB'],
   ['F20_CE_Certificate.pdf', '1.4 MB'],
-  ['F20_Test_Report.pdf', '2.2 MB'],
+  ['F20_Certificate_Annex.pdf', '2.2 MB'],
   ['F20_DoC_EN.pdf', '590 KB'],
   ['F20_DoC_FR.pdf', '604 KB'],
   ['F20_User_Manual.pdf', '4.8 MB'],
@@ -32,7 +32,7 @@ const uploadedFiles = [
 
 const groupedFiles = [
   { model: 'F66-608 系列', count: 4, languages: 'EN / DE', confidence: '高可信', tone: 'high', docs: '2 份证书 · 2 份 DoC' },
-  { model: 'F20 系列', count: 5, languages: 'EN / FR', confidence: '高可信', tone: 'high', docs: '证书 · 报告 · DoC · 说明书' },
+  { model: 'F20 系列', count: 5, languages: 'EN / FR', confidence: '高可信', tone: 'high', docs: '2 份证书 · DoC · 说明书' },
   { model: 'F60 系列', count: 3, languages: 'EN', confidence: '需确认', tone: 'medium', docs: '证书 · DoC · 说明书' },
 ];
 
@@ -73,7 +73,7 @@ function WelcomeScreen({ onAdvance }) {
         <div>
           <span className="sim-kicker">PRODUCT DOCUMENT CLOUD</span>
           <h2>把产品资料，<br />变成可信的公开页面。</h2>
-          <p>企业集中上传和管理 DoC、证书、说明书与检测报告，并按产品和型号清晰归档。</p>
+          <p>企业集中上传和管理 DoC、证书、说明书及其他公开资料，并按产品和型号清晰归档。</p>
           <button onClick={onAdvance}>我是企业用户，开始使用 <b>→</b></button>
         </div>
         <div className="sim-value-stack">

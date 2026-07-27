@@ -452,7 +452,6 @@ curl "http://localhost:3007/api/v2/products/1/documents"
 - `certificate` - 证书
 - `declaration_of_conformity` - DoC声明
 - `manual` - 说明书
-- `test_report` - 测试报告
 - `other` - 其他
 
 **示例**:

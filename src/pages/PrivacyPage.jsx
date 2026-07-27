@@ -57,7 +57,7 @@ export default function PrivacyPage() {
                 <ul>
                   <li>证书编号、产品名称、型号</li>
                   <li>发证机构、有效期</li>
-                  <li>上传的证书、DoC 声明、说明书、公开检测报告等产品资料</li>
+                  <li>上传的证书、DoC 声明、说明书及其他公开产品资料</li>
                 </ul>
 
                 <h3>2.3 日志信息</h3>
@@ -103,7 +103,7 @@ export default function PrivacyPage() {
                 </ol>
 
                 <h3>4.3 公开信息</h3>
-                <p>以下信息可能被公开展示：企业主动公开的资料编号、证书编号、产品名称、型号、公司名称、资料状态、DoC 声明、说明书和公开检测报告等产品资料。</p>
+                <p>以下信息可能被公开展示：企业主动公开的资料编号、证书编号、产品名称、型号、公司名称、资料状态、DoC 声明、说明书及其他公开产品资料。</p>
                 <p className={styles.highlight}><strong>请勿上传商业秘密、个人隐私或不适合公开展示的内容。用户主动分享的资料链接，任何持有链接的人都可能访问。</strong></p>
               </section>
 
@@ -160,7 +160,7 @@ export default function PrivacyPage() {
                 <ul>
                   <li>Document number, certificate number, product name, model</li>
                   <li>Issuing authority, validity period</li>
-                  <li>Uploaded certificates, DoC declarations, manuals, public test reports, and related product documentation</li>
+                  <li>Uploaded certificates, DoC declarations, manuals, and other public product documentation</li>
                 </ul>
 
                 <h3>2.3 Log Information</h3>
@@ -206,7 +206,7 @@ export default function PrivacyPage() {
                 </ol>
 
                 <h3>4.3 Public Information</h3>
-                <p>The following information may be publicly displayed: document number, certificate number, product name, model, company name, document status, DoC declarations, manuals, public test reports, and related product documentation.</p>
+                <p>The following information may be publicly displayed: document number, certificate number, product name, model, company name, document status, DoC declarations, manuals, and other public product documentation.</p>
                 <p className={styles.highlight}><strong>Note: Documentation links shared by users may be accessible to anyone with the link.</strong></p>
               </section>
 

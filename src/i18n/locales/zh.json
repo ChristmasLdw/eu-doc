@@ -37,7 +37,7 @@
   },
   "home": {
     "title": "EU-DOC 产品公开资料平台",
-    "subtitle": "把企业主动公开的证书、DoC 声明和说明书，变成可搜索、可分享、可扫码查看的产品资料页",
+    "subtitle": "把企业主动公开的证书、DoC 声明、说明书及其他公开资料，变成可搜索、可分享、可扫码查看的产品资料页",
     "searchPlaceholder": "输入产品型号、公司名称、证书编号...",
     "searchButton": "搜索",
     "features": {
@@ -132,7 +132,6 @@
     "viewProduct": "查看产品",
     "certificate": "证书",
     "manual": "说明书",
-    "report": "检测报告",
     "document": "文档",
     "documentStandard": "符合标准",
     "productModel": "产品型号",
@@ -150,7 +149,7 @@
       "declaration_of_conformity": "DoC",
       "certificate": "证书",
       "manual": "说明书",
-      "test_report": "检测报告"
+      "other": "其他"
     },
     "keepScrolling": "继续滚动切换"
   },
@@ -813,7 +812,7 @@
       "statusIncomplete": "企业已创建，尚未完成认证",
       "descRejected": "请根据审核意见补充企业信息后重新提交。资料整理不受影响，可以继续上传和归档。",
       "descReviewing": "审核期间仍可继续整理产品资料。认证通过后，已公开的产品资料才会出现在前台搜索和展示页面。",
-      "descIncomplete": "你可以先批量上传证书、DoC 声明、说明书等产品资料，再补充企业信息并提交认证。未认证企业最多上传 20 份资料，单份不超过 20MB。",
+      "descIncomplete": "你可以先批量上传证书、DoC 声明、说明书及其他公开产品资料，再补充企业信息并提交认证。未认证企业最多上传 20 份资料，单份不超过 20MB。",
       "waitForApproval": "等待认证通过",
       "submitVerification": "提交企业认证",
       "batchUpload": "批量上传产品资料",
@@ -1586,7 +1585,7 @@
     "certificate": "资质证书",
     "doc": "DoC 声明",
     "manual": "说明书",
-    "report": "检测报告",
+    "other": "其他资料",
     "allTime": "全部时间",
     "today": "今天",
     "yesterday": "昨天",
@@ -1688,6 +1687,6 @@
   },
   "meta": {
     "siteTitle": "EU-DOC｜产品合规资料、DoC 声明与证书在线管理平台",
-    "siteDescription": "在线展示、查询与分享产品证书、DoC 符合性声明、说明书和检测报告等公开资料。"
+    "siteDescription": "在线展示、查询与分享产品证书、DoC 符合性声明、说明书及其他公开资料。"
   }
 }

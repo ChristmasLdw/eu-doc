@@ -9,9 +9,8 @@ import styles from './DocumentDetailPage.module.css';
 
 function normalizeDocType(doc = {}) {
   const type = doc.document_type || doc.documentType || 'other';
-  if (type === 'declaration') return 'declaration_of_conformity';
-  if (type === 'report') return 'test_report';
-  return type;
+  const normalized = type === 'declaration' ? 'declaration_of_conformity' : type;
+  return ['certificate', 'declaration_of_conformity', 'manual'].includes(normalized) ? normalized : 'other';
 }
 
 function getFileUrl(doc = {}) {

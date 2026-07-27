@@ -35,7 +35,7 @@ export const tutorialDefinitions = {
       {
         id: 'business-upload',
         title: '上传产品文件',
-        description: '选择单份或多份 DoC、证书、说明书、检测报告等产品资料进行上传。',
+        description: '选择单份或多份 DoC、证书、说明书及其他公开资料进行上传。',
         tip: '上传后的文件先进入待整理区，不会立刻公开。',
         targetElement: '#upload-section',
       },

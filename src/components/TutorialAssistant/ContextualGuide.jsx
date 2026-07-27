@@ -48,7 +48,7 @@ const STEP_DEFINITIONS = {
   'upload-files': {
     selector: '[data-tutorial="batch-upload-trigger"]',
     title: '批量选择产品资料',
-    description: '建议把同一批产品的证书、DoC、说明书和检测报告一起上传，系统会辅助识别和分组。',
+    description: '建议把同一批产品的证书、DoC、说明书及其他公开资料一起上传，系统会辅助识别和分组。',
     next: 'import-group',
   },
   'import-group': {
