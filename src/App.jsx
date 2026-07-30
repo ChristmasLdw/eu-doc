@@ -51,11 +51,13 @@ import EmailVerifyPage from './pages/EmailVerifyPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import TutorialDemoPage from './pages/TutorialDemoPage';
+import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminV2Page from './pages/admin/AdminV2Page';
 import PublicOnboardingGuide from './components/TutorialAssistant/PublicOnboardingGuide';
 import { useAdmin } from './contexts/AdminContext';
+import { ENV } from './config/env';
 
 function App() {
   const location = useLocation();
@@ -120,8 +122,8 @@ function App() {
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/solutions" element={<SolutionsPage />} />
 
-        {/* 用户引导内部审阅页面，不作为正式用户入口 */}
-        <Route path="/tutorial-demo" element={<TutorialDemoPage />} />
+        {/* 用户引导审阅页面只在本地开发构建中开放 */}
+        {ENV.IS_DEV && <Route path="/tutorial-demo" element={<TutorialDemoPage />} />}
 
         {/* 用户认证相关页面 */}
         <Route path="/verify-email" element={<EmailVerifyPage />} />
@@ -148,6 +150,8 @@ function App() {
           }
         />
         <Route path="/admin-v2/*" element={<Navigate to="/admin" replace />} />
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
       {/* 公共页脚 - 除了认证页面和后台管理页面 */}

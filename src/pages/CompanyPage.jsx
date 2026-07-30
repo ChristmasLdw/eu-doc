@@ -518,7 +518,7 @@ export default function CompanyPage() {
 
         {/* 页脚 */}
         <footer className={styles.footer}>
-          <p>© 2025 EU-DOC</p>
+          <p>{t('footer.copyright')}</p>
         </footer>
         <ShareModal
           open={shareOpen}

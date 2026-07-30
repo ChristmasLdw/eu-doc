@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import * as api from '../../services/api';
+import { ENV } from '../../config/env';
 import styles from './AdminV2Page.module.css';
 import { ContextualGuide } from '../../components/TutorialAssistant/ContextualGuide';
 
@@ -4812,7 +4813,7 @@ export default function AdminV2Page() {
     return <Placeholder title={pageTitle} desc="平台管理员功能入口，后续接入真实审核、用户、举报和系统设置数据。" />;
   };
 
-  if (location.pathname === '/admin/test-stacklands-products') {
+  if (ENV.IS_DEV && location.pathname === '/admin/test-stacklands-products') {
     return <StacklandsProductsTestPage onBack={() => navigate('/admin')} />;
   }
 

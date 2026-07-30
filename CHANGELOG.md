@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.1] - 2026-07-30
+
+### Added
+- 新增中、英、德三语 404 页面，未知地址不再显示空白内容
+
+### Changed
+- 资料类型归并、批量上传入口合并和用户引导延迟优化纳入统一版本边界
+- 流程清理 API、用户引导审阅页和 Stacklands 测试页仅在明确开启的开发环境中可访问
+- 公司详情页页脚改为复用全局多语言版权文案
+
+### Security
+- Multer 升级至 2.2.0，修复上传请求可能触发的拒绝服务漏洞
+- 更新 Body Parser 间接依赖，修复请求体大小限制相关漏洞
+- React Router 升级至当前最新版 7.18.2；剩余审计项仅涉及本项目未使用的 RSC 模式，等待上游修复
+
+## [2.9.0] - 2026-07-26
+
+### Added
+- 接入 Resend 注册验证与密码重置邮件
+- 增加按邮箱和 IP 统计的邮件发送频率限制
+- 统一认证邮件与验证页面的 EU-DOC 品牌样式
+
 ## [2.8.1] - 2026-07-21
 
 ### Added

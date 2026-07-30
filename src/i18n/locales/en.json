@@ -1407,6 +1407,13 @@
     "solutions": "Solutions",
     "guide": "Guide"
   },
+  "notFound": {
+    "eyebrow": "Page not found",
+    "title": "There is no page at this address",
+    "description": "The link may have expired or the address may be incorrect. Return home or search for products, companies, and public documents.",
+    "backHome": "Back to home",
+    "search": "Search documents"
+  },
   "productDetail": {
     "backToList": "Back to Product List",
     "loading": "Loading...",

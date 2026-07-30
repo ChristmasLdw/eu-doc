@@ -1407,6 +1407,13 @@
     "solutions": "Lösungen",
     "guide": "Anleitung"
   },
+  "notFound": {
+    "eyebrow": "Seite nicht gefunden",
+    "title": "Unter dieser Adresse gibt es keine Seite",
+    "description": "Der Link ist möglicherweise abgelaufen oder die Adresse ist fehlerhaft. Kehren Sie zur Startseite zurück oder suchen Sie nach Produkten, Unternehmen und öffentlichen Dokumenten.",
+    "backHome": "Zur Startseite",
+    "search": "Dokumente suchen"
+  },
   "productDetail": {
     "backToList": "Zurück zur Produktliste",
     "loading": "Laden...",

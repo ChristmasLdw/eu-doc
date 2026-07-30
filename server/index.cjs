@@ -100,7 +100,13 @@ app.use('/api/v2/company-verifications', require('./routes/company-verifications
 app.use('/api/v2/upload-confirmations', require('./routes/upload-confirmations.cjs'));
 app.use('/api/v2/imports', require('./routes/imports.cjs'));
 app.use('/api/v2/platform-settings', require('./routes/platform-settings.cjs'));
-app.use('/api/v2/dev-tools', require('./routes/dev-tools.cjs'));
+const devToolsEnabled = process.env.ENABLE_DEV_TOOLS === 'true'
+  && process.env.NODE_ENV !== 'production'
+  && process.env.APP_ENV !== 'production';
+
+if (devToolsEnabled) {
+  app.use('/api/v2/dev-tools', require('./routes/dev-tools.cjs'));
+}
 
 /**
  * 健康检查接口

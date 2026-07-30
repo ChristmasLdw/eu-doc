@@ -1407,6 +1407,13 @@
     "solutions": "解决方案",
     "guide": "使用指南"
   },
+  "notFound": {
+    "eyebrow": "页面未找到",
+    "title": "这个地址没有对应页面",
+    "description": "链接可能已失效或地址输入有误。你可以返回首页，或继续搜索产品、企业和公开资料。",
+    "backHome": "返回首页",
+    "search": "搜索资料"
+  },
   "productDetail": {
     "backToList": "返回产品列表",
     "loading": "加载中...",
