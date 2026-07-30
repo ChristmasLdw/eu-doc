@@ -5336,6 +5336,9 @@ tbody tr:last-child td {
 }
 
 .importModalHeader {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5343,6 +5346,7 @@ tbody tr:last-child td {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
 }
 
 .importModalHeader p {
@@ -5435,6 +5439,20 @@ tbody tr:last-child td {
 
 .questionWaiting .questionIndex {
   background: rgba(148, 163, 184, 0.6);
+}
+
+.questionDone .questionBody > :not(h4),
+.questionWaiting .questionBody > :not(h4) {
+  display: none;
+}
+
+.questionDone .questionBody h4,
+.questionWaiting .questionBody h4 {
+  margin: 7px 0 0;
+}
+
+.questionWaiting {
+  pointer-events: none;
 }
 
 .questionDone:hover,

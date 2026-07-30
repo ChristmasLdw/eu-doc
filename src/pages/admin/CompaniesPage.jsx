@@ -136,6 +136,23 @@ export default function CompaniesPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleLogoUpload = async (companyId, file) => {
+    setUploadingLogoFor(companyId);
+    setFormError('');
+    try {
+      const result = await api.uploadCompanyLogo(companyId, file);
+      const logoUrl = result.data?.logoUrl || result.logoUrl;
+      if (logoUrl) {
+        setEditingCompany((company) => ({ ...company, logoUrl }));
+      }
+      await fetchCompanies();
+    } catch (err) {
+      setFormError(err.message);
+    } finally {
+      setUploadingLogoFor(null);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
@@ -239,7 +256,9 @@ export default function CompaniesPage() {
                       onUpload={(file) => handleLogoUpload(editingCompany.id, file)}
                       existingFile={editingCompany.logoUrl ? { url: editingCompany.logoUrl, type: 'image' } : null}
                     />
-                    <p className={styles.fieldHint}>{t('admin.companiesPage.logoHint')}</p>
+                    <p className={styles.fieldHint}>
+                      {uploadingLogoFor === editingCompany.id ? t('common.loading') : t('admin.companiesPage.logoHint')}
+                    </p>
                   </div>
                 )}
               </div>

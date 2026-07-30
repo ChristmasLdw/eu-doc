@@ -130,9 +130,9 @@ function enhanceGuessWithText(guess, text) {
   const normalized = text.replace(/\s+/g, ' ');
   const standards = [...new Set((normalized.match(/(?:CE\s*)?EN\s*\d{3,5}(?::\d{4})?/gi) || []).map((item) => item.replace(/\s+/g, ' ').toUpperCase()))];
   const models = [...new Set([...(guess.guessed_models ? guess.guessed_models.split(/[,，]/) : []), ...((normalized.match(/F\d{2}[A-Z0-9-]*/gi) || []))].map((item) => item.trim().toUpperCase()).filter(Boolean))];
-  const certNo = guess.guessed_cert_no || pickByRules(normalized, [/(?:certificate|cert\.?|no\.?|number)\s*(?:no\.?|number)?\s*[:#-]?\s*([A-Z0-9_\/-]{6,})/i, /\b(\d{2}[_-]\d{3}[_-]\d{2}[_-]\d{3,})\b/]);
-  const issuer = pickByRules(normalized, [/(SGS|TUV|TÜV|Intertek|Bureau Veritas|SATRA|UL|CSA|DEKRA)/i, /(?:issued by|notified body|certification body)\s*[:\-]?\s*([A-Za-z0-9 .,&-]{3,80})/i]);
-  const validUntil = pickByRules(normalized, [/(?:valid until|expiry date|expiration date|expires)\s*[:\-]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4})/i]);
+  const certNo = guess.guessed_cert_no || pickByRules(normalized, [/(?:certificate|cert\.?|no\.?|number)\s*(?:no\.?|number)?\s*[:#-]?\s*([-A-Z0-9_\x2F]{6,})/i, /\b(\d{2}[_-]\d{3}[_-]\d{2}[_-]\d{3,})\b/]);
+  const issuer = pickByRules(normalized, [/(SGS|TUV|TÜV|Intertek|Bureau Veritas|SATRA|UL|CSA|DEKRA)/i, /(?:issued by|notified body|certification body)\s*[:-]?\s*([A-Za-z0-9 .,&-]{3,80})/i]);
+  const validUntil = pickByRules(normalized, [/(?:valid until|expiry date|expiration date|expires)\s*[:-]?\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4})/i]);
   let guessedType = guess.guessed_type;
   const lower = normalized.toLowerCase();
   if (guessedType === 'other') {

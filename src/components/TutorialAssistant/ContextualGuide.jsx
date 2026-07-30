@@ -4,6 +4,7 @@ import { getGuidePopoverStyle, useGuideTargetRect } from './useGuideTargetRect';
 import './ContextualGuide.css';
 
 const BATCH_STEP_KEY = 'eu-doc:guide:batch-upload:step';
+const BATCH_FINISHED_EVENT = 'eu-doc:guide:batch-upload:finished';
 
 const DEFAULT_STEP_BEHAVIOR = {
   showCursor: true,
@@ -28,6 +29,15 @@ const STEP_DEFINITIONS = {
           title: '先创建公司申请',
           description: '上传资料必须归属于一家公司。先创建公司申请草稿，认证通过前不会公开。',
           next: 'company-submit',
+        };
+      }
+      const companyPicker = document.querySelector('[data-tutorial="import-company-picker"]');
+      if (companyPicker) {
+        return {
+          element: companyPicker,
+          title: '先确认资料归属公司',
+          description: '你的账号管理多家公司。请先确认本批资料要上传到哪家公司，再继续选择文件。',
+          next: 'upload-files',
         };
       }
       const upload = document.querySelector('[data-tutorial="batch-upload-trigger"]');
@@ -105,7 +115,6 @@ const STEP_DEFINITIONS = {
     resolveNext: (event) => {
       const choice = event.target.closest('[data-import-final-choice]')?.dataset.importFinalChoice;
       if (choice === 'submit') return 'expand-company-or-products';
-      if (choice === 'later' || choice === 'delete-group') return 'stop-guide';
       return null;
     },
   },
@@ -210,9 +219,8 @@ export function ContextualGuide() {
     pauseGuide();
   }, [pauseGuide]);
 
-  const startBatchGuide = useCallback((restart = false) => {
+  const startBatchGuide = useCallback(() => {
     localStorage.setItem('eu-doc:guide:batch-upload:seen', new Date().toISOString());
-    // 清除保存的步骤，确保从头开始
     localStorage.removeItem(BATCH_STEP_KEY);
     setHasPausedGuide(false);
     setTaskMenuOpen(false);
@@ -229,8 +237,16 @@ export function ContextualGuide() {
   useEffect(() => {
     if (localStorage.getItem('eu-doc:guide:pending') !== 'batch-upload') return;
     localStorage.removeItem('eu-doc:guide:pending');
-    startBatchGuide(true);
+    startBatchGuide();
   }, [startBatchGuide]);
+
+  useEffect(() => {
+    const handleFinished = () => {
+      if (active) stopGuide();
+    };
+    window.addEventListener(BATCH_FINISHED_EVENT, handleFinished);
+    return () => window.removeEventListener(BATCH_FINISHED_EVENT, handleFinished);
+  }, [active, stopGuide]);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -312,7 +328,7 @@ export function ContextualGuide() {
           {taskMenuOpen && (
             <div className="context-guide-menu">
               <span>我想要…</span>
-              <button onClick={() => startBatchGuide(false)}><strong>{hasPausedGuide ? '继续批量上传指引' : '批量上传产品资料'}</strong><small>{hasPausedGuide ? '从批量上传入口重新开始指引' : '从入口、上传到问卷归档和产品编辑'}</small></button>
+              <button onClick={startBatchGuide}><strong>{hasPausedGuide ? '重新开始批量上传指引' : '批量上传产品资料'}</strong><small>{hasPausedGuide ? '从批量上传入口重新开始' : '从入口、上传到问卷归档和产品编辑'}</small></button>
               <button disabled><strong>申请企业认证</strong><small>后续加入</small></button>
               <button disabled><strong>邀请团队成员</strong><small>后续加入</small></button>
             </div>

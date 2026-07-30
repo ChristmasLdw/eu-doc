@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2] - 2026-07-30
+
+### Added
+- 新增 ESLint flat config，并将 ESLint 固定在兼容当前 Node.js 20.11 的 9.x 版本
+
+### Changed
+- 用户引导关闭后统一明确为“重新开始”，当前阶段不实现不可靠的问卷断点恢复
+- 四步问卷只展开当前步骤，完成与后续步骤折叠为标题摘要，弹窗标题保持可见
+- 多公司账号在批量上传前先由指引提示确认资料归属公司
+- 问卷步骤滚动改为 React 渲染完成后的相邻定位，不再依赖固定 60ms 延迟
+
+### Fixed
+- “稍后处理”和成功删除整组资料后立即结束指引，不再停留在“等待下一项操作”
+- 修复静态检查发现的旧企业页 Logo 上传处理缺失、后台未定义通知变量和正则表达式冗余转义
+
 ## [2.9.1] - 2026-07-30
 
 ### Added

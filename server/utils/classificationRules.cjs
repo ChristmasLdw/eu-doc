@@ -84,7 +84,7 @@ const RULES = [
 ];
 
 function normalizeText(value) {
-  return String(value || '').replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(value || '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function getCategoryByPath(pathNames, taxonomyType) {

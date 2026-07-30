@@ -9,6 +9,7 @@ import styles from './AdminV2Page.module.css';
 import { ContextualGuide } from '../../components/TutorialAssistant/ContextualGuide';
 
 const fallbackCompanies = [];
+const BATCH_GUIDE_FINISHED_EVENT = 'eu-doc:guide:batch-upload:finished';
 
 const personalMenus = [
   { id: 'profile', labelKey: 'admin.menu.profile' },
@@ -2074,13 +2075,16 @@ export default function AdminV2Page() {
   };
 
   const deletePendingImportGroup = async (group) => {
-    if (!window.confirm(`确认删除这 ${group.items.length} 个待整理资料吗？`)) return;
+    if (!window.confirm(`确认删除这 ${group.items.length} 个待整理资料吗？`)) return false;
     try {
       await Promise.all(group.items.map((item) => api.deleteImportItem(item.id)));
       showAction('已删除待整理资料');
+      setActiveImportGroupKey(null);
       await refreshImportItems();
+      return true;
     } catch (error) {
       showAction(error.message || '删除失败');
+      return false;
     }
   };
 
@@ -2151,7 +2155,11 @@ export default function AdminV2Page() {
 
   const confirmImportStep = (formKey, step) => {
     setImportSelection((state) => ({ ...state, [formKey]: { ...(state[formKey] || {}), confirmedStep: step } }));
-    window.setTimeout(() => document.getElementById(`${formKey}-step-${step + 1}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.getElementById(`${formKey}-step-${step + 1}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
   };
 
   const addImportModel = (formKey, group) => {
@@ -2847,7 +2855,7 @@ export default function AdminV2Page() {
           </div>
         </div>
         <div className={styles.importActions}>
-          <label className={styles.importCompanyPicker}>
+          <label data-tutorial={companies.length > 1 ? 'import-company-picker' : undefined} className={styles.importCompanyPicker}>
             <span>导入公司</span>
             <select value={activeCompany || ''} onChange={(event) => setActiveCompany(Number(event.target.value))}>
               {companies.map((company) => <option key={company.id} value={company.id}>{company.name} · {company.code}</option>)}
@@ -3601,8 +3609,8 @@ export default function AdminV2Page() {
                               <div className={styles.finalActions}>
                                 <button data-tutorial="import-question-submit" data-import-final-choice="submit" className={styles.primaryBtn} onClick={() => organizeImportGroup(group)}>确认提交归档</button>
                                 {group.items.some((item) => item.isDuplicate) && <button className={styles.dangerSoftBtn} onClick={() => deleteDuplicateImportItems(group)}>只删除重复资料</button>}
-                                <button data-import-final-choice="later" className={styles.secondaryBtn} onClick={() => { showAction('已保留在待整理池，之后可继续处理'); setActiveImportGroupKey(null); }}>跳过整理，稍后处理</button>
-                                <button data-import-final-choice="delete-group" className={styles.dangerSoftBtn} onClick={() => deletePendingImportGroup(group)}>删除整组资料</button>
+                                <button data-import-final-choice="later" className={styles.secondaryBtn} onClick={() => { showAction('已保留在待整理池，之后可继续处理'); setActiveImportGroupKey(null); window.dispatchEvent(new CustomEvent(BATCH_GUIDE_FINISHED_EVENT, { detail: { outcome: 'later' } })); }}>跳过整理，稍后处理</button>
+                                <button data-import-final-choice="delete-group" className={styles.dangerSoftBtn} onClick={async () => { if (await deletePendingImportGroup(group)) window.dispatchEvent(new CustomEvent(BATCH_GUIDE_FINISHED_EVENT, { detail: { outcome: 'deleted' } })); }}>删除整组资料</button>
                               </div>
                             </div>
                           </section>
@@ -4856,7 +4864,6 @@ export default function AdminV2Page() {
                       >
                         <MenuIcon type={item.id} />
                         <span>{t(item.labelKey)}</span>
-            {item.id === 'notifications' && notificationCount > 0 && <em className={styles.menuBadge}>{notificationCount > 99 ? '99+' : notificationCount}</em>}
                       </button>
                     ))}
                   </div>
