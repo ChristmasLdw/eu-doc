@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Multer 升级至 2.2.0，修复上传请求可能触发的拒绝服务漏洞
 - 更新 Body Parser 间接依赖，修复请求体大小限制相关漏洞
+- 服务器 Sharp 升级至 0.35.3，服务器生产依赖审计降至 0 项漏洞
 - React Router 升级至当前最新版 7.18.2；剩余审计项仅涉及本项目未使用的 RSC 模式，等待上游修复
 
 ## [2.9.0] - 2026-07-26
