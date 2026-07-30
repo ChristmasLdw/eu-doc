@@ -111,7 +111,7 @@ export const MENU_PERMISSIONS = {
  * @param {string} user.company_role - 企业角色（owner/admin/uploader/viewer）
  * @returns {boolean} - 是否有权限
  */
-export function checkMenuPermission(menuKey, user) {
+export function checkMenuPermission(menuKey, _user) {
   const config = MENU_PERMISSIONS[menuKey];
 
   // 未配置的菜单默认允许访问

@@ -3,7 +3,7 @@
  * 用户点击邮件中的验证链接后跳转到此页面
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from './EmailVerifyPage.module.css';
@@ -16,22 +16,12 @@ export default function EmailVerifyPage() {
   const [message, setMessage] = useState('');
   const token = searchParams.get('token');
 
-  useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage(t('authFlow.invalidVerifyLink'));
-      return;
-    }
-
-    verifyEmail(token);
-  }, [token, t]);
-
-  const verifyEmail = async (token) => {
+  const verifyEmail = useCallback(async (emailToken) => {
     try {
       const response = await fetch('/eu-doc/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: emailToken }),
       });
 
       const data = await response.json();
@@ -48,11 +38,21 @@ export default function EmailVerifyPage() {
         setStatus('error');
         setMessage(data.message || t('authFlow.verifyFailed'));
       }
-    } catch (err) {
+    } catch {
       setStatus('error');
       setMessage(t('authFlow.verifyFailedRetry'));
     }
-  };
+  }, [navigate, t]);
+
+  useEffect(() => {
+    if (!token) {
+      setStatus('error');
+      setMessage(t('authFlow.invalidVerifyLink'));
+      return;
+    }
+
+    verifyEmail(token);
+  }, [t, token, verifyEmail]);
 
   return (
     <div className={styles.page}>

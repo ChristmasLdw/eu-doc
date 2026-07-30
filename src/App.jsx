@@ -56,12 +56,10 @@ import LoginPage from './pages/admin/LoginPage';
 import RegisterPage from './pages/admin/RegisterPage';
 import AdminV2Page from './pages/admin/AdminV2Page';
 import PublicOnboardingGuide from './components/TutorialAssistant/PublicOnboardingGuide';
-import { useAdmin } from './contexts/AdminContext';
 import { ENV } from './config/env';
 
 function App() {
   const location = useLocation();
-  const { isAdmin } = useAdmin();
   // 邮箱验证、密码重置保持独立页面；登录/注册显示公共导航栏，保持前后台一体感
   const authPages = ['/verify-email', '/forgot-password', '/reset-password'];
   const isAuthPage = authPages.includes(location.pathname);

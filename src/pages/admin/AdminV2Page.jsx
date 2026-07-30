@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -287,23 +287,6 @@ const documents = [
   { name: 'Declaration of Conformity', type: 'DoC声明资料', product: 'Equestrian Helmet F20', lang: 'EN / DE', backup: '已备份' },
   { name: 'User Manual', type: '使用说明书', product: 'Riding Helmet F20-202', lang: 'ZH / EN', backup: '待备份' },
 ];
-
-function FieldGrid({ fields }) {
-  return (
-    <div className={styles.fieldGrid}>
-      {fields.map((field) => (
-        <label key={field.label} className={styles.field}>
-          <span>{field.label}</span>
-          <input value={field.value || ''} readOnly placeholder={field.placeholder || '待填写'} />
-        </label>
-      ))}
-    </div>
-  );
-}
-
-function StatusPill({ children, tone = 'blue' }) {
-  return <span className={`${styles.pill} ${styles[tone]}`}>{children}</span>;
-}
 
 const MEMBER_ROLES = {
   applicant: { label: '企业申请人', scope: '认证前拥有者权限' },
@@ -634,34 +617,6 @@ function getProductFileStatus(product, docs) {
   return { productDocs, hasCert, hasDoc, hasManual, missing };
 }
 
-function buildImportFileStacks(items) {
-  const buckets = new Map();
-  [...items].sort((a, b) => Number(a.id) - Number(b.id)).forEach((item) => {
-    const key = item.originalName || `file-${item.id}`;
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push(item);
-  });
-
-  return [...buckets.values()].map((bucket) => {
-    const base = bucket.find((item) => !item.isDuplicate);
-    if (base) {
-      return {
-        key: base.originalName,
-        label: base.originalName,
-        status: 'keep',
-        duplicates: bucket.filter((item) => item.isDuplicate),
-      };
-    }
-    const first = bucket[0];
-    return {
-      key: first.originalName,
-      label: first.duplicateDocumentTitle || first.originalName,
-      status: first.duplicateDocumentTitle ? 'archived' : 'duplicate',
-      duplicates: bucket,
-    };
-  });
-}
-
 function MenuIcon({ type }) {
   const paths = {
     import: <><path d="M12 21V9" /><path d="m7 14 5-5 5 5" /><path d="M5 3h14" /></>,
@@ -698,7 +653,7 @@ export default function AdminV2Page() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { admin, logout, isAdmin } = useAdmin();
+  const { admin, isAdmin } = useAdmin();
   const [activeGroup, setActiveGroup] = useState('personal');
   const [companies, setCompanies] = useState(fallbackCompanies);
   const [activeCompany, setActiveCompany] = useState(null);
@@ -833,6 +788,10 @@ export default function AdminV2Page() {
   const uploadProgressTimer = useRef(null);
   const userCode = savedUserCode || admin?.user_code || `U-${String(admin?.id || 1).padStart(6, '0')}`;
   const hasPlatformPermission = isAdmin || admin?.platformRole === 'platform_admin' || admin?.platform_role === 'platform_admin' || admin?.role === 'admin' || admin?.role === 'platform_admin';
+  const showAction = useCallback((message) => {
+    setActionMessage(message);
+    setTimeout(() => setActionMessage(''), 1800);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -857,7 +816,7 @@ export default function AdminV2Page() {
       })
       .catch((error) => showAction(error.message || '分类数据读取失败'));
     return () => { cancelled = true; };
-  }, []);
+  }, [showAction]);
 
   useEffect(() => {
     let cancelled = false;
@@ -903,7 +862,7 @@ export default function AdminV2Page() {
       })
       .catch((error) => showAction(error.message || '个人数据读取失败'));
     return () => { cancelled = true; };
-  }, [admin?.display_name, admin?.username]);
+  }, [admin?.display_name, admin?.username, showAction]);
 
   const currentCompany = useMemo(
     () => companies.find((company) => String(company.id) === String(activeCompany)) || companies[0],
@@ -1027,13 +986,6 @@ export default function AdminV2Page() {
   const topConsumerCategories = consumerCategories.filter((category) => !category.parentId);
   const secondConsumerCategories = selectedConsumerTopId ? getConsumerChildren(selectedConsumerTopId) : [];
   const thirdConsumerCategories = selectedConsumerSecondId ? getConsumerChildren(selectedConsumerSecondId) : [];
-  const importConsumerCategoryId = productModal.categoryPrimaryId;
-  const importConsumerChain = useMemo(() => buildCategoryChain(importConsumerCategoryId, consumerCategoryById), [consumerCategoryById, importConsumerCategoryId]);
-  const importConsumerTopId = importConsumerChain[0]?.id || '';
-  const importConsumerSecondId = importConsumerChain[1]?.id || '';
-  const importConsumerThirdId = importConsumerChain[2]?.id || '';
-  const importSecondConsumerCategories = importConsumerTopId ? getConsumerChildren(importConsumerTopId) : [];
-  const importThirdConsumerCategories = importConsumerSecondId ? getConsumerChildren(importConsumerSecondId) : [];
   const productFilterSecondCategories = productCategoryTopFilter && productCategoryTopFilter !== 'uncategorized'
     ? getConsumerChildren(productCategoryTopFilter)
     : [];
@@ -1691,9 +1643,9 @@ export default function AdminV2Page() {
       });
 
     return () => { cancelled = true; };
-  }, [activeCompany]);
+  }, [activeCompany, showAction]);
 
-  const refreshCompanyMembers = async () => {
+  const refreshCompanyMembers = useCallback(async () => {
     if (!activeCompany) return;
     setMemberLoading(true);
     setMemberError('');
@@ -1709,9 +1661,9 @@ export default function AdminV2Page() {
     } finally {
       setMemberLoading(false);
     }
-  };
+  }, [activeCompany, t]);
 
-  const refreshCompanyActivity = async () => {
+  const refreshCompanyActivity = useCallback(async () => {
     if (!activeCompany) return;
     setActivityLoading(true);
     setActivityError('');
@@ -1723,9 +1675,9 @@ export default function AdminV2Page() {
     } finally {
       setActivityLoading(false);
     }
-  };
+  }, [activeCompany]);
 
-  const refreshPlatformActivity = async () => {
+  const refreshPlatformActivity = useCallback(async () => {
     setPlatformActivityLoading(true);
     setPlatformActivityError('');
     try {
@@ -1736,19 +1688,19 @@ export default function AdminV2Page() {
     } finally {
       setPlatformActivityLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!activeCompany || activeGroup !== 'company') return;
     if (activePage === 'members') refreshCompanyMembers();
     if (activePage === 'logs') refreshCompanyActivity();
-  }, [activeCompany, activeGroup, activePage]);
+  }, [activeCompany, activeGroup, activePage, refreshCompanyActivity, refreshCompanyMembers]);
 
   useEffect(() => {
     if (activeGroup === 'platform' && activePage === 'platform-logs' && hasPlatformPermission) refreshPlatformActivity();
-  }, [activeGroup, activePage, hasPlatformPermission]);
+  }, [activeGroup, activePage, hasPlatformPermission, refreshPlatformActivity]);
 
-  const refreshImportItems = async () => {
+  const refreshImportItems = useCallback(async () => {
     if (!activeCompany) return;
     try {
       const response = await api.getImportItems(activeCompany);
@@ -1756,10 +1708,10 @@ export default function AdminV2Page() {
     } catch (error) {
       showAction(error.message || '导入资料读取失败');
     }
-  };
+  }, [activeCompany, showAction]);
 
 
-  const refreshCompanyVerifications = async () => {
+  const refreshCompanyVerifications = useCallback(async () => {
     try {
       const [items, documentResponse] = await Promise.all([
         api.getCompanyVerifications('all'),
@@ -1770,7 +1722,7 @@ export default function AdminV2Page() {
     } catch (error) {
       showAction(error.message || '企业审核列表读取失败');
     }
-  };
+  }, [showAction]);
 
   const reviewPendingDocument = async (document, status) => {
     let note = '';
@@ -1835,7 +1787,7 @@ export default function AdminV2Page() {
     }
   };
 
-  const refreshPlatformUsers = async () => {
+  const refreshPlatformUsers = useCallback(async () => {
     try {
       const response = await api.getUsers({ ...platformUserFilters, pageSize: 200 });
       setPlatformUsers(response.data || []);
@@ -1843,7 +1795,7 @@ export default function AdminV2Page() {
     } catch (error) {
       showAction(error.message || '用户列表读取失败');
     }
-  };
+  }, [platformUserFilters, showAction]);
 
   const viewPlatformUser = async (userId) => {
     try {
@@ -1882,14 +1834,14 @@ export default function AdminV2Page() {
     }
   };
 
-  const refreshPlatformReports = async () => {
+  const refreshPlatformReports = useCallback(async () => {
     try {
       const response = await api.getReports({ pageSize: 500 });
       setPlatformReports(response.data || []);
     } catch (error) {
       showAction(error.message || '举报列表读取失败');
     }
-  };
+  }, [showAction]);
 
   const updatePlatformReport = async (report, status) => {
     const defaultResponse = status === 'processing' ? '平台已受理，正在核查相关资料。' : '平台已完成核查并处理。';
@@ -1913,7 +1865,7 @@ export default function AdminV2Page() {
     }
   };
 
-  const refreshPlatformSettings = async () => {
+  const refreshPlatformSettings = useCallback(async () => {
     try {
       const settings = await api.getPlatformSettings();
       setPlatformSettings(settings);
@@ -1921,7 +1873,7 @@ export default function AdminV2Page() {
     } catch (error) {
       showAction(error.message || '平台设置读取失败');
     }
-  };
+  }, [showAction]);
 
   const savePlatformSettings = async () => {
     try {
@@ -2007,19 +1959,19 @@ export default function AdminV2Page() {
 
   useEffect(() => {
     if (activeCompany && (activePage === 'bulk-import' || activePage === 'products' || activePage === 'company-info' || activePage === 'verification')) refreshImportItems();
-  }, [activeCompany, activePage]);
+  }, [activeCompany, activePage, refreshImportItems]);
 
 
   useEffect(() => {
     if (activePage === 'company-review' && hasPlatformPermission) refreshCompanyVerifications();
-  }, [activePage, hasPlatformPermission]);
+  }, [activePage, hasPlatformPermission, refreshCompanyVerifications]);
 
   useEffect(() => {
     if (!hasPlatformPermission || activeGroup !== 'platform') return;
     if (activePage === 'users') refreshPlatformUsers();
     if (activePage === 'reports') refreshPlatformReports();
     if (activePage === 'system') refreshPlatformSettings();
-  }, [activeGroup, activePage, hasPlatformPermission]);
+  }, [activeGroup, activePage, hasPlatformPermission, refreshPlatformReports, refreshPlatformSettings, refreshPlatformUsers]);
 
   const uploadImportFiles = async (files) => {
     if (!activeCompany) {
@@ -2128,31 +2080,6 @@ export default function AdminV2Page() {
     }
   };
 
-  const organizeImportItem = async (item) => {
-    const form = importSelection[item.id] || {};
-    const suggestedClassification = item.suggestedClassification || {};
-    try {
-      await api.organizeImportItem(item.id, {
-        productId: form.productId || '',
-        newProductName: form.newProductName || item.suggestedProductName || '',
-        newProductModel: form.newProductModel || item.guessedModels || item.guessedModel || '',
-        documentType: form.documentType || item.guessedType || 'other',
-        title: form.title || item.originalName,
-        language: form.language || item.guessedLanguage || 'en',
-        certNo: form.certNo || item.guessedCertNo || '',
-        standard: form.standard || '',
-        issuer: form.issuer || '',
-        categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
-        complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
-      });
-      showAction('资料已整理到产品资料');
-      await Promise.all([refreshImportItems(), refreshCompanyAssets()]);
-    } catch (error) {
-      showAction(error.message || '整理失败');
-    }
-  };
-
-
   const confirmImportStep = (formKey, step) => {
     setImportSelection((state) => ({ ...state, [formKey]: { ...(state[formKey] || {}), confirmedStep: step } }));
     window.requestAnimationFrame(() => {
@@ -2223,22 +2150,12 @@ export default function AdminV2Page() {
     openPage('company', 'files', activeCompany);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/admin/login');
-  };
-
   const handleSidebarScroll = () => {
     setSidebarScrolling(true);
     if (sidebarScrollTimer.current) clearTimeout(sidebarScrollTimer.current);
     sidebarScrollTimer.current = setTimeout(() => {
       setSidebarScrolling(false);
     }, 900);
-  };
-
-  const showAction = (message) => {
-    setActionMessage(message);
-    setTimeout(() => setActionMessage(''), 1800);
   };
 
   const openVerificationHistory = async () => {
@@ -3350,7 +3267,6 @@ export default function AdminV2Page() {
         );
       }
 
-      const pendingCount = importItems.filter((item) => item.status === 'pending').length;
       const importGroups = buildImportGroups(importItems).flatMap((group) => {
         if (splitImportGroups[group.key]) {
           return group.items.map((item) => ({
@@ -3419,7 +3335,6 @@ export default function AdminV2Page() {
                   const group = activeImportGroup;
                   const formKey = `group:${group.key}`;
                   const form = importSelection[formKey] || {};
-                  const typeValue = form.documentType || inferImportType(group.items[0], group.type);
                   const recommendedProduct = findMatchingProduct(group, companyProducts);
                   const recommendedProductId = recommendedProduct ? String(recommendedProduct.id) : '';
                   const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : recommendedProductId;
@@ -4227,58 +4142,6 @@ export default function AdminV2Page() {
             left: el.scrollLeft > 8,
             right: el.scrollLeft < maxScroll - 8,
           });
-        };
-        const planFeatures = [
-          ['最多 50 个产品', true, true, true, true],
-          ['2GB 资料存储', true, true, true, true],
-          ['5 名员工', true, true, true, true],
-          ['基础资料展示', true, true, true, true],
-          ['自定义公司网址', false, true, true, true],
-          ['基础数据统计', false, true, true, true],
-          ['批量上传', false, false, true, true],
-          ['资料版本管理', false, false, true, true],
-          ['缺失资料提醒', false, false, true, true],
-          ['高级权限管理', false, false, false, true],
-          ['专属支持', false, false, false, true],
-          ['企业级数据统计', false, false, false, true],
-        ];
-        const costViews = {
-          website: {
-            title: '自建官网放资料',
-            tag: '灰色成本项',
-            total: '首年约 ¥2,500-9,000+',
-            note: '适合展示公司形象，但产品资料、证书版本和型号对应关系通常需要人工维护。',
-            items: [
-              ['官网制作', '¥1,500-5,000+'],
-              ['域名 / 服务器', '¥350-1,600/年'],
-              ['功能改版', '¥500-2,000+'],
-              ['后续维护', '¥800-5,000/年'],
-            ],
-          },
-          labor: {
-            title: '业务员手动维护',
-            tag: '隐形时间成本',
-            total: '约 50 小时+/年',
-            note: '资料越多，找资料、确认版本、发送附件和回复客户的问题就越频繁。',
-            items: [
-              ['找证书 / DoC', '10-20 小时/年'],
-              ['反复发送附件', '15-30 小时/年'],
-              ['确认最新版本', '10-20 小时/年'],
-              ['错发旧资料风险', '难以量化'],
-            ],
-          },
-          eudoc: {
-            title: '使用 EU-DOC',
-            tag: '资料入口成本',
-            total: '¥99-9,999/年',
-            note: '围绕产品组织证书、DoC、说明书及其他公开资料，支持搜索、分享、二维码和持续更新。',
-            items: [
-              ['产品资料页', '已包含'],
-              ['资料分类展示', '已包含'],
-              ['搜索 / 分享 / 二维码', '套餐内开放'],
-              ['后续升级', '按产品和资料规模'],
-            ],
-          },
         };
         return (
           <Section title={t('admin.plans.title')} desc={t('admin.plans.desc')}>

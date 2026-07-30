@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
       } else {
         setError(data.message || t('authFlow.sendFailed'));
       }
-    } catch (err) {
+    } catch {
       setError(t('authFlow.networkError'));
     } finally {
       setLoading(false);

@@ -68,7 +68,7 @@ export default function ResetPasswordPage() {
       } else {
         setError(data.message || t('authFlow.resetFailed'));
       }
-    } catch (err) {
+    } catch {
       setError(t('authFlow.networkError'));
     } finally {
       setLoading(false);

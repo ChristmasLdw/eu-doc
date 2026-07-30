@@ -86,7 +86,7 @@ router.get('/suggestions', (req, res) => {
     });
 
     suggestions.sort((a, b) => b.score - a.score || String(a.value).localeCompare(String(b.value), 'zh-CN', { numeric: true }));
-    res.json({ success: true, data: suggestions.slice(0, limit).map(({ score, ...item }) => item) });
+    res.json({ success: true, data: suggestions.slice(0, limit).map(({ score: _score, ...item }) => item) });
   } catch (error) {
     console.error('搜索建议失败:', error);
     res.status(500).json({ success: false, message: '搜索建议失败' });

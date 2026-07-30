@@ -82,7 +82,7 @@ export default function ShareModal({ open, onClose, title, subtitle, typeLabel, 
       }
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
-    } catch (error) {
+    } catch {
       setCopied(false);
     }
   };

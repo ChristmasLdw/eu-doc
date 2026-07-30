@@ -15,7 +15,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
-const { hasCompanyRole, requireCompanyRole } = require('../middleware/companyRole.cjs');
+const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
 
 const router = Router();
@@ -209,9 +209,6 @@ function listDocuments(req, res) {
     }
 
     // 未登录用户只能看到已审核通过的文档
-    const authHeader = req.headers.authorization;
-    const hasToken = authHeader && authHeader.startsWith('Bearer ');
-
     const mineOnly = req.query.mine === '1';
     const privateStatusRequested = status === 'all' || (reviewStatus && reviewStatus !== 'approved');
 

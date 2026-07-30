@@ -238,54 +238,6 @@ export default function CompanyPage() {
   const totalDocuments = documents.length;
   const totalProducts = products.length;
 
-  // 过滤和排序后的证书列表
-  const filteredCertificates = useMemo(() => {
-    if (!company?.certificates) return [];
-
-    let certs = [...company.certificates];
-
-    // 搜索过滤
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      certs = certs.filter((cert) => {
-        return (
-          (cert.productName && cert.productName.toLowerCase().includes(q)) ||
-          (cert.certNo && cert.certNo.toLowerCase().includes(q)) ||
-          (cert.model && cert.model.toLowerCase().includes(q)) ||
-          (cert.category && cert.category.toLowerCase().includes(q)) ||
-          (cert.standard && cert.standard.toLowerCase().includes(q)) ||
-          (cert.issuer && cert.issuer.toLowerCase().includes(q))
-        );
-      });
-    }
-
-    // 排序
-    switch (sortBy) {
-      case 'name-asc':
-        certs.sort((a, b) => (a.productName || '').localeCompare(b.productName || '', 'zh-CN'));
-        break;
-      case 'name-desc':
-        certs.sort((a, b) => (b.productName || '').localeCompare(a.productName || '', 'zh-CN'));
-        break;
-      case 'date-desc':
-        certs.sort((a, b) => new Date(b.issueDate || 0) - new Date(a.issueDate || 0));
-        break;
-      case 'date-asc':
-        certs.sort((a, b) => new Date(a.issueDate || 0) - new Date(b.issueDate || 0));
-        break;
-      case 'expiry-asc':
-        certs.sort((a, b) => new Date(a.expiryDate || '9999') - new Date(b.expiryDate || '9999'));
-        break;
-      case 'expiry-desc':
-        certs.sort((a, b) => new Date(b.expiryDate || '9999') - new Date(a.expiryDate || '9999'));
-        break;
-      default:
-        break;
-    }
-
-    return certs;
-  }, [company, searchQuery, sortBy]);
-
   if (loading) {
     return (
       <div className={styles.page}>

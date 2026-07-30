@@ -293,7 +293,6 @@ export function ContextualGuide() {
   useEffect(() => {
     if (!active || !resolvedStep?.element) return undefined;
 
-    const element = resolvedStep.element;
     const actionElement = resolveNestedElement(resolvedStep, resolvedStep.actionTarget);
     if (!actionElement) return undefined;
 
@@ -318,7 +317,7 @@ export function ContextualGuide() {
     };
   }, [active, completeGuide, resolvedStep, stopGuide]);
 
-  const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
+  const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [resolvedStep]);
   const popoverStyle = useMemo(() => getGuidePopoverStyle(rect, { width: 350, height: 285 }), [rect]);
 
   return (

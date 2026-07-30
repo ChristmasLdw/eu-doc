@@ -438,7 +438,7 @@ export default function PublicOnboardingGuide() {
     };
   }, [active, closeGuide, resolvedStep, stepId]);
 
-  const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [rect, resolvedStep]);
+  const cursorPoint = useMemo(() => getCursorPoint(resolvedStep), [resolvedStep]);
   const popoverStyle = useMemo(() => getGuidePopoverStyle(rect, { width: 370, height: 285 }), [rect]);
 
   if (protectedAdminPage) return null;

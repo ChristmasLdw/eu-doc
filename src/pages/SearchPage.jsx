@@ -209,7 +209,7 @@ export default function SearchPage() {
     if (sortMapping) {
       params.sortBy = sortMapping.sortBy;
       params.sortOrder = sortMapping.sortOrder;
-    } else if (sortBy === 'relevance' && !query) {
+    } else if (sortBy === 'relevance' && !submittedQuery) {
       // relevance 排序且无搜索词时，按 id 升序（显示有缩略图的早期证书）
       params.sortBy = 'id';
       params.sortOrder = 'ASC';
@@ -522,8 +522,6 @@ export default function SearchPage() {
 
   // 当前激活的筛选条件数量（用于显示"清除筛选"按钮）
   const activeFilterCount = [activeCategory, activeStatus, activeIssuer, activeStandard].filter(Boolean).length;
-  const hasActiveFilters = activeFilterCount > 0;
-
   // 清除所有筛选
   const clearAllFilters = () => {
     setActiveCategory('');

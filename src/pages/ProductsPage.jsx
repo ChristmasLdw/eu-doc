@@ -8,13 +8,11 @@
  * - 点击产品查看详情
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import styles from './ProductsPage.module.css';
 
 function ProductsPage() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -35,11 +33,7 @@ function ProductsPage() {
   const categoryId = searchParams.get('categoryId') || '';
 
   // 获取产品列表
-  useEffect(() => {
-    fetchProducts();
-  }, [page, search, companyId, categoryId]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -68,7 +62,11 @@ function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryId, companyId, page, search]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   // 搜索处理
   const handleSearch = (e) => {

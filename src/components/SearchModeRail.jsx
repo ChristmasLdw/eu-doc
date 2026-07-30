@@ -3,7 +3,7 @@
  * 实现"像手机拍照滤镜一样"的模式切换体验
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './SearchModeRail.module.css';
 
@@ -14,7 +14,7 @@ const SEARCH_MODES = [
   { value: 'company', color: '#f59e0b' },
 ];
 
-export default function SearchModeRail({ currentMode, onModeChange, counts = {} }) {
+export default function SearchModeRail({ currentMode, onModeChange }) {
   const { t, i18n } = useTranslation();
   const railRef = useRef(null);
   const indicatorRef = useRef(null);
@@ -22,14 +22,8 @@ export default function SearchModeRail({ currentMode, onModeChange, counts = {} 
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollAccumulatorRef = useRef(0);
 
-  // 获取当前模式的颜色
-  const getCurrentColor = () => {
-    const mode = SEARCH_MODES.find(m => m.value === currentMode);
-    return mode?.color || '#6b7280';
-  };
-
   // 更新指示器位置和颜色
-  const updateIndicator = () => {
+  const updateIndicator = useCallback(() => {
     if (!railRef.current || !indicatorRef.current) return;
 
     const activeItem = railRef.current.querySelector(`[data-mode="${currentMode}"]`);
@@ -43,22 +37,23 @@ export default function SearchModeRail({ currentMode, onModeChange, counts = {} 
 
     indicatorRef.current.style.left = `${left}px`;
     indicatorRef.current.style.width = `${width}px`;
-    indicatorRef.current.style.background = getCurrentColor();
-  };
+    const mode = SEARCH_MODES.find((item) => item.value === currentMode);
+    indicatorRef.current.style.background = mode?.color || '#6b7280';
+  }, [currentMode]);
 
   // 模式切换时更新指示器
   useEffect(() => {
     updateIndicator();
     const timer = setTimeout(updateIndicator, 50);
     return () => clearTimeout(timer);
-  }, [currentMode, i18n.language]);
+  }, [i18n.language, updateIndicator]);
 
   // 窗口大小变化时更新指示器
   useEffect(() => {
     const handleResize = () => updateIndicator();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [updateIndicator]);
 
   // 横向滚轮处理
   useEffect(() => {
@@ -155,7 +150,6 @@ export default function SearchModeRail({ currentMode, onModeChange, counts = {} 
       >
         {SEARCH_MODES.map((mode) => {
           const isActive = currentMode === mode.value;
-          const count = counts[mode.value];
           const label = t(`search.modes.${mode.value}`);
 
           return (

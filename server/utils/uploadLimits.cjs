@@ -55,7 +55,7 @@ function removeUploadedFiles(files = []) {
   for (const file of files.filter(Boolean)) {
     try {
       if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-    } catch (error) {}
+    } catch {}
   }
 }
 

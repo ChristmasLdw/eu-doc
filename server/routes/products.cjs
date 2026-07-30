@@ -15,8 +15,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
-const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
-const { hasCompanyRole, requireCompanyRole } = require('../middleware/companyRole.cjs');
+const { authMiddleware } = require('../middleware/auth.cjs');
+const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
 const PRODUCT_EDITOR_ROLES = ['applicant', 'owner', 'admin'];
@@ -198,8 +198,6 @@ function listProducts(req, res) {
     // 构建 WHERE 条件
     const conditions = [];
     const params = [];
-    const authHeader = req.headers.authorization;
-    const hasToken = authHeader && authHeader.startsWith('Bearer ');
     const mineOnly = req.query.mine === '1';
     const privateStatusRequested = status === 'all';
     const documentVisibilitySql = req.admin ? '' : "AND status = 'active' AND review_status = 'approved'";

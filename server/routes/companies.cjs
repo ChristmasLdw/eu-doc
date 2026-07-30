@@ -272,7 +272,7 @@ router.get('/:id/verification-history', authMiddleware, (req, res) => {
       let detail = {};
       try {
         detail = JSON.parse(log.detail || '{}');
-      } catch (e) {
+      } catch {
         detail = {};
       }
 

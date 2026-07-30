@@ -25,8 +25,6 @@ async function generateThumbnail(pdfPath, certNo) {
 
     const timestamp = Date.now();
     const tempPrefix = `temp_${timestamp}`;
-    const tempPngPath = path.join(tempDir, `${tempPrefix}.png`);
-    
     // 使用 pdftoppm 将 PDF 第一页转为 PNG
     const cmd = `pdftoppm -png -f 1 -l 1 -scale-to 1024 "${pdfPath}" "${path.join(tempDir, tempPrefix)}"`;
     await execPromise(cmd);

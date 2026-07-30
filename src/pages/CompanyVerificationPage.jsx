@@ -3,7 +3,7 @@
  * 用户提交企业认证资料
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
@@ -22,15 +22,7 @@ export default function CompanyVerificationPage() {
     authorizationLetter: null,
   });
 
-  useEffect(() => {
-    if (!admin) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchMyCompanies();
-  }, [admin]);
-
-  const fetchMyCompanies = async () => {
+  const fetchMyCompanies = useCallback(async () => {
     try {
       const token = localStorage.getItem('admin_token');
       const response = await fetch('/eu-doc/api/auth/me', {
@@ -43,7 +35,15 @@ export default function CompanyVerificationPage() {
     } catch (err) {
       console.error(t('companyVerification.fetchCompaniesFailed'), err);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    if (!admin) {
+      navigate('/admin/login');
+      return;
+    }
+    fetchMyCompanies();
+  }, [admin, fetchMyCompanies, navigate]);
 
   const handleFileChange = (field, e) => {
     const file = e.target.files[0];
@@ -94,7 +94,7 @@ export default function CompanyVerificationPage() {
       } else {
         setError(data.message || t('companyVerification.submitFailed'));
       }
-    } catch (err) {
+    } catch {
       setError(t('companyVerification.submitRetry'));
     } finally {
       setLoading(false);

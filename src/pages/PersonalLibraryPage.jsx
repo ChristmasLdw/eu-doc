@@ -140,7 +140,7 @@ export default function PersonalLibraryPage({ mode }) {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [admin, isFavorites, navigate]);
+  }, [admin, isFavorites, navigate, t]);
 
   const stats = useMemo(() => ({
     all: items.length,

@@ -112,7 +112,7 @@ function extractPdfText(filePath) {
     for (const match of raw.matchAll(/\(([^()]{2,300})\)/g)) chunks.push(match[1]);
     const text = cleanExtractedText(chunks.join(' '));
     return text.length > 20 ? text : '';
-  } catch (error) {
+  } catch {
     return '';
   }
 }
@@ -260,7 +260,7 @@ function unlinkUploadedFile(filePath) {
   if (!filePath) return;
   const normalized = filePath.replace(/^\/uploads\//, 'uploads/');
   const fullPath = path.join(__dirname, '..', normalized);
-  try { if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath); } catch (error) {}
+  try { if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath); } catch {}
 }
 
 router.get('/', authMiddleware, (req, res) => {

@@ -3,7 +3,7 @@
  * 显示在导航栏，允许用户在多个企业之间切换
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../contexts/AdminContext';
 import styles from './CompanySwitcher.module.css';
@@ -16,25 +16,7 @@ export default function CompanySwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (admin) {
-      fetchCompanies();
-    }
-  }, [admin]);
-
-  useEffect(() => {
-    // 点击外部关闭下拉菜单
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
       const token = localStorage.getItem('admin_token');
       const response = await fetch('/eu-doc/api/auth/me', {
@@ -63,7 +45,25 @@ export default function CompanySwitcher() {
     } catch (err) {
       console.error(t('companySwitcher.fetchFailed'), err);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    if (admin) {
+      fetchCompanies();
+    }
+  }, [admin, fetchCompanies]);
+
+  useEffect(() => {
+    // 点击外部关闭下拉菜单
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSwitchCompany = (company) => {
     setCurrentCompany(company);

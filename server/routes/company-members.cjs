@@ -4,7 +4,7 @@
 
 const { Router } = require('express');
 const { db } = require('../db.cjs');
-const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { authMiddleware } = require('../middleware/auth.cjs');
 
 const router = Router();
 
