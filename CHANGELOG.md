@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 资料类型归并、批量上传入口合并和用户引导延迟优化纳入统一版本边界
 - 流程清理 API、用户引导审阅页和 Stacklands 测试页仅在明确开启的开发环境中可访问
 - 公司详情页页脚改为复用全局多语言版权文案
+- 修复部署验证脚本的静态资源路径、CORS 请求和零失败计数
 
 ### Security
 - Multer 升级至 2.2.0，修复上传请求可能触发的拒绝服务漏洞

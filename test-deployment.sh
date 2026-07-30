@@ -91,7 +91,13 @@ echo -e "\n${YELLOW}[5/7] 静态资源测试${NC}"
 echo -n "检查构建文件 ... "
 assets=$(curl -s "$BASE_URL/eu-doc/index.html" 2>/dev/null | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)
 if [ -n "$assets" ]; then
-    asset_url="$BASE_URL/eu-doc$assets"
+    if [[ "$assets" == http://* || "$assets" == https://* ]]; then
+        asset_url="$assets"
+    elif [[ "$assets" == /* ]]; then
+        asset_url="$BASE_URL$assets"
+    else
+        asset_url="$BASE_URL/eu-doc/$assets"
+    fi
     response=$(curl -s -o /dev/null -w "%{http_code}" "$asset_url" 2>/dev/null || echo "000")
     if [ "$response" = "200" ]; then
         echo -e "${GREEN}✓ 通过${NC}"
@@ -108,7 +114,10 @@ fi
 # 6. CORS测试
 echo -e "\n${YELLOW}[6/7] CORS配置测试${NC}"
 echo -n "测试CORS头 ... "
-cors_header=$(curl -s -I "$BASE_URL/eu-doc/api/health" 2>/dev/null | grep -i "access-control-allow-origin" || echo "")
+cors_header=$(curl -s -D - -o /dev/null \
+    -H "Origin: https://christmasldw.com" \
+    "$BASE_URL/eu-doc/api/health" 2>/dev/null \
+    | grep -i "access-control-allow-origin" || echo "")
 if [ -n "$cors_header" ]; then
     echo -e "${GREEN}✓ 通过${NC}"
     TEST_RESULTS+=("✓ CORS配置")
@@ -132,9 +141,9 @@ fi
 
 # 统计结果
 echo -e "\n${GREEN}=== 测试结果汇总 ===${NC}"
-success_count=$(printf '%s\n' "${TEST_RESULTS[@]}" | grep -c "^✓" || echo "0")
-fail_count=$(printf '%s\n' "${TEST_RESULTS[@]}" | grep -c "^✗" || echo "0")
-warn_count=$(printf '%s\n' "${TEST_RESULTS[@]}" | grep -c "^⚠" || echo "0")
+success_count=$(printf '%s\n' "${TEST_RESULTS[@]}" | grep -c "^✓" || true)
+fail_count=$(printf '%s\n' "${TEST_RESULTS[@]}" | grep -c "^✗" || true)
+warn_count=$(printf '%s\n' "${TEST_RESULTS[@]}" | grep -c "^⚠" || true)
 total_count=${#TEST_RESULTS[@]}
 
 echo ""
