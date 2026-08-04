@@ -10,6 +10,7 @@ import { ContextualGuide } from '../../components/TutorialAssistant/ContextualGu
 
 const fallbackCompanies = [];
 const BATCH_GUIDE_FINISHED_EVENT = 'eu-doc:guide:batch-upload:finished';
+const BATCH_GUIDE_STEP_EVENT = 'eu-doc:guide:batch-upload:step-change';
 
 const personalMenus = [
   { id: 'profile', labelKey: 'admin.menu.profile' },
@@ -2110,6 +2111,14 @@ export default function AdminV2Page() {
     });
   };
 
+  const reopenImportStep = (formKey, step) => {
+    setImportSelection((state) => ({ ...state, [formKey]: { ...(state[formKey] || {}), confirmedStep: Math.max(0, step - 1) } }));
+    window.dispatchEvent(new CustomEvent(BATCH_GUIDE_STEP_EVENT, { detail: { stepId: `question-${step}` } }));
+    window.requestAnimationFrame(() => {
+      document.getElementById(`${formKey}-step-${step}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  };
+
   const addImportModel = (formKey, group) => {
     const baseCount = splitImportModels(group.model).length || 1;
     setImportSelection((state) => {
@@ -3365,6 +3374,18 @@ export default function AdminV2Page() {
                   const needsGroupConfirmation = group.items.filter((item) => !item.isDuplicate).length > 1;
                   const confirmedStep = form.confirmedStep ?? (needsGroupConfirmation ? 0 : 1);
                   const displayStepNumber = (step) => step - (needsGroupConfirmation ? 0 : 1);
+                  const completedStepProps = (step, title) => confirmedStep >= step ? {
+                    onClick: () => reopenImportStep(formKey, step),
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        reopenImportStep(formKey, step);
+                      }
+                    },
+                    role: 'button',
+                    tabIndex: 0,
+                    'aria-label': `重新打开${title}`,
+                  } : {};
                   const suggestedClassification = getImportSuggestedClassification(group) || {};
                   const selectedImportCategoryId = form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '';
                   const selectedImportChain = buildCategoryChain(selectedImportCategoryId, consumerCategoryById);
@@ -3418,31 +3439,36 @@ export default function AdminV2Page() {
 
                         <div className={styles.importQuestionnaire}>
                           {needsGroupConfirmation && (
-                            <section id={`${formKey}-step-1`} data-tutorial="import-question-1" className={importStepClass(styles, confirmedStep, 1)}>
+                            <section id={`${formKey}-step-1`} data-tutorial="import-question-1" className={importStepClass(styles, confirmedStep, 1)} {...completedStepProps(1, '候选产品组确认')}>
                               <div className={styles.questionIndex}>{confirmedStep >= 1 ? '✓' : '1'}</div>
                               <div className={styles.questionBody}>
                                 <h4>先检查这一组资料，再判断是否属于同一产品</h4>
-                                <p>系统只是根据文件名和可读取文字进行推荐。请先核对每份资料，不确定时可以拆分后分别整理。</p>
+                                <div className={styles.questionExplanation}><strong>说明</strong><span>系统只是根据文件名和可读取文字进行推荐。请先核对每份资料，不确定时可以拆分后分别整理。</span></div>
                                 <div className={styles.questionFileReview}>
                                   {group.items.map((item) => <div key={item.id}>
                                     <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
                                     <span>{t(documentTypeLabelKey(inferImportType(item, group.type)))} · {(item.guessedLanguage || 'en').toUpperCase()}</span>
                                   </div>)}
                                 </div>
-                                <div className={`${styles.finalActions} ${styles.importDecisionActions}`}>
-                                  <button data-import-choice="same-product" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>属于同一产品，继续</button>
-                                  <button data-import-choice="split" className={styles.secondaryBtn} onClick={() => { setSplitImportGroups((state) => ({ ...state, [group.originalGroupKey || group.key]: true })); setActiveImportGroupKey(null); }}>不属于同一产品，拆分整理</button>
+                                <div className={`${styles.questionActionPanel} ${styles.questionActionPanelCompact}`}>
+                                  <div className={styles.questionActionHeader}><strong>需要你选择</strong><span>确认系统推荐的分组是否正确</span></div>
+                                  <div className={`${styles.finalActions} ${styles.importDecisionActions}`}>
+                                    <button data-import-choice="same-product" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>属于同一产品，继续</button>
+                                    <button data-import-choice="split" className={styles.secondaryBtn} onClick={() => { setSplitImportGroups((state) => ({ ...state, [group.originalGroupKey || group.key]: true })); setActiveImportGroupKey(null); }}>不属于同一产品，拆分整理</button>
+                                  </div>
                                 </div>
                               </div>
                             </section>
                           )}
 
-                          <section id={`${formKey}-step-2`} data-tutorial="import-question-2" className={importStepClass(styles, confirmedStep, 2)}>
+                          <section id={`${formKey}-step-2`} data-tutorial="import-question-2" className={importStepClass(styles, confirmedStep, 2)} {...completedStepProps(2, '产品归属确认')}>
                             <div className={styles.questionIndex}>{confirmedStep >= 2 ? '✓' : displayStepNumber(2)}</div>
                             <div className={styles.questionBody}>
                               <h4>确认归属产品</h4>
-                              <p>新公司通常选择“创建新产品”；已有产品则选择对应产品。适用型号按独立型号确认。</p>
-                              <div className={styles.productAssignGrid}>
+                              <div className={styles.questionExplanation}><strong>说明</strong><span>新公司通常选择“创建新产品”；已有产品则选择对应产品。适用型号按独立型号确认。</span></div>
+                              <div className={styles.questionActionPanel}>
+                                <div className={styles.questionActionHeader}><strong>需要你确认或填写</strong><span>下面带边框的区域均可选择或修改</span></div>
+                                <div className={styles.productAssignGrid}>
                                 <label><span>归档方式</span><select value={matchedProductId || ''} onChange={(event) => {
                                   const nextValue = event.target.value;
                                   if (!nextValue && recommendedProductId) {
@@ -3451,8 +3477,8 @@ export default function AdminV2Page() {
                                   }
                                   setImportSelection((state) => ({ ...state, [formKey]: { ...form, productId: nextValue } }));
                                 }}>{recommendedProduct && <option value={recommendedProductId}>{recommendedProduct.name} / {recommendedProduct.model}</option>}{companyProducts.filter((product) => String(product.id) !== recommendedProductId).map((product) => <option key={product.id} value={product.id}>{product.name} / {product.model}</option>)}<option value="">创建新产品</option></select>{recommendedProduct && <em className={styles.matchHint}>系统检测到该资料可能属于上方已选产品，建议优先关联，避免重复创建。</em>}</label>
-                                {!hasSelectedProduct && <label><span>产品/系列名称</span><input value={form.newProductName || group.suggestedName || ''} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, newProductName: event.target.value } }))} placeholder="例如：F60-608" /></label>}
-                              </div>
+                                  {!hasSelectedProduct && <label><span className={styles.fieldLabelWithExample}>产品/系列名称 <em>例如：F66 骑行头盔系列</em></span><input value={form.newProductName || group.suggestedName || ''} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, newProductName: event.target.value } }))} placeholder="例如：F66 骑行头盔系列" /></label>}
+                                </div>
                               {!hasSelectedProduct && <div className={styles.modelEditor}>
                                 <div className={styles.modelChipGrid}>
                                   {[...(splitImportModels(group.model).length ? splitImportModels(group.model) : ['']), ...(form.extraModels || [])].map((model, index) => {
@@ -3523,23 +3549,27 @@ export default function AdminV2Page() {
                                   </div>
                                 </div>
                               ) : <p className={styles.matchHint}>已选择已有产品，将沿用该产品当前分类；如需调整分类，请到产品编辑里修改。</p>}
-                              <button data-tutorial="import-question-2-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{confirmedStep >= 2 ? '已检查产品信息' : '产品信息已检查，继续'}</button>
+                                <button data-tutorial="import-question-2-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{confirmedStep >= 2 ? '已检查产品信息' : '产品信息已检查，继续'}</button>
+                              </div>
                             </div>
                           </section>
 
-                          <section id={`${formKey}-step-3`} data-tutorial="import-question-3" className={importStepClass(styles, confirmedStep, 3)}>
+                          <section id={`${formKey}-step-3`} data-tutorial="import-question-3" className={importStepClass(styles, confirmedStep, 3)} {...completedStepProps(3, '资料类型和语言确认')}>
                             <div className={styles.questionIndex}>{confirmedStep >= 3 ? '✓' : displayStepNumber(3)}</div>
                             <div className={styles.questionBody}>
                               <h4>确认每份资料的类型和语言</h4>
-                              <p>同一产品下，不同资料可以分别是证书、DoC 或说明书，也可以对应不同语言。</p>
-                              <div className={styles.fileConfirmRows}>
-                                {group.items.map((item) => <div key={item.id} className={styles.fileConfirmRow}>
-                                  <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
-                                  <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
-                                  <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
-                                </div>)}
+                              <div className={styles.questionExplanation}><strong>说明</strong><span>同一产品下，不同资料可以分别是证书、DoC 或说明书，也可以对应不同语言。</span></div>
+                              <div className={styles.questionActionPanel}>
+                                <div className={styles.questionActionHeader}><strong>需要你逐份确认</strong><span>每一行的资料类型和语言都可以修改</span></div>
+                                <div className={styles.fileConfirmRows}>
+                                  {group.items.map((item) => <div key={item.id} className={styles.fileConfirmRow}>
+                                    <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
+                                    <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
+                                    <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
+                                  </div>)}
+                                </div>
+                                <button data-tutorial="import-question-3-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{confirmedStep >= 3 ? '已检查资料信息' : '资料信息已检查，继续'}</button>
                               </div>
-                              <button data-tutorial="import-question-3-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{confirmedStep >= 3 ? '已检查资料信息' : '资料信息已检查，继续'}</button>
                             </div>
                           </section>
 
@@ -3547,12 +3577,15 @@ export default function AdminV2Page() {
                             <div className={styles.questionIndex}>{displayStepNumber(4)}</div>
                             <div className={styles.questionBody}>
                               <h4>最终提交</h4>
-                              <p>将{hasSelectedProduct ? '关联到已有产品' : '创建新产品'}，并归档 {group.items.filter((item) => !item.isDuplicate).length || group.items.length} 份保留资料。</p>
-                              <div className={styles.finalActions}>
-                                <button data-tutorial="import-question-submit" data-import-final-choice="submit" className={styles.primaryBtn} onClick={() => organizeImportGroup(group)}>确认提交归档</button>
-                                {group.items.some((item) => item.isDuplicate) && <button className={styles.dangerSoftBtn} onClick={() => deleteDuplicateImportItems(group)}>只删除重复资料</button>}
-                                <button data-import-final-choice="later" className={styles.secondaryBtn} onClick={() => { showAction('已保留在待整理池，之后可继续处理'); setActiveImportGroupKey(null); window.dispatchEvent(new CustomEvent(BATCH_GUIDE_FINISHED_EVENT, { detail: { outcome: 'later' } })); }}>跳过整理，稍后处理</button>
-                                <button data-import-final-choice="delete-group" className={styles.dangerSoftBtn} onClick={async () => { if (await deletePendingImportGroup(group)) window.dispatchEvent(new CustomEvent(BATCH_GUIDE_FINISHED_EVENT, { detail: { outcome: 'deleted' } })); }}>删除整组资料</button>
+                              <div className={styles.questionExplanation}><strong>说明</strong><span>将{hasSelectedProduct ? '关联到已有产品' : '创建新产品'}，并归档 {group.items.filter((item) => !item.isDuplicate).length || group.items.length} 份保留资料。</span></div>
+                              <div className={`${styles.questionActionPanel} ${styles.questionActionPanelCompact}`}>
+                                <div className={styles.questionActionHeader}><strong>需要你选择</strong><span>提交归档，或保留到稍后处理</span></div>
+                                <div className={styles.finalActions}>
+                                  <button data-tutorial="import-question-submit" data-import-final-choice="submit" className={styles.primaryBtn} onClick={() => organizeImportGroup(group)}>确认提交归档</button>
+                                  {group.items.some((item) => item.isDuplicate) && <button className={styles.dangerSoftBtn} onClick={() => deleteDuplicateImportItems(group)}>只删除重复资料</button>}
+                                  <button data-import-final-choice="later" className={styles.secondaryBtn} onClick={() => { showAction('已保留在待整理池，之后可继续处理'); setActiveImportGroupKey(null); window.dispatchEvent(new CustomEvent(BATCH_GUIDE_FINISHED_EVENT, { detail: { outcome: 'later' } })); }}>跳过整理，稍后处理</button>
+                                  <button data-import-final-choice="delete-group" className={styles.dangerSoftBtn} onClick={async () => { if (await deletePendingImportGroup(group)) window.dispatchEvent(new CustomEvent(BATCH_GUIDE_FINISHED_EVENT, { detail: { outcome: 'deleted' } })); }}>删除整组资料</button>
+                                </div>
                               </div>
                             </div>
                           </section>

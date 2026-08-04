@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.3] - 2026-08-04
+
+### Changed
+- 问卷将说明内容与需要用户选择、填写或逐份确认的区域分层展示，降低操作区域辨识成本
+- 产品/系列名称增加常驻示例，并与适用型号示例保持一致的填写提示
+- 已完成步骤支持点击整块内容直接重新展开，同时保留已填信息并同步用户引导位置
+
+### Fixed
+- 修复问卷确认后无法返回前一步修改的问题
+
 ## [2.9.2] - 2026-08-04
 
 ### Added

@@ -5,6 +5,7 @@ import './ContextualGuide.css';
 
 const BATCH_STEP_KEY = 'eu-doc:guide:batch-upload:step';
 const BATCH_FINISHED_EVENT = 'eu-doc:guide:batch-upload:finished';
+const BATCH_STEP_EVENT = 'eu-doc:guide:batch-upload:step-change';
 
 const DEFAULT_STEP_BEHAVIOR = {
   showCursor: true,
@@ -101,7 +102,7 @@ const STEP_DEFINITIONS = {
     selector: '[data-tutorial="import-question-3"]',
     actionTarget: '[data-tutorial="import-question-3-confirm"]',
     title: '逐份检查资料类型和语言',
-    description: '不要直接确认。请逐行核对文件名、资料类型和语言，修改系统识别错误的项目后再继续。',
+    description: '不要直接确认。请逐行核对文件名、资料类型和语言，修改系统识别错误的项目后再继续；如果前一步有误，直接点击上方已完成内容即可重新展开。',
     showCursor: false,
     requiredAction: 'review-and-confirm',
     next: 'question-4',
@@ -109,7 +110,7 @@ const STEP_DEFINITIONS = {
   'question-4': {
     selector: '[data-tutorial="import-question-4"]',
     title: '检查归档结果后选择',
-    description: '最后确认将关联已有产品还是创建新产品，以及本次归档的资料数量。你可以提交、稍后处理或删除整组资料。',
+    description: '最后确认将关联已有产品还是创建新产品，以及本次归档的资料数量。发现前面有误时，直接点击对应的已完成内容即可返回修改。',
     showCursor: false,
     requiredAction: 'final-review-and-submit',
     resolveNext: (event) => {
@@ -247,6 +248,15 @@ export function ContextualGuide() {
     window.addEventListener(BATCH_FINISHED_EVENT, handleFinished);
     return () => window.removeEventListener(BATCH_FINISHED_EVENT, handleFinished);
   }, [active, stopGuide]);
+
+  useEffect(() => {
+    const handleStepChange = (event) => {
+      const nextStep = event.detail?.stepId;
+      if (active && STEP_DEFINITIONS[nextStep]) setStepId(nextStep);
+    };
+    window.addEventListener(BATCH_STEP_EVENT, handleStepChange);
+    return () => window.removeEventListener(BATCH_STEP_EVENT, handleStepChange);
+  }, [active]);
 
   useEffect(() => {
     if (!active) return undefined;
