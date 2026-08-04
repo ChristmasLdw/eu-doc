@@ -10,7 +10,7 @@ const chapters = [
   { id: 'verification', label: '申请认证', title: '提交企业认证资料', note: '填写注册号、负责人和联系邮箱，并提交认证申请。' },
   { id: 'upload', label: '批量上传', title: '一次上传整批产品资料', note: '这是教程的核心：文件先进入待整理区，不会自动公开。' },
   { id: 'recognition', label: '智能分组', title: '系统自动识别和分组', note: '根据文件名和 PDF 文字，把资料整理成可能属于同一产品的卡片。' },
-  { id: 'questionnaire', label: '问卷确认', title: '用四个问题完成归档', note: '确认同一产品、产品归属、资料类型与语言，最后提交。' },
+  { id: 'questionnaire', label: '问卷确认', title: '按资料情况用三到四步完成归档', note: '单份资料直接确认产品归属；多份候选组先核对是否属于同一产品，再检查类型、语言并提交。' },
   { id: 'result', label: '查看结果', title: '资料自动进入对应产品', note: '产品、型号和多份资料一次建立，不再逐份重复操作。' },
   { id: 'edit', label: '后续编辑', title: '继续编辑产品和资料', note: '可以修改产品信息、预览或替换文件，并补充缺失资料。' },
 ];
@@ -191,14 +191,14 @@ function RecognitionScreen({ onAdvance }) {
       <div className="sim-group-grid">
         {groupedFiles.map((group, index) => <button key={group.model} className={index === 0 ? 'selected' : ''} onClick={index === 0 ? onAdvance : undefined}><div><span className="sim-doc-icon">DOC</span><em className={group.tone}>{group.confidence}</em></div><h3>{group.model}</h3><p>{group.count} 份资料 · {group.languages}</p><small>{group.docs}</small><footer><span>PDF 文字层已提取</span><b>{index === 0 ? '点击继续整理' : '待整理'}</b></footer></button>)}
       </div>
-      <div className="sim-recognition-note"><b>系统建议，不是自动决定：</b> 用户仍然通过问卷确认产品、型号、资料类型和语言。</div>
+      <div className="sim-recognition-note"><b>系统建议，不是自动决定：</b> 单份资料直接确认产品归属，多份候选组才增加一次同一产品判断。</div>
     </AdminFrame>
   );
 }
 
 function QuestionnaireScreen({ onAdvance }) {
   return (
-    <AdminFrame active="批量导入" title="批量导入" subtitle="处理 F66-608 系列的 4 份资料。">
+    <AdminFrame active="批量导入" title="批量导入" subtitle="处理 F66-608 系列的 4 份资料；单份资料会跳过第一项分组确认。">
       <div className="sim-question-modal">
         <header><div><small>待整理资料</small><h3>F66-608 系列</h3></div><span className="sim-confidence">高可信 · 型号与文件名一致</span></header>
         <div className="sim-recognized-files"><strong>F66_CE_Certificate.pdf</strong><strong>F66_UKCA_Certificate.pdf</strong><strong>F66_DoC_EN.pdf</strong><strong>F66_DoC_DE.pdf</strong></div>

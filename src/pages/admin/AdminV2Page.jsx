@@ -382,10 +382,31 @@ function formatActivityTime(value) {
 }
 
 
+function getImportFileProductSignature(name) {
+  const withoutDocumentWords = String(name || '')
+    .replace(/\.[a-z0-9]{2,5}$/i, '')
+    .replace(/[_./-]+/g, ' ')
+    .replace(/\bdeclaration\s+of\s+conformity\b/gi, ' ')
+    .replace(/\b(?:doc|declaration|conformity|certificate|cert|manual|user|instruction|instructions|report|test|datasheet|annex|statement|product|ce|ukca)\b/gi, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\bdeclaration\s+of\s+conformity\b/gi, ' ')
+    .replace(/\b(?:doc|declaration|conformity|certificate|cert|manual|user|instruction|instructions|report|test|datasheet|annex|statement|product|ce|ukca)\b/gi, ' ')
+    .replace(/\b(?:en|de|fr|zh|es|it|nl|pl|pt|cs|sv|da|fi|english|german|deutsch|french|chinese)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalizeImportText(withoutDocumentWords);
+}
+
 function getImportGroupKey(item) {
-  const model = (item.guessedModels || item.guessedModel || '').trim() || item.originalName.replace(/[_\-. ](en|de|fr|zh|es|it|nl|pl|pt|cs|sv|da|fi)(\.[a-z0-9]+)?$/i, '');
-  const type = item.guessedType || 'other';
-  return `${type}__${model.toUpperCase()}`;
+  const modelSignature = splitImportModels(item.guessedModels || item.guessedModel)
+    .map(normalizeImportText)
+    .filter(Boolean)
+    .sort()
+    .join('|');
+  if (modelSignature) return `model:${modelSignature}`;
+
+  const fileSignature = getImportFileProductSignature(item.originalName);
+  return fileSignature ? `name:${fileSignature}` : `item:${item.id}`;
 }
 
 function buildImportGroups(items) {
@@ -437,9 +458,9 @@ function buildCategoryChain(categoryId, byId) {
 function getImportConfidence(group) {
   const hasModel = Boolean(group.model);
   const hasLanguages = group.items.every((item) => item.guessedLanguage);
-  const sameType = new Set(group.items.map((item) => item.guessedType || 'other')).size === 1;
-  if (hasModel && hasLanguages && sameType) return { label: '高可信', tone: 'green', desc: '型号、类型和语言都较明确' };
-  if (hasModel && sameType) return { label: '中可信', tone: 'orange', desc: '型号和类型基本明确，建议确认语言' };
+  if (hasModel && hasLanguages) return { label: '高可信', tone: 'green', desc: '产品型号和语言都较明确' };
+  if (hasModel) return { label: '中可信', tone: 'orange', desc: '产品型号基本明确，建议确认语言' };
+  if (group.key.startsWith('name:') && group.items.length > 1) return { label: '中可信', tone: 'orange', desc: '文件名主体一致，建议确认产品归属' };
   return { label: '低可信', tone: 'red', desc: '识别信息不足，建议仔细检查' };
 }
 
@@ -3308,8 +3329,9 @@ export default function AdminV2Page() {
                     const form = importSelection[formKey] || {};
                     const typeValue = form.documentType || inferImportType(group.items[0], group.type);
                     const confidence = getImportConfidence(group);
+                    const needsGroupConfirmation = group.items.filter((item) => !item.isDuplicate).length > 1;
                     return (
-                      <button data-tutorial={!group.isDuplicateGroup ? 'import-group-card' : undefined} key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复资料卡片，可直接删除重复资料'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
+                      <button data-tutorial={!group.isDuplicateGroup ? 'import-group-card' : undefined} data-import-needs-group-confirmation={needsGroupConfirmation ? 'true' : 'false'} data-import-split-single={group.key.startsWith('single:') ? 'true' : undefined} key={group.key} className={`${styles.importMiniCard} ${group.isDuplicateGroup ? styles.importDuplicateCard : ''}`} onClick={() => { if (group.isDuplicateGroup) showAction('这是重复资料卡片，可直接删除重复资料'); else { setActiveImportGroupKey(group.key); openPage('import', 'bulk-import', activeCompany); } }}>
                         <div className={styles.importMiniTop}>
                           <span className={styles.fileTypeIcon}>{typeValue.slice(0, 3)}</span>
                           <span className={`${styles.confidenceDot} ${styles[confidence.tone]}`} />
@@ -3340,6 +3362,9 @@ export default function AdminV2Page() {
                   const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : recommendedProductId;
                   const hasSelectedProduct = Boolean(matchedProductId);
                   const confidence = getImportConfidence(group);
+                  const needsGroupConfirmation = group.items.filter((item) => !item.isDuplicate).length > 1;
+                  const confirmedStep = form.confirmedStep ?? (needsGroupConfirmation ? 0 : 1);
+                  const displayStepNumber = (step) => step - (needsGroupConfirmation ? 0 : 1);
                   const suggestedClassification = getImportSuggestedClassification(group) || {};
                   const selectedImportCategoryId = form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '';
                   const selectedImportChain = buildCategoryChain(selectedImportCategoryId, consumerCategoryById);
@@ -3370,7 +3395,7 @@ export default function AdminV2Page() {
                             <div className={styles.importFileNameRow}>
                               {group.items.map((item) => <strong key={item.id}>{item.originalName}</strong>)}
                             </div>
-                            <p className={styles.importGroupHint}>系统根据资料名称和可读取的PDF文字判断它们可能属于同一个产品。</p>
+                            <p className={styles.importGroupHint}>{needsGroupConfirmation ? '系统根据产品型号、资料名称和可读取的PDF文字判断它们可能属于同一个产品。' : '系统已根据资料名称和可读取的PDF文字提取候选产品信息，请继续确认产品归属。'}</p>
                             <div className={styles.freeRecognizeChips}>
                               {group.items.some((item) => item.extractedTextStatus === 'pdf_text_layer') && <span>PDF文字层已提取</span>}
                               {[...new Set(group.items.map((item) => item.guessedStandard).filter(Boolean))].map((value) => <span key={value}>标准：{value}</span>)}
@@ -3392,26 +3417,28 @@ export default function AdminV2Page() {
                         </div>
 
                         <div className={styles.importQuestionnaire}>
-                          <section id={`${formKey}-step-1`} data-tutorial="import-question-1" className={importStepClass(styles, form.confirmedStep || 0, 1)}>
-                            <div className={styles.questionIndex}>{(form.confirmedStep || 0) >= 1 ? '✓' : '1'}</div>
-                            <div className={styles.questionBody}>
-                              <h4>先检查这一组资料，再判断是否属于同一产品</h4>
-                              <p>系统只是根据文件名和可读取文字进行推荐。请先核对每份资料，不确定时可以拆分后分别整理。</p>
-                              <div className={styles.questionFileReview}>
-                                {group.items.map((item) => <div key={item.id}>
-                                  <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
-                                  <span>{t(documentTypeLabelKey(inferImportType(item, group.type)))} · {(item.guessedLanguage || 'en').toUpperCase()}</span>
-                                </div>)}
+                          {needsGroupConfirmation && (
+                            <section id={`${formKey}-step-1`} data-tutorial="import-question-1" className={importStepClass(styles, confirmedStep, 1)}>
+                              <div className={styles.questionIndex}>{confirmedStep >= 1 ? '✓' : '1'}</div>
+                              <div className={styles.questionBody}>
+                                <h4>先检查这一组资料，再判断是否属于同一产品</h4>
+                                <p>系统只是根据文件名和可读取文字进行推荐。请先核对每份资料，不确定时可以拆分后分别整理。</p>
+                                <div className={styles.questionFileReview}>
+                                  {group.items.map((item) => <div key={item.id}>
+                                    <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
+                                    <span>{t(documentTypeLabelKey(inferImportType(item, group.type)))} · {(item.guessedLanguage || 'en').toUpperCase()}</span>
+                                  </div>)}
+                                </div>
+                                <div className={`${styles.finalActions} ${styles.importDecisionActions}`}>
+                                  <button data-import-choice="same-product" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>属于同一产品，继续</button>
+                                  <button data-import-choice="split" className={styles.secondaryBtn} onClick={() => { setSplitImportGroups((state) => ({ ...state, [group.originalGroupKey || group.key]: true })); setActiveImportGroupKey(null); }}>不属于同一产品，拆分整理</button>
+                                </div>
                               </div>
-                              <div className={`${styles.finalActions} ${styles.importDecisionActions}`}>
-                                <button data-import-choice="same-product" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 1)}>{group.items.length > 1 ? '属于同一产品，继续' : '继续检查产品信息'}</button>
-                                {group.items.length > 1 && <button data-import-choice="split" className={styles.secondaryBtn} onClick={() => { setSplitImportGroups((state) => ({ ...state, [group.originalGroupKey || group.key]: true })); setActiveImportGroupKey(null); }}>不属于同一产品，拆分整理</button>}
-                              </div>
-                            </div>
-                          </section>
+                            </section>
+                          )}
 
-                          <section id={`${formKey}-step-2`} data-tutorial="import-question-2" className={importStepClass(styles, form.confirmedStep || 0, 2)}>
-                            <div className={styles.questionIndex}>{(form.confirmedStep || 0) >= 2 ? '✓' : '2'}</div>
+                          <section id={`${formKey}-step-2`} data-tutorial="import-question-2" className={importStepClass(styles, confirmedStep, 2)}>
+                            <div className={styles.questionIndex}>{confirmedStep >= 2 ? '✓' : displayStepNumber(2)}</div>
                             <div className={styles.questionBody}>
                               <h4>确认归属产品</h4>
                               <p>新公司通常选择“创建新产品”；已有产品则选择对应产品。适用型号按独立型号确认。</p>
@@ -3496,12 +3523,12 @@ export default function AdminV2Page() {
                                   </div>
                                 </div>
                               ) : <p className={styles.matchHint}>已选择已有产品，将沿用该产品当前分类；如需调整分类，请到产品编辑里修改。</p>}
-                              <button data-tutorial="import-question-2-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{(form.confirmedStep || 0) >= 2 ? '已检查产品信息' : '产品信息已检查，继续'}</button>
+                              <button data-tutorial="import-question-2-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 2)}>{confirmedStep >= 2 ? '已检查产品信息' : '产品信息已检查，继续'}</button>
                             </div>
                           </section>
 
-                          <section id={`${formKey}-step-3`} data-tutorial="import-question-3" className={importStepClass(styles, form.confirmedStep || 0, 3)}>
-                            <div className={styles.questionIndex}>{(form.confirmedStep || 0) >= 3 ? '✓' : '3'}</div>
+                          <section id={`${formKey}-step-3`} data-tutorial="import-question-3" className={importStepClass(styles, confirmedStep, 3)}>
+                            <div className={styles.questionIndex}>{confirmedStep >= 3 ? '✓' : displayStepNumber(3)}</div>
                             <div className={styles.questionBody}>
                               <h4>确认每份资料的类型和语言</h4>
                               <p>同一产品下，不同资料可以分别是证书、DoC 或说明书，也可以对应不同语言。</p>
@@ -3512,12 +3539,12 @@ export default function AdminV2Page() {
                                   <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
                                 </div>)}
                               </div>
-                              <button data-tutorial="import-question-3-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{(form.confirmedStep || 0) >= 3 ? '已检查资料信息' : '资料信息已检查，继续'}</button>
+                              <button data-tutorial="import-question-3-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{confirmedStep >= 3 ? '已检查资料信息' : '资料信息已检查，继续'}</button>
                             </div>
                           </section>
 
-                          <section id={`${formKey}-step-4`} data-tutorial="import-question-4" className={`${importStepClass(styles, form.confirmedStep || 0, 4)} ${styles.finalQuestion}`}>
-                            <div className={styles.questionIndex}>4</div>
+                          <section id={`${formKey}-step-4`} data-tutorial="import-question-4" className={`${importStepClass(styles, confirmedStep, 4)} ${styles.finalQuestion}`}>
+                            <div className={styles.questionIndex}>{displayStepNumber(4)}</div>
                             <div className={styles.questionBody}>
                               <h4>最终提交</h4>
                               <p>将{hasSelectedProduct ? '关联到已有产品' : '创建新产品'}，并归档 {group.items.filter((item) => !item.isDuplicate).length || group.items.length} 份保留资料。</p>

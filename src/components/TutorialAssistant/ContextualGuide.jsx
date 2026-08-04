@@ -64,20 +64,20 @@ const STEP_DEFINITIONS = {
   'import-group': {
     selector: '[data-tutorial="import-group-card"]',
     title: '打开系统推荐的资料组',
-    description: '上传完成后，系统会根据文件名和 PDF 文字推荐分组。点击一张正常资料卡片开始确认。',
+    description: '上传完成后，系统会根据产品型号和文件名主体推荐分组。单份资料直接确认产品归属，多份资料先核对是否属于同一产品。',
     waiting: '正在等待文件上传和系统识别完成…',
-    next: 'question-1',
+    resolveNext: (event) => event.currentTarget.dataset.importNeedsGroupConfirmation === 'true' ? 'question-1' : 'question-2',
   },
   'split-group': {
-    selector: '[data-tutorial="import-group-card"]',
+    selector: '[data-tutorial="import-group-card"][data-import-split-single="true"]',
     title: '已拆分，逐份重新检查',
     description: '系统已经把刚才的资料组拆成单份卡片。请打开第一张正常资料卡片，从产品归属开始分别整理。',
     waiting: '正在等待拆分后的资料卡片准备完成…',
-    next: 'question-1',
+    next: 'question-2',
   },
   'question-1': {
     selector: '[data-tutorial="import-question-1"]',
-    title: '问题 1：先核对这一组文件',
+    title: '核对候选产品组',
     description: '先逐份查看文件名、系统识别的类型和语言，再判断它们是否属于同一个产品。两种选择都可以继续，不需要默认确认。',
     showCursor: false,
     requiredAction: 'product-group-choice',
@@ -91,7 +91,7 @@ const STEP_DEFINITIONS = {
   'question-2': {
     selector: '[data-tutorial="import-question-2"]',
     actionTarget: '[data-tutorial="import-question-2-confirm"]',
-    title: '问题 2：检查产品归属和基础信息',
+    title: '检查产品归属和基础信息',
     description: '先检查是关联已有产品还是创建新产品，再核对产品名称、适用型号和分类；需要时直接修改，最后再确认。',
     showCursor: false,
     requiredAction: 'review-and-confirm',
@@ -100,7 +100,7 @@ const STEP_DEFINITIONS = {
   'question-3': {
     selector: '[data-tutorial="import-question-3"]',
     actionTarget: '[data-tutorial="import-question-3-confirm"]',
-    title: '问题 3：逐份检查资料类型和语言',
+    title: '逐份检查资料类型和语言',
     description: '不要直接确认。请逐行核对文件名、资料类型和语言，修改系统识别错误的项目后再继续。',
     showCursor: false,
     requiredAction: 'review-and-confirm',
@@ -108,7 +108,7 @@ const STEP_DEFINITIONS = {
   },
   'question-4': {
     selector: '[data-tutorial="import-question-4"]',
-    title: '问题 4：检查归档结果后选择',
+    title: '检查归档结果后选择',
     description: '最后确认将关联已有产品还是创建新产品，以及本次归档的资料数量。你可以提交、稍后处理或删除整组资料。',
     showCursor: false,
     requiredAction: 'final-review-and-submit',

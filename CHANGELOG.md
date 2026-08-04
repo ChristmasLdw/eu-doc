@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.9.2] - 2026-07-30
+## [2.9.2] - 2026-08-04
 
 ### Added
 - 新增 ESLint flat config，并将 ESLint 固定在兼容当前 Node.js 20.11 的 9.x 版本
@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 多公司账号在批量上传前先由指引提示确认资料归属公司
 - 问卷步骤滚动改为 React 渲染完成后的相邻定位，不再依赖固定 60ms 延迟
 - 正式前台、正式后台和生产 API 清理 ESLint 警告，稳定异步刷新函数依赖并移除未使用代码
+- 批量导入按产品型号和文件名主体生成候选产品组，不再按资料类型拆分同一产品的 DoC、证书和说明书
+- 单份资料和拆分后的资料直接确认产品归属；只有多份候选组才增加一次同一产品判断
 
 ### Fixed
 - “稍后处理”和成功删除整组资料后立即结束指引，不再停留在“等待下一项操作”
