@@ -1405,7 +1405,27 @@
     "enterpriseAgreement": "Enterprise Agreement",
     "copyright": "© 2026 EU-DOC Product Documentation Platform",
     "solutions": "Solutions",
-    "guide": "Guide"
+    "guide": "Guide",
+    "versionUpdates": "Version updates",
+    "updateIntro": "EU-DOC has been iterated continuously since June 10, 2026. Here are the main version and feature milestones.",
+    "updates": {
+      "v293": "Separated questionnaire guidance from input areas; added persistent name examples; completed steps can be reopened for editing.",
+      "v292": "Grouped batch-import candidates by model and filename to keep documents for the same product together.",
+      "v291": "Upgraded security dependencies and added multilingual 404, production test isolation, and current copyright text.",
+      "jul27": "Released document classification, upload-entry, and onboarding-delay improvements.",
+      "v290": "Added registration and password-reset emails with sending rate limits.",
+      "jul24": "Improved admin workflows and onboarding steps after a full-flow experience review.",
+      "jul22": "Expanded admin translations and improved search document cards and DoC presentation.",
+      "v281": "Released the enterprise document review, feedback, and notification loop.",
+      "v270": "Added platform-wide read-only member oversight and audit logs for platform administrators.",
+      "v20": "Completed the company-product-document data model and homepage performance improvements.",
+      "jun30": "Completed public detail pages, SEO, and preparation for the 2.0 test deployment.",
+      "v250": "Completed enterprise verification, member permissions, company switching, and the new admin foundation.",
+      "jun17": "Added certificate uploads, sharing, likes, favorites, issue reporting, and admin UI improvements.",
+      "jun15": "Added the personal dashboard, certificate management, responsive layouts, and search history.",
+      "jun12": "Built the early authentication, page translations, theme switching, and user agreement foundation.",
+      "jun10": "EU-DOC was established and foundational development of the compliance-document platform began."
+    }
   },
   "notFound": {
     "eyebrow": "Page not found",

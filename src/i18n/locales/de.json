@@ -1405,7 +1405,27 @@
     "enterpriseAgreement": "Vereinbarung für Unternehmen",
     "copyright": "© 2026 EU-DOC Produktdokumentationsplattform",
     "solutions": "Lösungen",
-    "guide": "Anleitung"
+    "guide": "Anleitung",
+    "versionUpdates": "Versionsupdates",
+    "updateIntro": "EU-DOC wird seit dem 10. Juni 2026 kontinuierlich weiterentwickelt. Hier finden Sie die wichtigsten Versionen und Funktionsmeilensteine.",
+    "updates": {
+      "v293": "Hinweise und Eingabebereiche im Fragebogen getrennt; feste Namensbeispiele ergänzt; abgeschlossene Schritte können wieder bearbeitet werden.",
+      "v292": "Kandidaten beim Stapelimport nach Modell und Dateinamen gruppiert, damit Unterlagen eines Produkts zusammenbleiben.",
+      "v291": "Sicherheitsabhängigkeiten aktualisiert sowie mehrsprachige 404-Seite, isolierte Produktionstests und aktueller Copyright-Text ergänzt.",
+      "jul27": "Verbesserungen an Dokumentklassifizierung, Upload-Einstieg und Verzögerungen der Einführung veröffentlicht.",
+      "v290": "E-Mail-Versand für Registrierung und Passwortzurücksetzung mit Versandlimits ergänzt.",
+      "jul24": "Admin-Abläufe und Einführungsschritte nach einer vollständigen Ablaufprüfung verbessert.",
+      "jul22": "Admin-Übersetzungen erweitert und Suchkarten sowie DoC-Darstellung verbessert.",
+      "v281": "Prüfung, Rückmeldung und Benachrichtigungen für Unternehmensdokumente veröffentlicht.",
+      "v270": "Plattformadministratoren können Unternehmensmitglieder schreibgeschützt prüfen; plattformweite Protokolle ergänzt.",
+      "v20": "Datenmodell für Unternehmen, Produkte und Dokumente sowie die Ladeleistung der Startseite fertiggestellt.",
+      "jun30": "Öffentliche Detailseiten, SEO und die Vorbereitung der 2.0-Testbereitstellung abgeschlossen.",
+      "v250": "Unternehmensverifizierung, Mitgliedsberechtigungen, Unternehmenswechsel und die neue Admin-Grundlage fertiggestellt.",
+      "jun17": "Upload, Teilen, Likes, Favoriten, Fehlermeldungen und Verbesserungen der Admin-Oberfläche ergänzt.",
+      "jun15": "Persönliches Dashboard, Dokumentverwaltung, responsive Layouts und Suchverlauf ergänzt.",
+      "jun12": "Grundlagen für Authentifizierung, Übersetzungen, Themenwechsel und Nutzungsvereinbarungen geschaffen.",
+      "jun10": "EU-DOC wurde gestartet; die grundlegende Entwicklung der Plattform für konforme Produktdokumente begann."
+    }
   },
   "notFound": {
     "eyebrow": "Seite nicht gefunden",
