@@ -21,7 +21,7 @@ export default function Footer() {
           <Link to="/upload-commitment">{t('footer.uploadCommitment')}</Link>
           <Link to="/enterprise-agreement">{t('footer.enterpriseAgreement')}</Link>
           <Link to="/contact">{t('footer.contact')}</Link>
-          <Link to="/updates" target="_blank" rel="noreferrer">{t('footer.versionUpdates')}</Link>
+          <Link to="/updates">{t('footer.versionUpdates')}</Link>
         </div>
         <div className={styles.copyright}>
           {t('footer.copyright')}
