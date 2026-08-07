@@ -41,63 +41,6 @@
   font-size: 12px;
 }
 
-.updates {
-  width: min(100%, 760px);
-  color: var(--text-secondary);
-  font-size: 13px;
-  text-align: left;
-}
-
-.updates summary {
-  width: fit-content;
-  margin: 0 auto;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.updateIntro {
-  margin: 14px 0 0;
-  color: var(--text-muted);
-  line-height: 1.6;
-  text-align: center;
-}
-
-.updateList {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-primary);
-}
-
-.updateItem {
-  display: grid;
-  grid-template-columns: 92px 58px 1fr;
-  gap: 10px;
-  align-items: baseline;
-  line-height: 1.5;
-}
-
-.updateItem time {
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.updateItem strong {
-  color: var(--text-primary);
-  font-size: 12px;
-}
-
-@media (max-width: 520px) {
-  .updateItem {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-}
-
 @media (max-width: 768px) {
   .links {
     gap: 16px;

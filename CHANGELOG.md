@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.5] - 2026-08-07
+
+### Changed
+- 将页脚“版本更新”改为与其他页脚链接并排显示。
+- 点击后在新窗口打开独立的版本更新历史页面，保留完整日期和版本里程碑。
+
 ## [2.9.4] - 2026-08-06
 
 ### Added

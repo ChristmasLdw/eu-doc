@@ -42,6 +42,7 @@ import EnterpriseAgreementPage from './pages/EnterpriseAgreementPage';
 import UploadCommitmentPage from './pages/UploadCommitmentPage';
 import CompanyVerificationPage from './pages/CompanyVerificationPage';
 import ContactPage from './pages/ContactPage';
+import VersionUpdatesPage from './pages/VersionUpdatesPage';
 import GuidePage from './pages/GuidePage';
 import SolutionsPage from './pages/SolutionsPage';
 import ProductsPage from './pages/ProductsPage';
@@ -117,6 +118,7 @@ function App() {
         <Route path="/enterprise-agreement" element={<EnterpriseAgreementPage />} />
         <Route path="/upload-commitment" element={<UploadCommitmentPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/updates" element={<VersionUpdatesPage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/solutions" element={<SolutionsPage />} />
 
