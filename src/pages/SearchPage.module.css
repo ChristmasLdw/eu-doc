@@ -1163,11 +1163,14 @@
 }
 
 .resultCount em {
-  margin-left: 8px;
+  display: block;
+  margin-top: 2px;
   color: var(--text-muted);
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
+  line-height: 1.45;
+  word-break: keep-all;
 }
 
 /* 搜索页分类改回下拉筛选，避免大量分类标签铺开造成页面复杂。 */

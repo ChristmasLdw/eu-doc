@@ -114,7 +114,7 @@
     "matchingSuggestions": "Matching related results...",
     "matchedCompanyResult": "Found {{count}} company results",
     "mixedResult": "Found {{total}} results",
-    "mixedResultDetail": "Includes {{companyCount}} companies, {{productCount}} products, and {{documentCount}} documents",
+    "mixedResultDetail": "{{documentCount}} documents · {{productCount}} products · {{companyCount}} companies",
     "companyResultCount": "Found <strong>{{count}}</strong> companies",
     "productResultCount": "Found <strong>{{count}}</strong> products",
     "documentResultCount": "Found <strong>{{count}}</strong> documents",

@@ -480,9 +480,6 @@ export default function SearchPage() {
     fetchResults();
   }, [fetchResults]);
 
-  // 正式搜索词变化时重置到第 1 页，输入过程不刷新结果页
-  useEffect(() => { setCurrentPage(1); }, [submittedQuery]);
-
   // 模式切换处理
   const handleModeChange = (newMode) => {
     setSearchMode(newMode);
