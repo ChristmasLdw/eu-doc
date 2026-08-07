@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.6] - 2026-08-07
+
+### Changed
+- 统一版本更新页面与联系我们等页脚页面的标题、卡片、间距和字体样式。
+
 ## [2.9.5] - 2026-08-07
 
 ### Changed

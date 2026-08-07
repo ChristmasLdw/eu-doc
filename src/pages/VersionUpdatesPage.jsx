@@ -2,7 +2,6 @@
  * EU-DOC - 版本更新历史
  */
 
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from './LegalPage.module.css';
 
@@ -31,19 +30,14 @@ export default function VersionUpdatesPage() {
   return (
     <main className={styles.page}>
       <div className={styles.container}>
-        <Link className={styles.backLink} to="/">{t('common.backToHome')}</Link>
-        <header className={styles.header}>
-          <h1 className={styles.title}>{t('footer.versionUpdates')}</h1>
-          <p className={styles.updateDate}>{t('footer.updateIntro')}</p>
-        </header>
-        <section className={styles.content}>
-          {updates.map(([date, version, key]) => (
-            <article key={`${date}-${version}`}>
-              <h2>{version ? `${date} · ${version}` : date}</h2>
-              <p>{t(`footer.updates.${key}`)}</p>
-            </article>
-          ))}
-        </section>
+        <h1 className={styles.title}>{t('footer.versionUpdates')}</h1>
+        <p className={styles.meta}>{t('footer.updateIntro')}</p>
+        {updates.map(([date, version, key]) => (
+          <section className={styles.section} key={`${date}-${version}`}>
+            <h2>{version ? `${date} · ${version}` : date}</h2>
+            <p>{t(`footer.updates.${key}`)}</p>
+          </section>
+        ))}
       </div>
     </main>
   );
