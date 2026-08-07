@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { db } = require('../db.cjs');
+const { buildDocumentDisplayTitle, requestLanguage } = require('../utils/documentTitles.cjs');
 
 const router = Router();
 
@@ -13,14 +14,14 @@ function scoreValue(value, q, base = 0) {
   return 0;
 }
 
-function addSuggestion(list, seen, type, value, meta, q, base) {
+function addSuggestion(list, seen, type, value, meta, q, base, scoreSource = value, label = value) {
   if (!value) return;
-  const key = `${type}:${String(value).toLowerCase()}`;
+  const key = `${type}:${String(label || value).toLowerCase()}`;
   if (seen.has(key)) return;
-  const score = scoreValue(value, q, base);
+  const score = scoreValue(scoreSource, q, base);
   if (!score) return;
   seen.add(key);
-  list.push({ type, value, meta, score });
+  list.push({ type, value, ...(label !== value ? { label } : {}), meta, score });
 }
 
 router.get('/suggestions', (req, res) => {
@@ -29,6 +30,7 @@ router.get('/suggestions', (req, res) => {
   if (!q) return res.json({ success: true, data: [] });
 
   try {
+    const responseLanguage = requestLanguage(req);
     const suggestions = [];
     const seen = new Set();
     const like = `%${q}%`;
@@ -68,21 +70,48 @@ router.get('/suggestions', (req, res) => {
     });
 
     const documents = db.prepare(`
-      SELECT d.id, d.title, d.document_type, d.language, p.name as product_name, c.name as company_name
+      SELECT d.id, d.public_title, d.document_type, d.language,
+        p.name as product_name, p.name_en as product_name_en, p.model as product_model,
+        c.name as company_name, c.name_en as company_name_en, cm.cert_no
       FROM documents d
       JOIN companies c ON c.id = d.company_id
       LEFT JOIN products p ON p.id = d.product_id
+      LEFT JOIN certificate_metadata cm ON cm.document_id = d.id
       WHERE COALESCE(d.status, 'active') != 'deleted'
         AND COALESCE(d.review_status, 'approved') = 'approved'
         AND COALESCE(c.verification_status, 'pending') = 'verified'
         AND COALESCE(c.public_visible, 1) = 1
-        AND LOWER(COALESCE(d.title, '')) LIKE ?
+        AND (
+          LOWER(COALESCE(d.public_title, '')) LIKE ?
+          OR LOWER(COALESCE(p.name, '')) LIKE ?
+          OR LOWER(COALESCE(p.name_en, '')) LIKE ?
+          OR LOWER(COALESCE(p.model, '')) LIKE ?
+          OR LOWER(COALESCE(c.name, '')) LIKE ?
+          OR LOWER(COALESCE(c.name_en, '')) LIKE ?
+          OR LOWER(COALESCE(cm.cert_no, '')) LIKE ?
+        )
       LIMIT 18
-    `).all(like);
+    `).all(like, like, like, like, like, like, like);
 
     documents.forEach((doc) => {
-      const type = doc.document_type === 'certificate' ? 'certNo' : doc.document_type === 'declaration_of_conformity' ? 'doc' : doc.document_type === 'manual' ? 'manual' : 'file';
-      addSuggestion(suggestions, seen, type, doc.title, { id: doc.id, productName: doc.product_name, companyName: doc.company_name, language: doc.language }, q, 8);
+      const type = doc.document_type === 'certificate' ? 'certificate' : doc.document_type === 'declaration_of_conformity' ? 'doc' : doc.document_type === 'manual' ? 'manual' : 'file';
+      const displayTitle = buildDocumentDisplayTitle(doc, responseLanguage);
+      const scoreSource = [displayTitle, doc.cert_no, doc.product_model].filter(Boolean).join(' ');
+      const searchableValues = [
+        doc.public_title,
+        responseLanguage === 'zh' ? doc.product_name : (doc.product_name_en || doc.product_name),
+        doc.product_model,
+        responseLanguage === 'zh' ? doc.company_name : (doc.company_name_en || doc.company_name),
+        doc.cert_no,
+      ].filter(Boolean);
+      const searchValue = searchableValues.find((value) => String(value).toLowerCase().includes(q)) || searchableValues[0];
+      addSuggestion(suggestions, seen, type, searchValue, {
+        id: doc.id,
+        productName: doc.product_name,
+        companyName: doc.company_name,
+        language: doc.language,
+        documentType: doc.document_type,
+      }, q, 8, scoreSource, displayTitle);
     });
 
     suggestions.sort((a, b) => b.score - a.score || String(a.value).localeCompare(String(b.value), 'zh-CN', { numeric: true }));

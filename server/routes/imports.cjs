@@ -6,6 +6,11 @@ const { db } = require('../db.cjs');
 const { authMiddleware } = require('../middleware/auth.cjs');
 const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
 const { suggestProductClassification } = require('../utils/classificationRules.cjs');
+const {
+  buildDocumentDisplayTitle,
+  internalTitleFromFilename,
+  validatePublicTitle,
+} = require('../utils/documentTitles.cjs');
 
 const router = Router();
 const SUPPORTED_DOCUMENT_TYPES = new Set(['certificate', 'declaration_of_conformity', 'manual', 'other']);
@@ -225,14 +230,14 @@ function buildDuplicateInfo(row) {
   };
 
   const sameDocument = db.prepare(`
-    SELECT d.id, d.title, d.document_type, d.language, p.name as product_name
+    SELECT d.id, COALESCE(d.public_title, d.title) as title, d.document_type, d.language, p.name as product_name
     FROM documents d
     LEFT JOIN products p ON d.product_id = p.id
     WHERE d.company_id = ? AND d.status != 'deleted'
-      AND (d.title = ? OR (d.file_size IS NOT NULL AND d.file_size = ?)
+      AND (d.original_filename = ? OR d.title = ? OR (d.file_size IS NOT NULL AND d.file_size = ?)
         OR (d.product_id = ? AND d.document_type = ? AND d.language = ?))
-    LIMIT 1
-  `).get(row.company_id, row.original_name, row.file_size || -1, row.product_id || -1, row.guessed_type || 'other', row.guessed_language || 'en');
+      LIMIT 1
+  `).get(row.company_id, row.original_name, row.original_name, row.file_size || -1, row.product_id || -1, row.guessed_type || 'other', row.guessed_language || 'en');
   if (sameDocument) return {
     is_duplicate: 1,
     duplicate_reason: '已归档文件中存在相似文件',
@@ -269,14 +274,34 @@ router.get('/', authMiddleware, (req, res) => {
   if (!companyId) return res.status(400).json({ success: false, message: '缺少公司ID' });
   if (!canManageCompany(req.admin, companyId)) return res.status(403).json({ success: false, message: '无权查看该公司的导入资料' });
   const rows = db.prepare(`
-    SELECT ii.*, p.name as product_name, d.title as document_title
+    SELECT ii.*, p.name as product_name, p.name_en as product_name_en, p.model as product_model,
+      c.name as company_name, c.name_en as company_name_en,
+      d.title as legacy_document_title, d.public_title as document_public_title,
+      d.document_type as organized_document_type
     FROM import_items ii
     LEFT JOIN products p ON ii.product_id = p.id
     LEFT JOIN documents d ON ii.document_id = d.id
+    LEFT JOIN companies c ON ii.company_id = c.id
     WHERE ii.company_id = ?
     ORDER BY CASE ii.status WHEN 'pending' THEN 0 WHEN 'organized' THEN 1 ELSE 2 END, ii.created_at DESC
   `).all(companyId);
-  res.json({ success: true, data: rows.map((row) => ({ ...row, ...buildDuplicateInfo(row), suggested_classification: buildClassificationSuggestion(row) })) });
+  res.json({
+    success: true,
+    data: rows.map((row) => ({
+      ...row,
+      document_title: row.document_id ? buildDocumentDisplayTitle({
+        public_title: row.document_public_title,
+        document_type: row.organized_document_type,
+        product_name: row.product_name,
+        product_name_en: row.product_name_en,
+        product_model: row.product_model,
+        company_name: row.company_name,
+        company_name_en: row.company_name_en,
+      }, 'zh') : null,
+      ...buildDuplicateInfo(row),
+      suggested_classification: buildClassificationSuggestion(row),
+    })),
+  });
 });
 
 router.post('/upload', authMiddleware, upload.array('files', 80), (req, res) => {
@@ -367,11 +392,22 @@ router.post('/organize-group', authMiddleware, (req, res) => {
   const cert_no = req.body.certNo;
   const languages_by_id = req.body.languagesById;
   const document_types_by_id = req.body.documentTypesById;
+  const public_titles_by_id = req.body.publicTitlesById || {};
   const { standard, issuer } = req.body;
   const category_primary_id = req.body.categoryPrimaryId || null;
   const compliance_category_ids = Array.isArray(req.body.complianceCategoryIds) ? req.body.complianceCategoryIds.map(Number).filter(Boolean) : [];
   let productId = product_id ? Number(product_id) : null;
   const createdProduct = !productId;
+
+  let normalizedPublicTitles;
+  try {
+    normalizedPublicTitles = new Map(items.map((item) => [
+      String(item.id),
+      validatePublicTitle(public_titles_by_id[String(item.id)]),
+    ]));
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message, code: error.code });
+  }
 
   if (createdProduct && isModelListProductName(new_product_name, new_product_model) && req.body.confirmModelListName !== true) {
     return res.status(400).json({
@@ -399,8 +435,8 @@ router.post('/organize-group', authMiddleware, (req, res) => {
     const docType = normalizeImportDocumentType(document_type || items[0].guessed_type || 'other');
     const created = [];
     const insertDocument = db.prepare(`
-      INSERT INTO documents (company_id, product_id, document_type, title, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO documents (company_id, product_id, document_type, title, public_title, original_filename, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
     `);
     const insertMeta = db.prepare(`INSERT INTO certificate_metadata (document_id, cert_no, standard, issuer) VALUES (?, ?, ?, ?)`);
     const markDone = db.prepare(`UPDATE import_items SET status = 'organized', product_id = ?, document_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
@@ -408,7 +444,20 @@ router.post('/organize-group', authMiddleware, (req, res) => {
     for (const item of items) {
       const languageOverride = languages_by_id && languages_by_id[String(item.id)];
       const itemDocType = normalizeImportDocumentType((document_types_by_id && document_types_by_id[String(item.id)]) || docType);
-      const docResult = insertDocument.run(companyId, productId, itemDocType, item.original_name, languageOverride || item.guessed_language || 'en', item.file_path, item.file_size, item.mime_type, importReviewStatus(req), req.admin.id);
+      const docResult = insertDocument.run(
+        companyId,
+        productId,
+        itemDocType,
+        internalTitleFromFilename(item.original_name),
+        normalizedPublicTitles.get(String(item.id)),
+        item.original_name,
+        languageOverride || item.guessed_language || 'en',
+        item.file_path,
+        item.file_size,
+        item.mime_type,
+        importReviewStatus(req),
+        req.admin.id
+      );
       const documentId = docResult.lastInsertRowid;
       if (itemDocType === 'certificate') {
         insertMeta.run(documentId, cert_no || fallbackCertNo(item), standard || item.guessed_standard || null, issuer || item.guessed_issuer || null);
@@ -456,11 +505,17 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
   const new_product_model = req.body.newProductModel;
   const document_type = req.body.documentType;
   const cert_no = req.body.certNo;
-  const { title, language, standard, issuer } = req.body;
+  const { language, standard, issuer } = req.body;
   const category_primary_id = req.body.categoryPrimaryId || null;
   const compliance_category_ids = Array.isArray(req.body.complianceCategoryIds) ? req.body.complianceCategoryIds.map(Number).filter(Boolean) : [];
   let productId = product_id ? Number(product_id) : null;
   const createdProduct = !productId;
+  let publicTitle;
+  try {
+    publicTitle = validatePublicTitle(req.body.publicTitle ?? req.body.public_title);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message, code: error.code });
+  }
 
   if (createdProduct && isModelListProductName(new_product_name, new_product_model) && req.body.confirmModelListName !== true) {
     return res.status(400).json({
@@ -486,12 +541,12 @@ router.post('/:id/organize', authMiddleware, (req, res) => {
     }
 
     const docType = normalizeImportDocumentType(document_type || item.guessed_type || 'other');
-    const docTitle = title || item.original_name;
+    const docTitle = internalTitleFromFilename(item.original_name);
     const docLang = language || item.guessed_language || 'en';
     const docResult = db.prepare(`
-      INSERT INTO documents (company_id, product_id, document_type, title, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
-    `).run(item.company_id, productId, docType, docTitle, docLang, item.file_path, item.file_size, item.mime_type, importReviewStatus(req), req.admin.id);
+      INSERT INTO documents (company_id, product_id, document_type, title, public_title, original_filename, language, file_path, file_size, mime_type, status, review_status, uploaded_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
+    `).run(item.company_id, productId, docType, docTitle, publicTitle, item.original_name, docLang, item.file_path, item.file_size, item.mime_type, importReviewStatus(req), req.admin.id);
     const documentId = docResult.lastInsertRowid;
 
     if (docType === 'certificate') {

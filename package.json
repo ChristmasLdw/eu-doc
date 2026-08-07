@@ -1,13 +1,14 @@
 {
   "name": "eu-doc",
   "private": true,
-  "version": "2.9.8",
+  "version": "2.9.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "test:mail": "node --test server/tests/mailer.test.cjs server/tests/emailRateLimit.test.cjs",
+    "test:documents": "node --test server/tests/documentTitles.test.cjs",
     "test:security": "node --test server/tests/security.test.cjs",
     "preview": "vite preview",
     "server": "node server/index.cjs",

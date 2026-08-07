@@ -170,6 +170,8 @@ function createNewTables() {
       document_type TEXT NOT NULL,
       title TEXT NOT NULL,
       title_en TEXT,
+      public_title TEXT,
+      original_filename TEXT,
       language TEXT DEFAULT 'en',
       file_path TEXT,
       file_size INTEGER,

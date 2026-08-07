@@ -17,6 +17,7 @@ const { Router } = require('express');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 const { hasCompanyRole } = require('../middleware/companyRole.cjs');
+const { requestLanguage, withDocumentDisplayTitle } = require('../utils/documentTitles.cjs');
 
 const router = Router();
 const PRODUCT_TAG_EDITOR_ROLES = ['applicant', 'owner', 'admin'];
@@ -111,12 +112,16 @@ router.get('/:id', (req, res) => {
 
     // 获取使用该标签的文档（最多10个）
     const documents = db.prepare(`
-      SELECT d.id, d.title, d.document_type
+      SELECT d.id, d.public_title, d.document_type,
+        p.name as product_name, p.name_en as product_name_en, p.model as product_model,
+        c.name as company_name, c.name_en as company_name_en
       FROM documents d
       INNER JOIN document_tags dt ON d.id = dt.document_id
+      LEFT JOIN products p ON p.id = d.product_id
+      LEFT JOIN companies c ON c.id = d.company_id
       WHERE dt.tag_id = ?
       LIMIT 10
-    `).all(tag.id);
+    `).all(tag.id).map((document) => withDocumentDisplayTitle(document, requestLanguage(req)));
 
     tag.sample_documents = documents;
 

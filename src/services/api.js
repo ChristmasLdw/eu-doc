@@ -581,8 +581,9 @@ export function getCompanyActivity(companyId, limit = 200) {
 // ===== 搜索相关 API =====
 
 /** 获取统一搜索建议 */
-export function getSearchSuggestions(query, limit = 12) {
+export function getSearchSuggestions(query, limit = 12, language = '') {
   const qs = new URLSearchParams({ q: query || '', limit: String(limit) });
+  if (language) qs.set('lang', language);
   return request(`/search/suggestions?${qs.toString()}`).then((data) => Array.isArray(data) ? data.map(keysToCamelCase) : []);
 }
 
@@ -883,8 +884,9 @@ export function updatePlatformSettings(data) {
   return request('/v2/platform-settings', { method: 'PUT', body: JSON.stringify(data) });
 }
 
-export function getPendingDocumentReviews() {
-  return request('/v2/documents?status=active&reviewStatus=pending&pageSize=500', { raw: true }).then((response) => {
+export function getPendingDocumentReviews(language = '') {
+  const languageQuery = language ? `&lang=${encodeURIComponent(language)}` : '';
+  return request(`/v2/documents?status=active&reviewStatus=pending&pageSize=500${languageQuery}`, { raw: true }).then((response) => {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
     return response;
   });
@@ -916,7 +918,8 @@ export async function getDocumentReviewFile(id) {
 
 export function getCompanyDocuments(companyId, options = {}) {
   const privateQuery = options.includePrivate ? '&reviewStatus=all&status=all' : '';
-  return request(`/v2/documents?companyId=${companyId}${privateQuery}&pageSize=500`, { raw: true, skipAuth: !options.includePrivate }).then((response) => {
+  const languageQuery = options.language ? `&lang=${encodeURIComponent(options.language)}` : '';
+  return request(`/v2/documents?companyId=${companyId}${privateQuery}${languageQuery}&pageSize=500`, { raw: true, skipAuth: !options.includePrivate }).then((response) => {
     if (response && Array.isArray(response.data)) response.data = response.data.map(keysToCamelCase);
     return response;
   });
@@ -935,6 +938,7 @@ export function getDocuments(params = {}) {
   if (params.status) query.set('status', params.status);
   if (params.sortBy) query.set('sortBy', params.sortBy);
   if (params.sortOrder) query.set('sortOrder', params.sortOrder);
+  if (params.language) query.set('lang', params.language);
 
   return request(`/v2/documents?${query.toString()}`, { raw: true }).then((response) => {
     if (response && Array.isArray(response.data)) {

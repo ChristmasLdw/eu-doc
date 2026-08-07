@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getLanguageCode } from '../i18n/languages';
 import ShareModal from '../components/ShareModal';
 import * as api from '../services/api';
-import { documentTypeLabel, formatPublicDate, usesEnglishFallback, localizedField, publicStatusLabel } from '../utils/languageContent';
+import { documentDisplayTitle, documentTypeLabel, formatPublicDate, usesEnglishFallback, localizedField, publicStatusLabel } from '../utils/languageContent';
 import styles from './DocumentDetailPage.module.css';
 
 function normalizeDocType(doc = {}) {
@@ -156,14 +156,15 @@ export default function DocumentDetailPage() {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`/eu-doc/api/v2/documents/${id}`).then((res) => res.json());
+        const lang = encodeURIComponent(i18n.resolvedLanguage || i18n.language || 'zh');
+        const response = await fetch(`/eu-doc/api/v2/documents/${id}?lang=${lang}`).then((res) => res.json());
         if (!response.success) throw new Error(ui.notFound);
         if (cancelled) return;
         setDocumentData(response.data);
 
         const productId = response.data?.product_id || response.data?.productId;
         if (productId) {
-          const docsResponse = await fetch(`/eu-doc/api/v2/products/${productId}/documents`).then((res) => res.json());
+          const docsResponse = await fetch(`/eu-doc/api/v2/products/${productId}/documents?lang=${lang}`).then((res) => res.json());
           if (!cancelled && docsResponse.success) setRelatedDocs(docsResponse.data || []);
         } else {
           setRelatedDocs([]);
@@ -176,13 +177,13 @@ export default function DocumentDetailPage() {
     }
     loadDocument();
     return () => { cancelled = true; };
-  }, [id, ui.notFound, ui.loadFailed]);
+  }, [id, i18n.language, i18n.resolvedLanguage, ui.notFound, ui.loadFailed]);
 
   const fileUrl = useMemo(() => getFileUrl(documentData), [documentData]);
   const thumbUrl = useMemo(() => getThumbUrl(documentData), [documentData]);
   const certMeta = documentData?.certificate_metadata || documentData?.certificateMetadata || {};
   const typeLabel = documentTypeLabel(documentData || {}, i18n.language);
-  const title = localizedField(documentData || {}, 'title', i18n.language) || certMeta?.cert_no || documentData?.cert_no || `${typeLabel} ${id}`;
+  const title = documentDisplayTitle(documentData || {}, i18n.language) || certMeta?.cert_no || documentData?.cert_no || `${typeLabel} ${id}`;
   const currentDocType = normalizeDocType(documentData || {});
   const documentPublicStatus = publicStatusLabel(documentData, 'document', i18n.language);
 
@@ -201,8 +202,8 @@ export default function DocumentDetailPage() {
   const switchLabel = (doc) => {
     const metaNo = doc.cert_no || doc.certNo || doc.certificate_metadata?.cert_no;
     const lang = doc.language ? String(doc.language).toUpperCase() : '';
-    if (normalizeDocType(doc) === 'certificate') return metaNo || localizedField(doc, 'title', i18n.language) || `${documentTypeLabel(doc, i18n.language, 'short')} #${doc.id}`;
-    return [lang, localizedField(doc, 'title', i18n.language) || `${language === 'de' ? ui.documentFallback : isEn ? 'Document' : '资料'} #${doc.id}`].filter(Boolean).join(' · ');
+    if (normalizeDocType(doc) === 'certificate') return metaNo || documentDisplayTitle(doc, i18n.language) || `${documentTypeLabel(doc, i18n.language, 'short')} #${doc.id}`;
+    return [lang, documentDisplayTitle(doc, i18n.language) || `${language === 'de' ? ui.documentFallback : isEn ? 'Document' : '资料'} #${doc.id}`].filter(Boolean).join(' · ');
   };
 
 

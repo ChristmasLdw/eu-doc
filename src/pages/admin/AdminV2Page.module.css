@@ -11650,3 +11650,107 @@ button.documentPreviewCard:hover {
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* Public titles stay separate from the original upload filename. */
+.documentPublicTitleField {
+  grid-column: 1 / -1;
+}
+
+.documentPublicTitlePreview {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(14, 165, 233, 0.035));
+}
+
+.documentPublicTitlePreview small {
+  color: var(--accent-blue);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.documentPublicTitlePreview strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.fileConfirmRow {
+  grid-template-columns:
+    minmax(170px, 1.1fr)
+    minmax(140px, 0.52fr)
+    minmax(120px, 0.42fr)
+    minmax(250px, 1fr) !important;
+  align-items: start;
+}
+
+.filePublicTitleField {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.filePublicTitleField > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.filePublicTitleField input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  padding: 6px 11px;
+  border: 1px solid rgba(203, 213, 225, 0.86);
+  border-radius: 13px;
+  background: rgba(248, 250, 252, 0.88);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  outline: none;
+}
+
+.filePublicTitleField input:focus {
+  border-color: rgba(37, 99, 235, 0.62);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filePublicTitleField small {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.filePublicTitleField small b {
+  margin-right: 6px;
+  color: var(--accent-blue);
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .fileConfirmRow {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .fileConfirmRow > strong,
+  .filePublicTitleField {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .fileConfirmRow {
+    grid-template-columns: 1fr !important;
+  }
+}

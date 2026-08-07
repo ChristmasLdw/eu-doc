@@ -17,7 +17,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { getLanguageLocale } from '../i18n/languages';
 import { getCertificates, getStats, getCompanies, getSearchSuggestions, getProducts, getDocuments } from '../services/api';
 import { categories as defaultCategories } from '../data/mockData';
-import { categoryLabel, localizedField } from '../utils/languageContent';
+import { categoryLabel, documentDisplayTitle, localizedField } from '../utils/languageContent';
 import { getSortOptions, mapSortToApiParams, getSuggestionTypeLabel } from '../utils/searchHelpers';
 import { getSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '../utils/searchHistory';
 import StatusBadge from '../components/StatusBadge';
@@ -42,7 +42,7 @@ function getUnifiedSearchScore(item, query) {
   if (!keyword) return 0;
 
   const fields = item.resultKind === 'document'
-    ? [item.title, item.productName, item.productModel, item.companyName, item.certNo]
+    ? [item.displayTitle, item.publicTitle, item.productName, item.productModel, item.companyName, item.certNo]
     : item.resultKind === 'product'
       ? [item.name, item.model, item.companyName, item.description]
       : [item.name, item.nameEn];
@@ -227,7 +227,7 @@ export default function SearchPage() {
     let cancelled = false;
     setSuggestionsLoading(true);
     const timer = window.setTimeout(() => {
-      getSearchSuggestions(keyword, 12)
+      getSearchSuggestions(keyword, 12, i18n.resolvedLanguage)
         .then((items) => {
           if (!cancelled) setSuggestions(items);
         })
@@ -243,7 +243,7 @@ export default function SearchPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, i18n.resolvedLanguage]);
 
 
   // 点击外部关闭建议下拉
@@ -329,7 +329,8 @@ export default function SearchPage() {
         page: currentPage,
         pageSize: PAGE_SIZE,
         sortBy: params.sortBy,
-        sortOrder: params.sortOrder
+        sortOrder: params.sortOrder,
+        language: i18n.resolvedLanguage,
       };
 
       // 如果选择了具体的文档类型，传递给 API
@@ -350,6 +351,7 @@ export default function SearchPage() {
         search: submittedQuery,
         page: 1,
         pageSize: ALL_SEARCH_FETCH_SIZE,
+        language: i18n.resolvedLanguage,
       }).catch(() => ({ data: [] }));
       productPromise = getProducts({
         search: submittedQuery,
@@ -473,7 +475,7 @@ export default function SearchPage() {
       .finally(() => {
         if (requestId === fetchRequestIdRef.current) setLoading(false);
       });
-  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage, searchMode, documentType, t]);
+  }, [submittedQuery, activeCategory, activeStatus, activeIssuer, activeStandard, sortBy, currentPage, searchMode, documentType, i18n.resolvedLanguage, t]);
 
   // 搜索参数变化时重新获取数据
   useEffect(() => {
@@ -727,7 +729,7 @@ export default function SearchPage() {
                       <span className={styles.suggestionType} data-type={s.type}>
                         {getSuggestionTypeLabel(s.type, t)}
                       </span>
-                      <span className={styles.suggestionValue}>{s.value}</span>
+                      <span className={styles.suggestionValue}>{s.label || s.value}</span>
                     </button>
                   ))}
 
@@ -1116,6 +1118,7 @@ export default function SearchPage() {
                 // 文档模式：根据文档类型渲染不同卡片
                 if (resultKind === 'document') {
                   const docType = item.documentType || 'other';
+                  const publicDocumentTitle = documentDisplayTitle(item, i18n.language);
 
                   // 证书类型：使用原来的证书卡片样式
                   if (docType === 'certificate') {
@@ -1131,7 +1134,7 @@ export default function SearchPage() {
                           <div className={styles.certContent}>
                             <div className={styles.certHeader}>
                               <div className={styles.certMeta}>
-                                <h3 className={styles.certCompany}>{highlightText(item.companyName)}</h3>
+                                <h3 className={styles.certCompany}>{highlightText(publicDocumentTitle)}</h3>
                                 <p className={styles.certProduct}>{highlightText(item.productName)}</p>
                               </div>
                               <StatusBadge status={item.status} />
@@ -1185,7 +1188,7 @@ export default function SearchPage() {
                         <div className={styles.certContent}>
                           <div className={styles.certHeader}>
                             <div className={styles.certMeta}>
-                              <h3 className={styles.certCompany}>{highlightText(item.title || item.productName)}</h3>
+                              <h3 className={styles.certCompany}>{highlightText(publicDocumentTitle)}</h3>
                               <p className={styles.certProduct}>
                                 {item.productName} · {item.companyName}
                               </p>
@@ -1234,7 +1237,7 @@ export default function SearchPage() {
 
                         {item.thumbnailUrl ? (
                           <div className={`${styles.certThumb} ${styles.documentThumb}`}>
-                            <LazyImage src={item.thumbnailUrl} alt={item.title} />
+                            <LazyImage src={item.thumbnailUrl} alt={publicDocumentTitle} />
                           </div>
                         ) : (
                           <div className={`${styles.certThumb} ${styles.documentThumb} ${styles.documentThumbPlaceholder}`}>

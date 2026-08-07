@@ -5,6 +5,7 @@ import { getLanguageCode } from '../i18n/languages';
 import * as api from '../services/api';
 import ShareModal from '../components/ShareModal';
 import {
+  documentDisplayTitle,
   documentTypeLabel,
   formatPublicDate,
   usesEnglishFallback,
@@ -169,9 +170,10 @@ export default function ProductDetailPage() {
       setLoading(true);
       setError(null);
       try {
+        const lang = encodeURIComponent(i18n.resolvedLanguage || i18n.language || 'zh');
         const [productResponse, documentsResponse, relatedResponse] = await Promise.all([
           fetch(`/eu-doc/api/v2/products/${id}`).then((res) => res.json()),
-          fetch(`/eu-doc/api/v2/products/${id}/documents`).then((res) => res.json()),
+          fetch(`/eu-doc/api/v2/products/${id}/documents?lang=${lang}`).then((res) => res.json()),
           fetch(`/eu-doc/api/v2/products/${id}/related`).then((res) => res.json()).catch(() => ({ success: false, data: [] })),
         ]);
         if (!productResponse.success) throw new Error(t('productDetail.productNotFound'));
@@ -190,7 +192,7 @@ export default function ProductDetailPage() {
     }
     loadData();
     return () => { cancelled = true; };
-  }, [id, t]);
+  }, [id, i18n.language, i18n.resolvedLanguage, t]);
 
   useEffect(() => {
     if (!product) return;
@@ -365,13 +367,14 @@ export default function ProductDetailPage() {
                           {group.docs.map((doc) => {
                             const filePath = docFilePath(doc);
                             const thumbPath = docThumbPath(doc);
+                            const publicDocumentTitle = documentDisplayTitle(doc, i18n.language, { companyName, productName });
                             return (
                               <button key={doc.id} className={styles.documentRowV3} onClick={() => openDocument(doc)}>
                                 <div className={styles.documentThumbV3}>
-                                  {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : isImageFile(filePath, doc.mime_type || doc.mimeType) ? <img src={toAssetUrl(filePath)} alt={localizedField(doc, 'title', i18n.language) || doc.title} /> : <span>{group.shortLabel}</span>}
+                                  {thumbPath ? <img src={toAssetUrl(thumbPath)} alt={publicDocumentTitle} /> : isImageFile(filePath, doc.mime_type || doc.mimeType) ? <img src={toAssetUrl(filePath)} alt={publicDocumentTitle} /> : <span>{group.shortLabel}</span>}
                                 </div>
                                 <div>
-                                  <h3>{localizedField(doc, 'title', i18n.language) || doc.cert_no || `${language === 'de' ? ui.documentFallback : isEn ? 'Document' : '资料'} ${doc.id}`}</h3>
+                                  <h3>{publicDocumentTitle || doc.cert_no || `${language === 'de' ? ui.documentFallback : isEn ? 'Document' : '资料'} ${doc.id}`}</h3>
                                   <p>{documentTypeLabel(normalizeDocType(doc), i18n.language)} · {language === 'de' ? ui.number : isEn ? 'No.' : '编号'}: {documentCode(doc)} · {doc.language ? doc.language.toUpperCase() : ui.noLanguage} · {compactDate(doc.updated_at || doc.updatedAt || doc.created_at || doc.createdAt, i18n.language)}</p>
                                 </div>
                                 <em>{ui.enterDetail}</em>

@@ -13,7 +13,7 @@ import { getLanguageCode } from '../i18n/languages';
 import { getCompany } from '../services/api';
 import * as api from '../services/api';
 import ShareModal from '../components/ShareModal';
-import { categoryLabel, formatPublicDate, usesEnglishFallback, localizedField, publicStatusLabel } from '../utils/languageContent';
+import { categoryLabel, documentDisplayTitle, formatPublicDate, usesEnglishFallback, localizedField, publicStatusLabel } from '../utils/languageContent';
 import styles from './CompanyPage.module.css';
 
 export default function CompanyPage() {
@@ -130,7 +130,7 @@ export default function CompanyPage() {
         setCompany(data);
         const [productResult, documentResult] = await Promise.all([
           api.getCompanyProducts(id).catch(() => ({ data: [] })),
-          api.getCompanyDocuments(id).catch(() => ({ data: [] })),
+          api.getCompanyDocuments(id, { language: i18n.resolvedLanguage }).catch(() => ({ data: [] })),
         ]);
         setProducts(productResult.data || []);
         setDocuments((documentResult.data || []).filter((doc) => doc.status !== 'deleted'));
@@ -144,7 +144,7 @@ export default function CompanyPage() {
         setCompany(null);
       })
       .finally(() => setLoading(false));
-  }, [id, i18n.language, isEn, t]);
+  }, [id, i18n.language, i18n.resolvedLanguage, isEn, t]);
 
   // 加载收藏状态
   const loadFavoriteStatus = async (companyId) => {
@@ -218,7 +218,10 @@ export default function CompanyPage() {
       const q = searchQuery.toLowerCase();
       list = list.filter((product) => [product.name, product.nameEn, product.name_en, product.model, product.categoryName, product.category_name]
         .some((value) => String(value || '').toLowerCase().includes(q))
-        || product.docs.some((doc) => String(doc.title || doc.name || '').toLowerCase().includes(q)));
+        || product.docs.some((doc) => documentDisplayTitle(doc, i18n.language, {
+          companyName: localizedField(company || {}, 'name', i18n.language),
+          productName: localizedField(product, 'name', i18n.language),
+        }).toLowerCase().includes(q)));
     }
 
     switch (sortBy) {
@@ -233,7 +236,7 @@ export default function CompanyPage() {
         break;
     }
     return list;
-  }, [products, documents, searchQuery, sortBy]);
+  }, [products, documents, searchQuery, sortBy, company, i18n.language]);
 
   const totalDocuments = documents.length;
   const totalProducts = products.length;

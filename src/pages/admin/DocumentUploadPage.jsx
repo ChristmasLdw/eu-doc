@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { normalizeDocumentPublicTitle } from '../../utils/languageContent';
 import styles from './UploadPage.module.css';
 
 export default function DocumentUploadPage() {
@@ -17,7 +18,7 @@ export default function DocumentUploadPage() {
 
   const [formData, setFormData] = useState({
     documentType: 'certificate',
-    title: '',
+    publicTitle: '',
     language: 'en',
     certNo: '',
     standard: '',
@@ -42,7 +43,6 @@ export default function DocumentUploadPage() {
       const data = await res.json();
       if (data.success) {
         setProduct(data.data);
-        setFormData(prev => ({ ...prev, title: data.data.name }));
       }
     } catch (err) {
       console.error('获取产品详情失败:', err);
@@ -57,9 +57,6 @@ export default function DocumentUploadPage() {
         return;
       }
       setFile(selectedFile);
-      if (!formData.title) {
-        setFormData(prev => ({ ...prev, title: selectedFile.name.replace(/\.[^/.]+$/, '') }));
-      }
       setError('');
     }
   };
@@ -75,10 +72,6 @@ export default function DocumentUploadPage() {
 
     if (!file) {
       setError('请选择要上传的文件');
-      return;
-    }
-    if (!formData.title) {
-      setError('请填写资料标题');
       return;
     }
     if (!confirmations.confirmedAuthentic || !confirmations.confirmedAuthorized || !confirmations.acceptedDisclaimer) {
@@ -206,17 +199,19 @@ export default function DocumentUploadPage() {
 
             <div className={styles.formGroup}>
               <label className={styles.label}>
-                资料标题 <span className={styles.required}>*</span>
+                公开资料名称（可选）
               </label>
               <input
                 type="text"
-                name="title"
-                value={formData.title}
+                name="publicTitle"
+                value={formData.publicTitle}
                 onChange={handleInputChange}
-                placeholder="资料标题"
+                onBlur={(event) => setFormData(prev => ({ ...prev, publicTitle: normalizeDocumentPublicTitle(event.target.value) }))}
+                placeholder="留空使用系统标准名称"
                 className={styles.input}
-                required
+                maxLength={80}
               />
+              <small>系统会根据企业、产品和资料类型生成公开名称；原始文件名仅后台可见。</small>
             </div>
 
             <div className={styles.formGroup}>

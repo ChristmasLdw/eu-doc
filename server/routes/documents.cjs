@@ -17,6 +17,13 @@ const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
+const {
+  buildDocumentDisplayTitle,
+  internalTitleFromFilename,
+  requestLanguage,
+  validatePublicTitle,
+  withDocumentDisplayTitle,
+} = require('../utils/documentTitles.cjs');
 
 const router = Router();
 
@@ -55,11 +62,12 @@ function notifyDocumentReviewResult(document, status, note = '') {
   const approved = status === 'approved';
   const title = approved ? '资料审核已通过' : '资料审核未通过';
   const reason = String(note || '').trim();
+  const documentTitle = buildDocumentDisplayTitle(document, 'zh');
   const description = approved
-    ? `你所在企业「${document.company_name}」的资料「${document.title}」已通过平台审核并公开。`
-    : `你所在企业「${document.company_name}」的资料「${document.title}」未通过平台审核，请联系管理员并根据审核意见修改后重新提交。${reason ? `审核意见：${reason}` : ''}`;
+    ? `你所在企业「${document.company_name}」的资料「${documentTitle}」已通过平台审核并公开。`
+    : `你所在企业「${document.company_name}」的资料「${documentTitle}」未通过平台审核，请联系管理员并根据审核意见修改后重新提交。${reason ? `审核意见：${reason}` : ''}`;
   const notificationType = approved ? 'document_review_approved' : 'document_review_rejected';
-  const metadata = JSON.stringify({ companyName: document.company_name, documentTitle: document.title, note: reason });
+  const metadata = JSON.stringify({ companyName: document.company_name, documentTitle, note: reason });
   const insert = db.prepare(`
     INSERT INTO user_notifications (user_id, title, description, status, tone, pinned, notification_type, metadata)
     VALUES (?, ?, ?, '未读', ?, ?, ?, ?)
@@ -103,6 +111,9 @@ function sanitizePublicDocument(document) {
     delete sanitized.certificate_metadata.remark;
   }
   delete sanitized.file_path;
+  delete sanitized.title;
+  delete sanitized.title_en;
+  delete sanitized.original_filename;
   delete sanitized.uploaded_by;
   delete sanitized.uploaded_by_name;
   delete sanitized.reviewed_by;
@@ -181,6 +192,7 @@ router.get('/', (req, res) => {
 
 function listDocuments(req, res) {
   try {
+    const responseLanguage = requestLanguage(req);
     const {
       page = 1,
       pageSize = 10,
@@ -242,9 +254,12 @@ function listDocuments(req, res) {
     }
 
     if (search) {
-      conditions.push('(d.title LIKE ? OR p.name LIKE ? OR c.name LIKE ?)');
+      conditions.push(`(
+        d.public_title LIKE ? OR p.name LIKE ? OR p.name_en LIKE ? OR p.model LIKE ?
+        OR c.name LIKE ? OR c.name_en LIKE ? OR cm.cert_no LIKE ?
+      )`);
       const keyword = `%${search}%`;
-      params.push(keyword, keyword, keyword);
+      params.push(keyword, keyword, keyword, keyword, keyword, keyword, keyword);
     }
 
     if (companyId) {
@@ -272,6 +287,7 @@ function listDocuments(req, res) {
       FROM documents d
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies c ON d.company_id = c.id
+      LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
       ${whereClause}
     `;
     const { total } = db.prepare(countSql).get(...params);
@@ -283,8 +299,10 @@ function listDocuments(req, res) {
         d.*,
         cl.thumbnail_path as legacy_thumbnail_path,
         p.name as product_name,
+        p.name_en as product_name_en,
         p.model as product_model,
         c.name as company_name,
+        c.name_en as company_name_en,
         u.display_name as uploaded_by_name,
         cm.cert_no,
         cm.standard,
@@ -305,7 +323,7 @@ function listDocuments(req, res) {
     const documents = db.prepare(dataSql).all(...params, Number(pageSize), offset).map((doc) => {
       if (!doc.thumbnail_path && doc.legacy_thumbnail_path) doc.thumbnail_path = doc.legacy_thumbnail_path;
       delete doc.legacy_thumbnail_path;
-      return doc;
+      return withDocumentDisplayTitle(doc, responseLanguage);
     });
 
     res.json({
@@ -330,11 +348,13 @@ function listDocuments(req, res) {
 // GET /api/v2/documents/:id - 获取文档详情
 router.get('/:id', optionalAuth, (req, res) => {
   try {
+    const responseLanguage = requestLanguage(req);
     const document = db.prepare(`
       SELECT
         d.*,
         cl.thumbnail_path as legacy_thumbnail_path,
         p.name as product_name,
+        p.name_en as product_name_en,
         p.model as product_model,
         c.name as company_name,
         c.name_en as company_name_en,
@@ -383,7 +403,8 @@ router.get('/:id', optionalAuth, (req, res) => {
 
     document.tags = tags;
 
-    res.json({ success: true, data: privateAccess ? document : sanitizePublicDocument(document) });
+    const responseDocument = withDocumentDisplayTitle(document, responseLanguage);
+    res.json({ success: true, data: privateAccess ? responseDocument : sanitizePublicDocument(responseDocument) });
   } catch (error) {
     console.error('[错误] GET /api/v2/documents/:id:', error);
     res.status(500).json({
@@ -424,9 +445,12 @@ router.post('/:id/review', authMiddleware, requireAdmin, (req, res) => {
   }
 
   const document = db.prepare(`
-    SELECT d.id, d.title, d.document_type, d.status, d.review_status, d.company_id, d.uploaded_by, c.name AS company_name
+    SELECT d.id, d.title, d.public_title, d.document_type, d.status, d.review_status,
+      d.company_id, d.uploaded_by, c.name AS company_name, c.name_en AS company_name_en,
+      p.name AS product_name, p.name_en AS product_name_en, p.model AS product_model
     FROM documents d
     LEFT JOIN companies c ON c.id = d.company_id
+    LEFT JOIN products p ON p.id = d.product_id
     WHERE d.id = ?
   `).get(req.params.id);
   if (!document || document.status === 'deleted') return res.status(404).json({ success: false, message: '文档不存在或已删除' });
@@ -473,7 +497,7 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   const confirmed_authentic = req.body.confirmedAuthentic;
   const confirmed_authorized = req.body.confirmedAuthorized;
   const accepted_disclaimer = req.body.acceptedDisclaimer;
-  const { title, language = 'en', standard, issuer } = req.body;
+  const { language = 'en', standard, issuer } = req.body;
 
   // 上传确认校验（必须勾选所有确认项）
   if (!confirmed_authentic || !confirmed_authorized || !accepted_disclaimer) {
@@ -499,13 +523,21 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
   }
 
   // 必填字段校验
-  if (!company_id || !product_id || !document_type || !title) {
+  if (!company_id || !product_id || !document_type) {
     // 删除已上传的文件
     if (req.file) fs.unlinkSync(req.file.path);
     return res.status(400).json({
       success: false,
-      message: '企业ID、产品ID、文档类型和标题为必填项',
+      message: '企业ID、产品ID和文档类型为必填项',
     });
+  }
+
+  let publicTitle;
+  try {
+    publicTitle = validatePublicTitle(req.body.publicTitle ?? req.body.public_title);
+  } catch (error) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(400).json({ success: false, message: error.message, code: error.code });
   }
 
   // 权限检查：用户必须是该企业的 owner/admin/uploader
@@ -560,18 +592,22 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
     file_size = req.file.size;
     mime_type = req.file.mimetype;
   }
+  const originalFilename = req.file.originalname || null;
+  const internalTitle = internalTitleFromFilename(req.body.title || originalFilename, `Document ${Date.now()}`);
 
   try {
     const result = db.prepare(`
       INSERT INTO documents (
-        company_id, product_id, document_type, title, language,
+        company_id, product_id, document_type, title, public_title, original_filename, language,
         file_path, file_size, mime_type, status, review_status, uploaded_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       company_id,
       product_id,
       document_type,
-      title,
+      internalTitle,
+      publicTitle,
+      originalFilename,
       language,
       file_path,
       file_size,
@@ -596,7 +632,7 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
       'INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(
       req.admin.id, 'create', 'document', documentId,
-      JSON.stringify({ document_type, title, review_status: reviewStatus }), req.ip
+      JSON.stringify({ document_type, public_title: publicTitle, review_status: reviewStatus }), req.ip
     );
 
     // 记录上传确认
@@ -623,6 +659,8 @@ router.post('/', authMiddleware, upload.single('file'), (req, res) => {
         file_path,
         file_size,
         mime_type,
+        public_title: publicTitle,
+        original_filename: originalFilename,
         review_status: reviewStatus,
       },
     });
@@ -642,12 +680,17 @@ router.put('/:id', authMiddleware, requireDocumentEditor, (req, res) => {
   const document = req.document;
 
   try {
+    const hasPublicTitle = req.body.publicTitle !== undefined || req.body.public_title !== undefined;
+    const publicTitle = hasPublicTitle
+      ? validatePublicTitle(req.body.publicTitle ?? req.body.public_title)
+      : undefined;
     const body = {
       ...req.body,
+      public_title: publicTitle,
       file_path: req.body.filePath,
       review_status: req.body.reviewStatus,
     };
-    const fields = ['title', 'language', 'file_path', 'status'];
+    const fields = ['title', 'public_title', 'language', 'file_path', 'status'];
     if (['admin', 'platform_admin'].includes(req.admin.role)) {
       fields.push('review_status');
     }
@@ -714,10 +757,14 @@ router.put('/:id', authMiddleware, requireDocumentEditor, (req, res) => {
 
     res.json({ success: true, message: '文档更新成功' });
   } catch (error) {
+    if (error.code === 'INVALID_PUBLIC_TITLE') {
+      return res.status(400).json({ success: false, message: error.message, code: error.code });
+    }
     console.error('更新文档失败:', error);
     res.status(500).json({
       success: false,
       message: '更新文档失败: ' + error.message,
+      ...(error.code ? { code: error.code } : {}),
     });
   }
 });
@@ -741,10 +788,10 @@ router.post('/:id/replace', authMiddleware, requireDocumentEditor, upload.single
   const reviewStatus = ['admin', 'platform_admin'].includes(req.admin.role) ? 'approved' : 'pending';
   db.prepare(`
     UPDATE documents
-    SET file_path = ?, file_size = ?, mime_type = ?, review_status = ?, review_note = NULL,
+    SET file_path = ?, file_size = ?, mime_type = ?, original_filename = ?, review_status = ?, review_note = NULL,
         reviewed_by = NULL, reviewed_at = NULL, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(filePath, req.file.size, req.file.mimetype, reviewStatus, document.id);
+  `).run(filePath, req.file.size, req.file.mimetype, req.file.originalname || null, reviewStatus, document.id);
 
   db.prepare('INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
     .run(req.admin.id, 'replace_file', 'document', document.id, JSON.stringify({ old: document.file_path, new: filePath, review_status: reviewStatus }), req.ip);

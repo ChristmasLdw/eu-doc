@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAdmin } from '../../contexts/AdminContext';
 import * as api from '../../services/api';
 import { ENV } from '../../config/env';
+import { documentDisplayTitle, normalizeDocumentPublicTitle } from '../../utils/languageContent';
 import styles from './AdminV2Page.module.css';
 import { ContextualGuide } from '../../components/TutorialAssistant/ContextualGuide';
 
@@ -473,7 +474,7 @@ function emptyDocumentModalState(overrides = {}) {
     source: 'generic',
     doc: null,
     docs: [],
-    title: '',
+    publicTitle: '',
     productId: '',
     productName: '',
     documentType: 'certificate',
@@ -495,10 +496,6 @@ function inferLanguageFromFileName(fileName = '') {
   if (!matched) return 'en';
   if (matched[1] === 'cn') return 'zh';
   return matched[1];
-}
-
-function titleFromFileName(fileName = '') {
-  return String(fileName || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
 }
 
 function documentFileExt(fileName = '') {
@@ -672,7 +669,7 @@ function MenuIcon({ type }) {
 }
 
 export default function AdminV2Page() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { admin, isAdmin } = useAdmin();
@@ -890,6 +887,29 @@ export default function AdminV2Page() {
     () => companies.find((company) => String(company.id) === String(activeCompany)) || companies[0],
     [activeCompany, companies]
   );
+  const documentModalDisplayTitle = useMemo(() => {
+    const product = companyProducts.find((item) => String(item.id) === String(documentModal.productId));
+    const titleLanguage = i18n.resolvedLanguage || i18n.language || 'zh';
+    const useEnglishFallback = !String(titleLanguage).toLowerCase().startsWith('zh');
+    const productName = (useEnglishFallback ? product?.nameEn : '') || documentModal.productName || product?.name || product?.model || '';
+    const companyName = (useEnglishFallback ? currentCompany?.nameEn : '') || currentCompany?.name || '';
+    return documentDisplayTitle({
+      publicTitle: documentModal.publicTitle,
+      documentType: documentModal.documentType,
+      productName,
+      companyName,
+    }, titleLanguage, { companyName, productName });
+  }, [
+    companyProducts,
+    currentCompany?.name,
+    currentCompany?.nameEn,
+    documentModal.documentType,
+    documentModal.productId,
+    documentModal.productName,
+    documentModal.publicTitle,
+    i18n.language,
+    i18n.resolvedLanguage,
+  ]);
   const filteredCompanyMembers = useMemo(() => {
     const query = memberFilters.query.trim().toLowerCase();
     return companyMembers.filter((member) => {
@@ -1638,12 +1658,16 @@ export default function AdminV2Page() {
       .catch(() => {
         if (!cancelled) setCompanyProducts([]);
       });
-    api.getCompanyDocuments(companyId, { includePrivate: true })
+    api.getCompanyDocuments(companyId, { includePrivate: true, language: i18n.resolvedLanguage })
       .then((response) => {
         if (cancelled) return;
         setCompanyDocuments((response.data || []).map((item) => ({
           id: item.id,
-          name: item.title || item.fileName || '未命名资料',
+          name: item.displayTitle || item.publicTitle || '未命名资料',
+          publicTitle: item.publicTitle || '',
+          originalFilename: item.originalFilename || '',
+          internalTitle: item.title || '',
+          companyName: item.companyName || currentCompany?.name || '',
           type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' || item.documentType === 'declaration' ? 'DoC声明资料' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
           documentType: item.documentType || 'other',
           productId: item.productId || item.product_id || '',
@@ -1665,7 +1689,7 @@ export default function AdminV2Page() {
       });
 
     return () => { cancelled = true; };
-  }, [activeCompany, showAction]);
+  }, [activeCompany, currentCompany?.name, i18n.resolvedLanguage, showAction]);
 
   const refreshCompanyMembers = useCallback(async () => {
     if (!activeCompany) return;
@@ -1737,14 +1761,14 @@ export default function AdminV2Page() {
     try {
       const [items, documentResponse] = await Promise.all([
         api.getCompanyVerifications('all'),
-        api.getPendingDocumentReviews(),
+        api.getPendingDocumentReviews(i18n.resolvedLanguage),
       ]);
       setVerificationItems(items);
       setPendingReviewDocuments(documentResponse.data || []);
     } catch (error) {
       showAction(error.message || '企业审核列表读取失败');
     }
-  }, [showAction]);
+  }, [i18n.resolvedLanguage, showAction]);
 
   const reviewPendingDocument = async (document, status) => {
     let note = '';
@@ -1756,7 +1780,7 @@ export default function AdminV2Page() {
         showAction('拒绝文件时需要填写原因');
         return;
       }
-    } else if (!window.confirm(`确认通过「${document.title || '该资料'}」并立即公开吗？`)) {
+    } else if (!window.confirm(`确认通过「${document.displayTitle || document.publicTitle || `资料 #${document.id}`}」并立即公开吗？`)) {
       return;
     }
 
@@ -1770,13 +1794,14 @@ export default function AdminV2Page() {
   };
 
   const previewPendingDocument = async (document) => {
-    setDocumentPreview({ open: true, url: '', title: document.title || '待审核资料', objectUrl: '', mimeType: '', loading: true, error: '' });
+    const previewTitle = document.displayTitle || document.publicTitle || `资料 #${document.id}`;
+    setDocumentPreview({ open: true, url: '', title: previewTitle, objectUrl: '', mimeType: '', loading: true, error: '' });
     try {
       const blob = await api.getDocumentReviewFile(document.id);
       const objectUrl = URL.createObjectURL(blob);
-      setDocumentPreview({ open: true, url: objectUrl, title: document.title || '待审核资料', objectUrl, mimeType: blob.type || '', loading: false, error: '' });
+      setDocumentPreview({ open: true, url: objectUrl, title: previewTitle, objectUrl, mimeType: blob.type || '', loading: false, error: '' });
     } catch (error) {
-      setDocumentPreview({ open: true, url: '', title: document.title || '待审核资料', objectUrl: '', mimeType: '', loading: false, error: error.message || '资料预览失败' });
+      setDocumentPreview({ open: true, url: '', title: previewTitle, objectUrl: '', mimeType: '', loading: false, error: error.message || '资料预览失败' });
       showAction(error.message || '资料预览失败');
     }
   };
@@ -2153,6 +2178,10 @@ export default function AdminV2Page() {
         documentType: form.documentType || inferImportType(group.items[0], group.type),
         languagesById: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`language_${item.id}`] || item.guessedLanguage || 'en'])),
         documentTypesById: Object.fromEntries(itemsToOrganize.map((item) => [String(item.id), form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)])),
+        publicTitlesById: Object.fromEntries(itemsToOrganize.map((item) => [
+          String(item.id),
+          normalizeDocumentPublicTitle(form[`publicTitle_${item.id}`] || ''),
+        ])),
         categoryPrimaryId: form.categoryPrimaryId || suggestedClassification.consumerCategoryId || '',
         complianceCategoryIds: form.complianceCategoryIds || suggestedClassification.complianceCategoryIds || [],
       });
@@ -2432,7 +2461,7 @@ export default function AdminV2Page() {
   const refreshCompanyAssets = async () => {
     const [productResponse, documentResponse] = await Promise.all([
       api.getCompanyProducts(activeCompany, { includePrivate: true }),
-      api.getCompanyDocuments(activeCompany, { includePrivate: true }),
+      api.getCompanyDocuments(activeCompany, { includePrivate: true, language: i18n.resolvedLanguage }),
     ]);
     setCompanyProducts((productResponse.data || []).map((item) => ({
       id: item.id,
@@ -2465,7 +2494,11 @@ export default function AdminV2Page() {
     })));
     setCompanyDocuments((documentResponse.data || []).map((item) => ({
       id: item.id,
-      name: item.title || item.fileName || '未命名资料',
+      name: item.displayTitle || item.publicTitle || '未命名资料',
+      publicTitle: item.publicTitle || '',
+      originalFilename: item.originalFilename || '',
+      internalTitle: item.title || '',
+      companyName: item.companyName || currentCompany?.name || '',
       type: item.documentType === 'certificate' ? '资质证书' : item.documentType === 'declaration_of_conformity' ? 'DoC声明资料' : item.documentType === 'manual' ? '使用说明书' : '其他资料',
       product: item.productName || '-',
       productId: item.productId,
@@ -2627,7 +2660,7 @@ export default function AdminV2Page() {
       source: 'slot',
       doc: firstDoc,
       docs,
-      title: firstDoc?.name || '',
+      publicTitle: firstDoc?.publicTitle || '',
       productId: String(product?.id || firstDoc?.productId || ''),
       productName: product?.name || firstDoc?.product || '',
       documentType,
@@ -2647,7 +2680,7 @@ export default function AdminV2Page() {
       mode: 'edit',
       doc,
       docs: [doc],
-      title: doc.name || '',
+      publicTitle: doc.publicTitle || '',
       productId: String(doc.productId || ''),
       productName: product.name || doc.product || '',
       documentType: doc.documentType || 'certificate',
@@ -2668,7 +2701,7 @@ export default function AdminV2Page() {
         mode: 'edit',
         doc,
         docs: form.docs?.length ? form.docs : [doc],
-        title: doc.name || '',
+        publicTitle: doc.publicTitle || '',
         productId: String(doc.productId || form.productId || ''),
         productName: form.productName || product.name || doc.product || '',
         documentType: doc.documentType || form.documentType || 'certificate',
@@ -2710,7 +2743,6 @@ export default function AdminV2Page() {
         ...form,
         file,
         filePreviewUrl: file && file.type?.startsWith('image/') ? URL.createObjectURL(file) : '',
-        title: file && !form.title ? titleFromFileName(file.name) : form.title,
         language: file ? inferLanguageFromFileName(file.name) : form.language,
       };
     });
@@ -2734,7 +2766,7 @@ export default function AdminV2Page() {
           companyId: activeCompany,
           productId: documentModal.productId,
           documentType: documentModal.documentType,
-          title: documentModal.title,
+          publicTitle: normalizeDocumentPublicTitle(documentModal.publicTitle),
           language: documentModal.language,
           file: documentModal.file,
           confirmedAuthentic: '1',
@@ -2748,7 +2780,7 @@ export default function AdminV2Page() {
         showAction(t('admin.fileManagement.uploadSuccess'));
       } else {
         await api.updateDocument(documentModal.doc.id, {
-          title: documentModal.title,
+          publicTitle: normalizeDocumentPublicTitle(documentModal.publicTitle),
           language: documentModal.language,
           certNo: documentModal.certNo,
           standard: documentModal.standard,
@@ -3370,6 +3402,13 @@ export default function AdminV2Page() {
                   const recommendedProductId = recommendedProduct ? String(recommendedProduct.id) : '';
                   const matchedProductId = Object.prototype.hasOwnProperty.call(form, 'productId') ? form.productId : recommendedProductId;
                   const hasSelectedProduct = Boolean(matchedProductId);
+                  const selectedImportProduct = companyProducts.find((product) => String(product.id) === String(matchedProductId));
+                  const importTitleLanguage = i18n.resolvedLanguage || i18n.language || 'zh';
+                  const useEnglishTitleFallback = !String(importTitleLanguage).toLowerCase().startsWith('zh');
+                  const importProductName = hasSelectedProduct
+                    ? ((useEnglishTitleFallback ? selectedImportProduct?.nameEn : '') || selectedImportProduct?.name || selectedImportProduct?.model || '')
+                    : (form.newProductName || group.suggestedName || '');
+                  const importCompanyName = (useEnglishTitleFallback ? currentCompany?.nameEn : '') || currentCompany?.name || '';
                   const confidence = getImportConfidence(group);
                   const needsGroupConfirmation = group.items.filter((item) => !item.isDuplicate).length > 1;
                   const confirmedStep = form.confirmedStep ?? (needsGroupConfirmation ? 0 : 1);
@@ -3560,13 +3599,37 @@ export default function AdminV2Page() {
                               <h4>确认每份资料的类型和语言</h4>
                               <div className={styles.questionExplanation}><strong>说明</strong><span>同一产品下，不同资料可以分别是证书、DoC 或说明书，也可以对应不同语言。</span></div>
                               <div className={styles.questionActionPanel}>
-                                <div className={styles.questionActionHeader}><strong>需要你逐份确认</strong><span>每一行的资料类型和语言都可以修改</span></div>
+                                <div className={styles.questionActionHeader}><strong>需要你逐份确认</strong><span>资料类型、语言和公开资料名称都可以修改；留空会使用系统标准名称</span></div>
                                 <div className={styles.fileConfirmRows}>
-                                  {group.items.map((item) => <div key={item.id} className={styles.fileConfirmRow}>
-                                    <strong>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
-                                    <select value={form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type)} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
-                                    <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
-                                  </div>)}
+                                  {group.items.map((item) => {
+                                    const itemDocumentType = form[`documentType_${item.id}`] || form.documentType || inferImportType(item, group.type);
+                                    const itemPublicTitle = form[`publicTitle_${item.id}`] || '';
+                                    const publicPreview = documentDisplayTitle({
+                                      publicTitle: itemPublicTitle,
+                                      documentType: itemDocumentType,
+                                      productName: importProductName,
+                                      companyName: importCompanyName,
+                                    }, importTitleLanguage, {
+                                      companyName: importCompanyName,
+                                      productName: importProductName,
+                                    });
+                                    return <div key={item.id} className={styles.fileConfirmRow}>
+                                      <strong title={item.originalName}>{item.originalName}{item.isDuplicate && <em className={styles.fileDupTag}>后上传重复</em>}</strong>
+                                      <select value={itemDocumentType} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`documentType_${item.id}`]: event.target.value } }))}><option value="certificate">资质证书</option><option value="declaration_of_conformity">DoC声明资料</option><option value="manual">使用说明书</option><option value="other">其他资料</option></select>
+                                      <select value={form[`language_${item.id}`] || item.guessedLanguage || 'en'} onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...form, [`language_${item.id}`]: event.target.value } }))}><option value="en">英语 EN</option><option value="de">德语 DE</option><option value="zh">中文 ZH</option><option value="fr">法语 FR</option><option value="es">西语 ES</option><option value="it">意语 IT</option><option value="other">其他</option></select>
+                                      <label className={styles.filePublicTitleField}>
+                                        <span>公开资料名称（可选）</span>
+                                        <input
+                                          value={itemPublicTitle}
+                                          maxLength={80}
+                                          placeholder="留空使用系统标准名称"
+                                          onChange={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...(state[formKey] || {}), [`publicTitle_${item.id}`]: event.target.value } }))}
+                                          onBlur={(event) => setImportSelection((state) => ({ ...state, [formKey]: { ...(state[formKey] || {}), [`publicTitle_${item.id}`]: normalizeDocumentPublicTitle(event.target.value) } }))}
+                                        />
+                                        <small><b>公开预览</b>{publicPreview}</small>
+                                      </label>
+                                    </div>;
+                                  })}
                                 </div>
                                 <button data-tutorial="import-question-3-confirm" className={styles.secondaryBtn} onClick={() => confirmImportStep(formKey, 3)}>{confirmedStep >= 3 ? '已检查资料信息' : '资料信息已检查，继续'}</button>
                               </div>
@@ -4460,7 +4523,7 @@ export default function AdminV2Page() {
                     {company.documents.map((document) => (
                       <article key={document.id} className={styles.documentReviewFile}>
                         <div>
-                          <strong>{document.title || `资料 #${document.id}`}</strong>
+                          <strong>{document.displayTitle || document.publicTitle || `资料 #${document.id}`}</strong>
                           <span>{document.productName || t('admin.fileManagement.unlinkedProduct')} · {t(documentTypeLabelKey(document.documentType))} · {document.uploadedByName || t('admin.memberManagement.companyMember')}</span>
                           <em>{formatActivityTime(document.createdAt)}</em>
                         </div>
@@ -5242,7 +5305,7 @@ export default function AdminV2Page() {
                               {previewImageUrl ? (
                                 <img src={previewImageUrl} alt={documentModal.file?.name || documentModal.doc?.name || t('admin.fileManagement.thumbnailAlt')} />
                               ) : hasActualFile ? (
-                                <strong>{documentModal.file ? documentFileExt(documentModal.file.name) : documentFileExt(documentModal.doc?.name || docUrl || 'FILE')}</strong>
+                                <strong>{documentModal.file ? documentFileExt(documentModal.file.name) : documentFileExt(documentModal.doc?.originalFilename || docUrl || 'FILE')}</strong>
                               ) : isMissingFile ? (
                                 <span className={styles.documentMissingPrompt}>
                                   <b>!</b>
@@ -5259,7 +5322,7 @@ export default function AdminV2Page() {
                             </button>
                             <div className={styles.documentPreviewMeta}>
                               <div>
-                                <span>{documentModal.file?.name || documentModal.doc?.name || t('admin.fileManagement.emptySlot')}</span>
+                                <span>{t('admin.fileManagement.originalFilename')}：{documentModal.file?.name || documentModal.doc?.originalFilename || (hasRecord ? t('admin.fileManagement.originalFilenameUnavailable') : t('admin.fileManagement.emptySlot'))}</span>
                                 <em>{hasActualFile ? t('admin.fileManagement.clickToPreview') : isMissingFile ? t('admin.fileManagement.serverFileMissing') : t('admin.fileManagement.autoFillHint')}</em>
                               </div>
                               {(hasRecord || documentModal.file) && <button type="button" onClick={() => documentFileInputRef.current?.click()}>{isMissingFile ? t('admin.fileManagement.reupload') : t('admin.fileManagement.replace')}</button>}
@@ -5305,7 +5368,8 @@ export default function AdminV2Page() {
                     ) : (
                       <label><span>{t('admin.fileManagement.documentType')}</span><select value={documentModal.documentType} onChange={(event) => setDocumentModal((form) => ({ ...form, documentType: event.target.value }))}>{DOCUMENT_TYPE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}</select></label>
                     )}
-                    <label><span>{t('admin.fileManagement.documentTitle')}</span><input value={documentModal.title} placeholder={t('admin.fileManagement.titleAutoFillPlaceholder')} onChange={(event) => setDocumentModal((form) => ({ ...form, title: event.target.value }))} /></label>
+                    <label className={styles.documentPublicTitleField}><span>{t('admin.fileManagement.documentTitle')}</span><input value={documentModal.publicTitle} maxLength={80} placeholder={t('admin.fileManagement.titleAutoFillPlaceholder')} onChange={(event) => setDocumentModal((form) => ({ ...form, publicTitle: event.target.value }))} onBlur={(event) => setDocumentModal((form) => ({ ...form, publicTitle: normalizeDocumentPublicTitle(event.target.value) }))} /></label>
+                    <div className={styles.documentPublicTitlePreview}><small>{t('admin.fileManagement.publicTitlePreview')}</small><strong>{documentModalDisplayTitle}</strong></div>
                     <label><span>{t('admin.fileManagement.language')}</span><input value={documentModal.language} onChange={(event) => setDocumentModal((form) => ({ ...form, language: event.target.value }))} /></label>
                     {documentModal.documentType === 'certificate' && <label><span>{t('admin.fileManagement.certificateNumber')}</span><input value={documentModal.certNo} placeholder={t('admin.fileManagement.optionalLater')} onChange={(event) => setDocumentModal((form) => ({ ...form, certNo: event.target.value }))} /></label>}
                     {documentModal.documentType === 'certificate' && <label><span>{t('admin.fileManagement.applicableStandards')}</span><input value={documentModal.standard} placeholder={t('admin.fileManagement.standardPlaceholder')} onChange={(event) => setDocumentModal((form) => ({ ...form, standard: event.target.value }))} /></label>}

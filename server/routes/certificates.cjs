@@ -648,8 +648,8 @@ router.post("/:id/upload", authMiddleware, requireCertificateEditor, upload.sing
       console.error("缩略图生成失败:", thumbError.message);
     }
 
-    db.prepare("UPDATE documents SET file_path = ?, file_size = ?, mime_type = 'application/pdf', updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-      .run(filePath, req.file.size, cert.id);
+    db.prepare("UPDATE documents SET file_path = ?, file_size = ?, mime_type = 'application/pdf', original_filename = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .run(filePath, req.file.size, req.file.originalname || null, cert.id);
 
     db.prepare("INSERT INTO audit_logs (admin_id, action, target_type, target_id, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)")
       .run(req.admin.id, "upload", "certificate", cert.id, JSON.stringify({ file: filePath, thumbnail: thumbnailPath }), req.ip);

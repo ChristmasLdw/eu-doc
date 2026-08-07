@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.9] - 2026-08-07
+
+### Added
+- 文档新增独立的公开名称和原始文件名字段，单份上传与批量归档均支持公开名称预览和可选覆盖。
+- 新增公开资料标题工具测试，覆盖同型号不同企业、中英德资料类型、文件扩展名清理和长度校验。
+
+### Changed
+- 公开资料统一使用“企业展示名 · 产品名称或主型号 · 资料类型”，企业身份由系统固定添加。
+- 自定义公开资料名称留空时使用系统标准名称；填写时自动清理空白和文件扩展名，并限制为 2–80 个字符。
+- 搜索建议、搜索结果、资料详情、产品资料列表和企业页统一使用标准公开名称；语言、证书编号和标准继续作为副信息。
+
+### Fixed
+- 公开文档接口不再返回内部标题或原始文件名，避免企业本地文件名进入公开页面。
+
 ## [2.9.8] - 2026-08-07
 
 ### Changed

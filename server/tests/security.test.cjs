@@ -52,6 +52,7 @@ db.exec(`
     id INTEGER PRIMARY KEY,
     company_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    name_en TEXT,
     model TEXT,
     image_path TEXT,
     category_primary_id INTEGER,
@@ -66,6 +67,8 @@ db.exec(`
     product_id INTEGER,
     document_type TEXT NOT NULL,
     title TEXT,
+    public_title TEXT,
+    original_filename TEXT,
     language TEXT,
     file_path TEXT,
     file_size INTEGER,
@@ -88,6 +91,18 @@ db.exec(`
     issue_date TEXT,
     expiry_date TEXT,
     remark TEXT
+  );
+  CREATE TABLE upload_confirmations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    company_id INTEGER NOT NULL,
+    confirmed_authentic INTEGER DEFAULT 0,
+    confirmed_authorized INTEGER DEFAULT 0,
+    accepted_disclaimer INTEGER DEFAULT 0,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE certificates_legacy (id INTEGER PRIMARY KEY, thumbnail_path TEXT);
   CREATE TABLE company_verification_documents (
@@ -158,7 +173,7 @@ db.prepare('INSERT INTO companies (id, name) VALUES (1, ?)').run('Company One');
 db.prepare("INSERT INTO company_members (id, user_id, company_id, role) VALUES (1, 1, 1, 'owner')").run();
 db.prepare("INSERT INTO company_members (id, user_id, company_id, role) VALUES (2, 4, 1, 'uploader')").run();
 db.prepare("INSERT INTO products (id, company_id, name, created_by) VALUES (1, 1, 'Product One', 1)").run();
-db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (1, 1, 1, 'manual', 'Manual', 'active', 'approved', 4, '/documents/manual.pdf', 'application/pdf')").run();
+db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, original_filename, status, review_status, uploaded_by, file_path, mime_type) VALUES (1, 1, 1, 'manual', 'Manual', 'manual_internal.pdf', 'active', 'approved', 4, '/documents/manual.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (2, 1, 1, 'certificate', 'Certificate', 'active', 'approved', 4, '/documents/certificate.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (3, 1, 1, 'manual', 'Pending Manual', 'active', 'pending', 4, '/documents/pending.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO certificate_metadata (id, document_id, cert_no) VALUES (1, 2, 'CERT-1')").run();
@@ -178,6 +193,7 @@ app.use('/api/v2/documents', require('../routes/documents.cjs'));
 app.use('/api/v2/products', require('../routes/products.cjs'));
 app.use('/api/v2/tags', require('../routes/tags.cjs'));
 app.use('/api/v2/imports', require('../routes/imports.cjs'));
+app.use('/api/search', require('../routes/search.cjs'));
 app.use('/api/v2/company-verifications', require('../routes/company-verifications.cjs'));
 app.use('/api/v2/platform-settings', require('../routes/platform-settings.cjs'));
 app.use('/api/reports', require('../routes/reports.cjs'));
@@ -310,6 +326,7 @@ test('company writes reject outsiders and allow platform admins', async () => {
     body: { name: 'Company One Updated' },
   });
   assert.equal(allowed.status, 200);
+  db.prepare("UPDATE companies SET name = 'Company One' WHERE id = 1").run();
 });
 
 test('company verification history resolves operators from current users', async () => {
@@ -337,6 +354,86 @@ test('document writes reject outsiders and allow uploader members', async () => 
     body: { title: 'Updated Manual' },
   });
   assert.equal(allowed.status, 200);
+});
+
+test('public document titles are normalized, validated, and never expose internal filenames', async () => {
+  const normalized = await request('/api/v2/documents/1', {
+    method: 'PUT',
+    token: uploaderToken,
+    body: { publicTitle: '  Branded Manual.pdf  ' },
+  });
+  assert.equal(normalized.status, 200);
+  assert.equal(db.prepare('SELECT public_title FROM documents WHERE id = 1').get().public_title, 'Branded Manual');
+
+  const customDetail = await request('/api/v2/documents/1?lang=en');
+  assert.equal(customDetail.status, 200);
+  assert.equal(customDetail.body.data.display_title, 'Company One · Branded Manual');
+  assert.equal(Object.hasOwn(customDetail.body.data, 'title'), false);
+  assert.equal(Object.hasOwn(customDetail.body.data, 'original_filename'), false);
+
+  const tooShort = await request('/api/v2/documents/1', {
+    method: 'PUT', token: uploaderToken, body: { publicTitle: 'A' },
+  });
+  assert.equal(tooShort.status, 400);
+  assert.equal(tooShort.body.code, 'INVALID_PUBLIC_TITLE');
+
+  const tooLong = await request('/api/v2/documents/1', {
+    method: 'PUT', token: uploaderToken, body: { publicTitle: 'A'.repeat(81) },
+  });
+  assert.equal(tooLong.status, 400);
+
+  const restored = await request('/api/v2/documents/1', {
+    method: 'PUT', token: uploaderToken, body: { publicTitle: '' },
+  });
+  assert.equal(restored.status, 200);
+  assert.equal(db.prepare('SELECT public_title FROM documents WHERE id = 1').get().public_title, null);
+
+  const generatedDetail = await request('/api/v2/documents/1?lang=en');
+  assert.equal(generatedDetail.body.data.display_title, 'Company One · Product One · User Manual');
+});
+
+test('document suggestions display public titles but search with a safe matching value', async () => {
+  const result = await request('/api/search/suggestions?q=Product%20One&lang=en');
+  assert.equal(result.status, 200);
+  const suggestion = result.body.data.find((item) => item.type === 'manual' && item.meta?.id === 1);
+  assert.ok(suggestion);
+  assert.equal(suggestion.label, 'Company One · Product One · User Manual');
+  assert.equal(suggestion.value, 'Product One');
+  assert.equal(JSON.stringify(result.body.data).includes('manual_internal.pdf'), false);
+});
+
+test('single document uploads keep the original filename private', async () => {
+  const form = new FormData();
+  form.append('companyId', '1');
+  form.append('productId', '1');
+  form.append('documentType', 'manual');
+  form.append('publicTitle', '  Setup Guide.pdf  ');
+  form.append('language', 'en');
+  form.append('confirmedAuthentic', '1');
+  form.append('confirmedAuthorized', '1');
+  form.append('acceptedDisclaimer', '1');
+  form.append('file', new Blob(['%PDF-1.4 private guide'], { type: 'application/pdf' }), 'private_original_guide.pdf');
+
+  const response = await fetch(`${baseUrl}/api/v2/documents`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${uploaderToken}` },
+    body: form,
+  });
+  const payload = await response.json();
+  assert.equal(response.status, 201);
+
+  const uploaded = db.prepare(`
+    SELECT title, public_title, original_filename, file_path, review_status
+    FROM documents WHERE id = ?
+  `).get(payload.id);
+  assert.equal(uploaded.title, 'private_original_guide');
+  assert.equal(uploaded.public_title, 'Setup Guide');
+  assert.equal(uploaded.original_filename, 'private_original_guide.pdf');
+  assert.equal(uploaded.review_status, 'pending');
+
+  db.prepare('DELETE FROM upload_confirmations WHERE document_id = ?').run(payload.id);
+  db.prepare('DELETE FROM documents WHERE id = ?').run(payload.id);
+  fs.rmSync(path.join(__dirname, '..', 'uploads', uploaded.file_path.replace(/^\/+/, '')), { force: true });
 });
 
 test('product image route checks company permission before accepting a file', async () => {
@@ -423,7 +520,10 @@ test('public product APIs hide actor fields and pending documents', async () => 
   assert.deepEqual(documents.body.data.map((item) => item.id).sort(), [1, 2]);
   documents.body.data.forEach((item) => {
     assert.equal(Object.hasOwn(item, 'file_path'), false);
+    assert.equal(Object.hasOwn(item, 'title'), false);
+    assert.equal(Object.hasOwn(item, 'original_filename'), false);
     assert.equal(Object.hasOwn(item, 'uploaded_by'), false);
+    assert.match(item.display_title, /^Company One · Product One · /);
     assert.match(item.file_url, new RegExp(`/api/v2/documents/${item.id}/file$`));
   });
 
@@ -496,6 +596,7 @@ test('model-list product names require confirmation and organizing writes an aud
     newProductName: 'F20-1, F20-2',
     newProductModel: 'F20-1, F20-2',
     documentType: 'certificate',
+    publicTitlesById: { [String(item.lastInsertRowid)]: 'Branded Certificate.pdf' },
   };
 
   const blocked = await request('/api/v2/imports/organize-group', {
@@ -520,14 +621,17 @@ test('model-list product names require confirmation and organizing writes an aud
   assert.equal(detail.productCreated, true);
   assert.equal(detail.count, 1);
 
-  const organizedDocument = db.prepare('SELECT review_status FROM documents WHERE id = ?').get(detail.documentIds[0]);
+  const organizedDocument = db.prepare('SELECT review_status, title, public_title, original_filename FROM documents WHERE id = ?').get(detail.documentIds[0]);
   assert.equal(organizedDocument.review_status, 'pending');
+  assert.equal(organizedDocument.title, 'certificate');
+  assert.equal(organizedDocument.public_title, 'Branded Certificate');
+  assert.equal(organizedDocument.original_filename, 'certificate.pdf');
 });
 
 test('platform admins can review pending documents and company members cannot', async () => {
   const inserted = db.prepare(`
-    INSERT INTO documents (company_id, product_id, document_type, title, status, review_status, uploaded_by)
-    VALUES (1, 1, 'manual', 'Review Queue Manual', 'active', 'pending', 4)
+    INSERT INTO documents (company_id, product_id, document_type, title, public_title, status, review_status, uploaded_by)
+    VALUES (1, 1, 'manual', 'Review Queue Manual', 'Review Queue Manual', 'active', 'pending', 4)
   `).run();
   const documentId = Number(inserted.lastInsertRowid);
 
@@ -561,8 +665,8 @@ test('platform admins can review pending documents and company members cannot', 
 
 test('rejected document reviews notify the uploader and company owner with the reason', async () => {
   const inserted = db.prepare(`
-    INSERT INTO documents (company_id, product_id, document_type, title, status, review_status, uploaded_by)
-    VALUES (1, 1, 'manual', 'Incorrect Manual', 'active', 'pending', 4)
+    INSERT INTO documents (company_id, product_id, document_type, title, public_title, status, review_status, uploaded_by)
+    VALUES (1, 1, 'manual', 'Incorrect Manual', 'Incorrect Manual', 'active', 'pending', 4)
   `).run();
   const documentId = Number(inserted.lastInsertRowid);
   const rejected = await request(`/api/v2/documents/${documentId}/review`, {

@@ -16,6 +16,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db.cjs');
 const { authMiddleware } = require('../middleware/auth.cjs');
+const { requestLanguage, withDocumentDisplayTitle } = require('../utils/documentTitles.cjs');
 const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 
 const router = Router();
@@ -47,6 +48,9 @@ function sanitizePublicDocument(document) {
   const sanitized = { ...document };
   sanitized.file_url = `/eu-doc/api/v2/documents/${document.id}/file`;
   delete sanitized.file_path;
+  delete sanitized.title;
+  delete sanitized.title_en;
+  delete sanitized.original_filename;
   delete sanitized.uploaded_by;
   delete sanitized.reviewed_by;
   delete sanitized.review_note;
@@ -436,6 +440,7 @@ router.get('/:id', optionalAuth, (req, res) => {
 // GET /api/v2/products/:id/documents - 获取产品的所有文档
 router.get('/:id/documents', optionalAuth, (req, res) => {
   try {
+    const responseLanguage = requestLanguage(req);
     const product = db.prepare(`
       SELECT p.company_id, p.status, c.verification_status, c.public_visible
       FROM products p
@@ -453,6 +458,11 @@ router.get('/:id/documents', optionalAuth, (req, res) => {
       SELECT
         d.*,
         cl.thumbnail_path as legacy_thumbnail_path,
+        p.name as product_name,
+        p.name_en as product_name_en,
+        p.model as product_model,
+        c.name as company_name,
+        c.name_en as company_name_en,
         CASE
           WHEN d.document_type = 'certificate' THEN cm.cert_no
           ELSE NULL
@@ -460,20 +470,23 @@ router.get('/:id/documents', optionalAuth, (req, res) => {
       FROM documents d
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id AND d.document_type = 'certificate'
       LEFT JOIN certificates_legacy cl ON d.id = cl.id
+      LEFT JOIN products p ON p.id = d.product_id
+      LEFT JOIN companies c ON c.id = d.company_id
       WHERE d.product_id = ?
         ${privateAccess ? '' : "AND d.status = 'active' AND d.review_status = 'approved'"}
       ORDER BY d.created_at DESC
     `).all(req.params.id);
 
-    documents.forEach((doc) => {
+    const responseDocuments = documents.map((doc) => {
       if (!doc.thumbnail_path && doc.legacy_thumbnail_path) doc.thumbnail_path = doc.legacy_thumbnail_path;
       delete doc.legacy_thumbnail_path;
+      return withDocumentDisplayTitle(doc, responseLanguage);
     });
 
     res.json({
       success: true,
-      data: privateAccess ? documents : documents.map(sanitizePublicDocument),
-      total: documents.length,
+      data: privateAccess ? responseDocuments : responseDocuments.map(sanitizePublicDocument),
+      total: responseDocuments.length,
     });
   } catch (error) {
     console.error('[错误] GET /api/v2/products/:id/documents:', error);

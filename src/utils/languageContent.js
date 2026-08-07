@@ -137,6 +137,41 @@ export function documentTypeLabel(typeOrDoc = {}, language = 'zh', variant = 'lo
   return dict[type] || dict.other;
 }
 
+export function normalizeDocumentPublicTitle(value) {
+  if (value === undefined || value === null) return '';
+  return String(value)
+    .replace(/\p{Cc}+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\.(?:avif|bmp|docx?|gif|jpe?g|odt|pdf|png|pptx?|rtf|svg|tiff?|webp|xlsx?)$/i, '')
+    .trim();
+}
+
+function titleIncludesCompany(title, companyName) {
+  const normalizedTitle = String(title || '').trim().toLocaleLowerCase();
+  const normalizedCompany = String(companyName || '').trim().toLocaleLowerCase();
+  if (!normalizedTitle || !normalizedCompany) return false;
+  if (normalizedTitle === normalizedCompany) return true;
+  return [' · ', ' - ', ' — ', ': '].some((separator) => normalizedTitle.startsWith(`${normalizedCompany}${separator}`));
+}
+
+export function documentDisplayTitle(item = {}, language = 'zh', options = {}) {
+  const companyName = options.companyName ?? localizedField({
+    name: item.companyName ?? item.company_name,
+    name_en: item.companyNameEn ?? item.company_name_en,
+  }, 'name', language);
+  const productName = options.productName ?? localizedField({
+    name: item.productName ?? item.product_name,
+    name_en: item.productNameEn ?? item.product_name_en,
+  }, 'name', language);
+  const productIdentity = productName || item.productModel || item.product_model || '';
+  const customTitle = normalizeDocumentPublicTitle(item.publicTitle ?? item.public_title);
+  const generatedTitle = [productIdentity, documentTypeLabel(item, language)].filter(Boolean).join(' · ');
+  const titleCore = customTitle || item.displayTitle || item.display_title || generatedTitle || documentTypeLabel(item, language);
+  if (!companyName || titleIncludesCompany(titleCore, companyName)) return titleCore;
+  return `${companyName} · ${titleCore}`;
+}
+
 export function valueOrPending(value, language = 'zh') {
   return value || PUBLIC_COPY[getLanguageCode(language)].pendingValue;
 }
