@@ -114,7 +114,7 @@
     "matchingSuggestions": "正在匹配相关结果...",
     "matchedCompanyResult": "找到 {{count}} 个公司结果",
     "mixedResult": "找到 {{total}} 条结果",
-    "mixedResultDetail": "包含 {{companyCount}} 个公司、{{docCount}} 份资料",
+    "mixedResultDetail": "包含 {{companyCount}} 家企业、{{productCount}} 个产品、{{documentCount}} 份资料",
     "companyResultCount": "找到 <strong>{{count}}</strong> 家企业",
     "productResultCount": "找到 <strong>{{count}}</strong> 个产品",
     "documentResultCount": "找到 <strong>{{count}}</strong> 份资料",

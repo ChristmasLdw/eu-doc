@@ -114,7 +114,7 @@
     "matchingSuggestions": "Passende verwandte Ergebnisse...",
     "matchedCompanyResult": "{{count}} passende Unternehmen gefunden",
     "mixedResult": "{{total}} Ergebnisse gefunden",
-    "mixedResultDetail": "Enthält {{companyCount}} Unternehmen und {{docCount}} Dokumente",
+    "mixedResultDetail": "Enthält {{companyCount}} Unternehmen, {{productCount}} Produkte und {{documentCount}} Dokumente",
     "companyResultCount": "<strong>{{count}}</strong> Unternehmen gefunden",
     "productResultCount": "<strong>{{count}}</strong> Produkte gefunden",
     "documentResultCount": "<strong>{{count}}</strong> Dokumente gefunden",

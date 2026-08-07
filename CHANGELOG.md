@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.8] - 2026-08-07
+
+### Changed
+- 综合搜索按资料、产品、企业统一混排，并让每类结果直接进入对应详情页。
+- 搜索模式顺序调整为“综合 / 资料 / 产品 / 企业”，资料在相关度相近时优先展示。
+
 ## [2.9.7] - 2026-08-07
 
 ### Changed

@@ -28,6 +28,77 @@ import styles from './SearchPage.module.css';
 
 // 每页显示条数
 const PAGE_SIZE = 8;
+// 综合模式需要把不同对象放到同一条相关度序列中；当前公开数据量较小，先在一次请求中取完整候选集。
+const ALL_SEARCH_FETCH_SIZE = 500;
+
+const ALL_RESULT_KIND_PRIORITY = {
+  document: 0,
+  product: 1,
+  company: 2,
+};
+
+function getUnifiedSearchScore(item, query) {
+  const keyword = String(query || '').trim().toLowerCase();
+  if (!keyword) return 0;
+
+  const fields = item.resultKind === 'document'
+    ? [item.title, item.productName, item.productModel, item.companyName, item.certNo]
+    : item.resultKind === 'product'
+      ? [item.name, item.model, item.companyName, item.description]
+      : [item.name, item.nameEn];
+
+  return fields.reduce((score, value) => {
+    const text = String(value || '').toLowerCase();
+    if (!text || !text.includes(keyword)) return score;
+    if (text === keyword) return score + 100;
+    if (text.startsWith(keyword)) return score + 80;
+    return score + 30;
+  }, 0);
+}
+
+function matchesUnifiedFilters(item, filters = {}) {
+  const { activeCategory, activeStatus, activeIssuer, activeStandard } = filters;
+
+  if (activeCategory) {
+    const categoryValue = item.resultKind === 'product' ? item.categoryPath : item.category;
+    if (!String(categoryValue || '').includes(activeCategory)) return false;
+  }
+  if (activeStatus) {
+    if (item.resultKind === 'company' || String(item.status || 'active') !== activeStatus) return false;
+  }
+  if (activeIssuer && (item.resultKind !== 'document' || !String(item.issuer || '').includes(activeIssuer))) return false;
+  if (activeStandard && (item.resultKind !== 'document' || !String(item.standard || '').includes(activeStandard))) return false;
+
+  return true;
+}
+
+function mergeUnifiedSearchResults({ certificates, documents, products, companies }, query, filters) {
+  const items = [
+    ...(certificates || []).map((item) => ({
+      ...item,
+      resultKind: 'document',
+      documentType: 'certificate',
+      productModel: item.productModel || item.model,
+    })),
+    // 证书已经由旧兼容接口提供，避免在资料接口中重复显示。
+    ...(documents || [])
+      .filter((item) => item.documentType !== 'certificate')
+      .map((item) => ({ ...item, resultKind: 'document' })),
+    ...(products || []).map((item) => ({ ...item, resultKind: 'product' })),
+    ...(companies || []).map((item) => ({ ...item, resultKind: 'company' })),
+  ];
+
+  return items.filter((item) => matchesUnifiedFilters(item, filters)).sort((a, b) => {
+    const scoreDifference = getUnifiedSearchScore(b, query) - getUnifiedSearchScore(a, query);
+    if (scoreDifference !== 0) return scoreDifference;
+
+    const kindDifference = (ALL_RESULT_KIND_PRIORITY[a.resultKind] ?? 99)
+      - (ALL_RESULT_KIND_PRIORITY[b.resultKind] ?? 99);
+    if (kindDifference !== 0) return kindDifference;
+
+    return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+  });
+}
 
 function normalizeDocumentTypeFilter(value) {
   const normalized = value === 'doc' || value === 'declaration' ? 'declaration_of_conformity' : value;
@@ -101,6 +172,7 @@ export default function SearchPage() {
 
   // 匹配的公司（搜索时自动查找）
   const [matchedCompanies, setMatchedCompanies] = useState([]);
+  const [allResultCounts, setAllResultCounts] = useState({ documentCount: 0, productCount: 0, companyCount: 0 });
 
   // 搜索建议由后端统一返回，避免不同来源先后刷新导致跳动
   const [suggestions, setSuggestions] = useState([]);
@@ -267,13 +339,28 @@ export default function SearchPage() {
 
       documentPromise = getDocuments(docParams).catch(() => ({ data: [], pagination: { total: 0, totalPages: 1 } }));
     } else {
-      // 综合模式：同时查询证书和企业
-      companyPromise = (submittedQuery && currentPage === 1)
-        ? getCompanies({ search: submittedQuery, pageSize: 3 }).catch(() => ({ data: [] }))
-        : Promise.resolve({ data: [] });
-      certPromise = getCertificates(params);
-      productPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
-      documentPromise = Promise.resolve({ data: [], pagination: { total: 0, totalPages: 1 } });
+      // 综合模式：并行获取四类公开对象，再在前端统一按相关度混排。
+      // 证书继续使用兼容接口，其余资料来自统一 documents 接口，避免证书重复。
+      certPromise = getCertificates({
+        ...params,
+        page: 1,
+        pageSize: ALL_SEARCH_FETCH_SIZE,
+      });
+      documentPromise = getDocuments({
+        search: submittedQuery,
+        page: 1,
+        pageSize: ALL_SEARCH_FETCH_SIZE,
+      }).catch(() => ({ data: [] }));
+      productPromise = getProducts({
+        search: submittedQuery,
+        page: 1,
+        pageSize: ALL_SEARCH_FETCH_SIZE,
+      }).catch(() => ({ data: [] }));
+      companyPromise = getCompanies({
+        search: submittedQuery,
+        page: 1,
+        pageSize: ALL_SEARCH_FETCH_SIZE,
+      }).catch(() => ({ data: [] }));
     }
 
     Promise.all([certPromise, companyPromise, productPromise, documentPromise])
@@ -328,8 +415,29 @@ export default function SearchPage() {
             updates.totalPages = 1;
           }
         } else {
-          // 资料/综合模式：使用证书 API 的总数
-          if (certResult) {
+          if (searchMode === 'all') {
+            const merged = mergeUnifiedSearchResults({
+              certificates: certResult?.data,
+              documents: docResult?.data,
+              products: productResult?.data,
+              companies: companyResult?.data,
+            }, submittedQuery, {
+              activeCategory,
+              activeStatus,
+              activeIssuer,
+              activeStandard,
+            });
+            const start = (currentPage - 1) * PAGE_SIZE;
+            updates.results = merged.slice(start, start + PAGE_SIZE);
+            updates.totalResults = merged.length;
+            updates.totalPages = Math.max(1, Math.ceil(merged.length / PAGE_SIZE));
+            updates.companies = [];
+            updates.allResultCounts = {
+              documentCount: merged.filter((item) => item.resultKind === 'document').length,
+              productCount: merged.filter((item) => item.resultKind === 'product').length,
+              companyCount: merged.filter((item) => item.resultKind === 'company').length,
+            };
+          } else if (certResult) {
             let data = certResult.data || [];
             // relevance 排序：有搜索词时，匹配字段越多越靠前（前端二次排序）
             if (sortBy === 'relevance' && submittedQuery) {
@@ -344,16 +452,6 @@ export default function SearchPage() {
             updates.results = data;
             updates.totalResults = certResult.pagination?.total ?? 0;
             updates.totalPages = certResult.pagination?.totalPages ?? 1;
-          }
-
-          // 综合模式需要企业数据
-          if (searchMode === 'all' && companyResult && Array.isArray(companyResult.data)) {
-            const q = submittedQuery.toLowerCase();
-            const matched = companyResult.data.filter(
-              (c) => c.name.toLowerCase().includes(q) || (c.nameEn && c.nameEn.toLowerCase().includes(q))
-            );
-            updates.companies = matched;
-          } else {
             updates.companies = [];
           }
         }
@@ -363,6 +461,7 @@ export default function SearchPage() {
         if (updates.totalResults !== undefined) setTotalResults(updates.totalResults);
         if (updates.totalPages !== undefined) setTotalPages(updates.totalPages);
         if (updates.companies !== undefined) setMatchedCompanies(updates.companies);
+        if (updates.allResultCounts !== undefined) setAllResultCounts(updates.allResultCounts);
       })
       .catch((err) => {
         if (requestId !== fetchRequestIdRef.current) return;
@@ -808,6 +907,8 @@ export default function SearchPage() {
               ) : searchMode === 'document' ? (
                 // 资料模式：只显示资料数量
                 <Trans i18nKey="search.documentResultCount" values={{ count: totalResults }} components={{ strong: <strong /> }} />
+              ) : searchMode === 'all' ? (
+                <>{t('search.mixedResult', { total: totalResults })} <em>{t('search.mixedResultDetail', allResultCounts)}</em></>
               ) : matchedCompanies.length > 0 && totalResults === 0 ? (
                 // 综合模式：只有企业
                 <>{t('search.matchedCompanyResult', { count: matchedCompanies.length })}</>
@@ -861,7 +962,7 @@ export default function SearchPage() {
         )}
 
         {/* 公司卡片 */}
-        {!error && matchedCompanies.length > 0 && (
+        {!error && searchMode === 'company' && matchedCompanies.length > 0 && (
           <div className={styles.companyCards} data-tutorial="search-result-list">
             {matchedCompanies.map((company) => (
               <Link
@@ -901,8 +1002,52 @@ export default function SearchPage() {
           <>
             <div className={styles.resultList} data-tutorial="search-result-list">
               {results.map((item, resultIndex) => {
-                // 产品模式：渲染产品卡片
-                if (searchMode === 'product') {
+                const resultKind = searchMode === 'all'
+                  ? item.resultKind
+                  : searchMode === 'product'
+                    ? 'product'
+                    : searchMode === 'document'
+                      ? 'document'
+                      : 'document';
+
+                // 综合模式中的企业结果仍沿用企业卡片，但和资料/产品共用同一分页序列。
+                if (resultKind === 'company') {
+                  return (
+                    <Link
+                      to={`/companies/${item.id}`}
+                      key={`company-${item.id}`}
+                      className={styles.companyCard}
+                      data-tutorial={resultIndex === 0 ? 'search-result-card' : undefined}
+                      data-result-kind="company"
+                    >
+                      <div className={styles.companyIcon}>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 21h18" />
+                          <path d="M5 21V7l8-4v18" />
+                          <path d="M19 21V11l-6-4" />
+                          <path d="M9 9v.01" />
+                          <path d="M9 12v.01" />
+                          <path d="M9 15v.01" />
+                          <path d="M9 18v.01" />
+                        </svg>
+                      </div>
+                      <div className={styles.companyInfo}>
+                        <h3 className={styles.companyName}>{highlightText(localizedField(item, 'name', i18n.language))}</h3>
+                        {item.nameEn && item.nameEn !== localizedField(item, 'name', i18n.language) && (
+                          <p className={styles.companyNameEn}>{item.nameEn}</p>
+                        )}
+                      </div>
+                      <div className={styles.companyBadge}>
+                        <span className={styles.companyCertCount}>{t('search.productCount', { count: item.productCount || 0 })}</span>
+                        <span className={styles.companyDocCount}>{t('search.documentCount', { count: item.documentCount || item.certCount || 0 })}</span>
+                        <span className={styles.companyViewBtn}>{t('search.viewCompany')}</span>
+                      </div>
+                    </Link>
+                  );
+                }
+
+                // 产品模式或综合模式中的产品结果：渲染产品卡片。
+                if (resultKind === 'product') {
                   return (
                     <Link
                       to={`/products/${item.id}`}
@@ -972,7 +1117,7 @@ export default function SearchPage() {
                 }
 
                 // 文档模式：根据文档类型渲染不同卡片
-                if (searchMode === 'document') {
+                if (resultKind === 'document') {
                   const docType = item.documentType || 'other';
 
                   // 证书类型：使用原来的证书卡片样式
@@ -1113,7 +1258,7 @@ export default function SearchPage() {
                 // 综合模式/其他模式：渲染原来的证书卡片
                 return (
                   <Link
-                    to={item.productId ? `/products/${item.productId}` : `/documents/${item.id}`}
+                    to={`/documents/${item.id}`}
                     key={item.id}
                     className={styles.certCard}
                     data-tutorial={resultIndex === 0 ? 'search-result-card' : undefined}

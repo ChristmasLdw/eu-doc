@@ -9,8 +9,8 @@ import styles from './SearchModeRail.module.css';
 
 const SEARCH_MODES = [
   { value: 'all', color: '#6b7280' },
-  { value: 'product', color: '#3b82f6' },
   { value: 'document', color: '#10b981' },
+  { value: 'product', color: '#3b82f6' },
   { value: 'company', color: '#f59e0b' },
 ];
 
