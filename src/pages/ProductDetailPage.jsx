@@ -92,8 +92,7 @@ export default function ProductDetailPage() {
   const isEn = usesEnglishFallback(language);
   const ui = {
     back: isEn ? 'Back' : '返回',
-    center: isEn ? 'Product Document Center' : '产品资料中心',
-    intro: isEn ? 'This page presents product basics, applicable models, compliance documents, and manuals so users can confirm the product and open each document detail page.' : '该页面集中展示产品基础信息、适用型号、合规资料和说明文档，方便用户确认产品并进入对应资料详情页。',
+    center: isEn ? 'Public product documents' : '产品公开资料',
     productCode: isEn ? 'Product ID' : '产品编号',
     publicDocs: isEn ? 'public documents' : '份公开资料',
     productImagePending: isEn ? 'Product image not provided' : '产品图片待企业补充',
@@ -103,18 +102,18 @@ export default function ProductDetailPage() {
     sourceTitle: isEn ? 'Source notice' : '资料来源说明',
     sourceText: isEn ? 'Documents on this page are uploaded by the company, which is responsible for their authenticity. EU-DOC provides display and management tools only and is not a certification body.' : '本页资料由企业上传并对真实性负责。EU-DOC 提供展示与管理工具，不作为认证机构，不对资料真实性、有效性或产品合规性作出背书。',
     productInfo: isEn ? 'Product information' : '产品信息',
-    productInfoDesc: isEn ? 'Helps users confirm whether this is the product they are looking for.' : '用于让 C 端用户确认是不是自己要找的产品。',
+    productInfoDesc: isEn ? 'Product name, applicable models, and public specifications' : '产品名称、适用型号与公开参数',
     modelSection: isEn ? 'Applicable models' : '适用型号',
     modelDesc: isEn ? 'These documents apply to the following models.' : '该产品资料覆盖以下具体型号。',
-    resourceCenter: isEn ? 'Document center' : '资料中心',
-    resourceDesc: isEn ? 'The product page is an overview. Open a document to view its dedicated detail page.' : '产品页只做资料总览；点击具体资料后进入独立资料详情页。',
+    resourceCenter: isEn ? 'Public documents' : '公开资料',
+    resourceDesc: isEn ? 'Certificates, DoC declarations, manuals, and other public files' : '资质证书、DoC 声明、说明书及其他公开文件',
     view: isEn ? 'View' : '查看',
     notPublic: isEn ? 'Not public yet' : '暂未公开',
     enterDetail: isEn ? 'Open document details →' : '进入资料详情 →',
     quickView: isEn ? 'Quick access' : '快捷查看',
-    quickDesc: isEn ? 'For reviewers who need quick access to DoC, certificates, or manuals.' : '适合审核人员快速进入 DoC、证书或说明书。',
-    related: isEn ? 'Related products from this company' : '同公司相关产品',
-    relatedDesc: isEn ? 'Continue browsing other public product documents from this company.' : '继续查看该企业公开的其他产品资料。',
+    quickDesc: isEn ? 'DoC declarations, certificates, manuals, and other documents' : 'DoC 声明、资质证书、说明书及其他资料',
+    related: isEn ? 'Products from the same company' : '同公司产品',
+    relatedDesc: isEn ? 'Other public products from this company' : '该企业公开的其他产品',
     modelPending: isEn ? 'Model not provided' : '型号待补充',
     shareType: isEn ? 'Product share' : '产品分享',
     shareSubtitle: isEn ? 'View product basics, applicable models, public documents, and document details.' : '查看产品基础信息、适用型号、公开资料和资料详情。',
@@ -122,8 +121,7 @@ export default function ProductDetailPage() {
   };
   if (language === 'de') Object.assign(ui, {
     back: 'Zurück',
-    center: 'Produktdokumentation',
-    intro: 'Diese Seite bündelt Produktinformationen, Modelle, Konformitätsdokumente und Anleitungen. Öffnen Sie ein Dokument, um die zugehörige Detailseite aufzurufen.',
+    center: 'Öffentliche Produktdokumente',
     productCode: 'Produkt-ID',
     publicDocs: 'öffentliche Dokumente',
     productImagePending: 'Produktbild nicht hinterlegt',
@@ -133,18 +131,18 @@ export default function ProductDetailPage() {
     sourceTitle: 'Hinweis zur Quelle',
     sourceText: 'Die Dokumente auf dieser Seite werden vom Unternehmen bereitgestellt, das für ihre Richtigkeit verantwortlich ist. EU-DOC stellt Anzeige- und Verwaltungsfunktionen bereit und ist keine Zertifizierungsstelle.',
     productInfo: 'Produktinformationen',
-    productInfoDesc: 'Hilft Nutzern zu prüfen, ob dies das gesuchte Produkt ist.',
+    productInfoDesc: 'Produktname, gültige Modelle und öffentliche Angaben',
     modelSection: 'Gültige Modelle',
     modelDesc: 'Diese Dokumente gelten für die folgenden Modelle.',
-    resourceCenter: 'Dokumente',
-    resourceDesc: 'Die Produktseite bietet eine Übersicht. Öffnen Sie ein Dokument, um dessen Detailseite anzuzeigen.',
+    resourceCenter: 'Öffentliche Dokumente',
+    resourceDesc: 'Zertifikate, Konformitätserklärungen, Anleitungen und weitere öffentliche Dateien',
     view: 'Ansehen',
     notPublic: 'Noch nicht öffentlich',
     enterDetail: 'Dokumentdetails öffnen →',
     quickView: 'Schnellzugriff',
-    quickDesc: 'Schneller Zugriff auf Konformitätserklärungen, Zertifikate und Anleitungen.',
-    related: 'Weitere Produkte dieses Unternehmens',
-    relatedDesc: 'Weitere öffentliche Produktdokumente dieses Unternehmens ansehen.',
+    quickDesc: 'Konformitätserklärungen, Zertifikate, Anleitungen und weitere Dokumente',
+    related: 'Produkte desselben Unternehmens',
+    relatedDesc: 'Weitere öffentliche Produkte dieses Unternehmens',
     modelPending: 'Modell nicht angegeben',
     shareType: 'Produkt teilen',
     shareSubtitle: 'Produktinformationen, Modelle, öffentliche Dokumente und Dokumentdetails ansehen.',
@@ -290,7 +288,7 @@ export default function ProductDetailPage() {
             <span className={styles.eyebrowV3}>{ui.center}</span>
             <h1>{productName}</h1>
             {!isEn && product.name_en && <p className={styles.productEnglishName}>{product.name_en}</p>}
-            <p className={styles.productIntro}>{productDescription || ui.intro}</p>
+            {productDescription && <p className={styles.productIntro}>{productDescription}</p>}
             <div className={styles.heroMetaV3}>
               <span>{ui.productCode}: {productCode(product)}</span>
               {categoryName && <span>{categoryName}</span>}

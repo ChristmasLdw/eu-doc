@@ -2,7 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  buildDocumentDownloadFilename,
   buildDocumentDisplayTitle,
+  downloadFileExtension,
   internalTitleFromFilename,
   normalizePublicTitle,
   validatePublicTitle,
@@ -67,4 +69,29 @@ test('optional custom titles must contain 2 to 80 characters', () => {
   assert.throws(() => validatePublicTitle('A'), { code: 'INVALID_PUBLIC_TITLE' });
   assert.throws(() => validatePublicTitle('A'.repeat(81)), { code: 'INVALID_PUBLIC_TITLE' });
   assert.equal(validatePublicTitle('证'.repeat(80)), '证'.repeat(80));
+});
+
+test('download filenames use public document facts instead of original names', () => {
+  assert.equal(buildDocumentDownloadFilename({
+    id: 100,
+    product_id: 53,
+    product_model: 'F66-660',
+    document_type: 'declaration_of_conformity',
+    language: 'de',
+    original_filename: 'internal_upload_name.png',
+  }), 'F66-660_DoC_DE_EU-D-000100.png');
+
+  assert.equal(buildDocumentDownloadFilename({
+    id: 9,
+    product_model: 'F66 / 660',
+    document_type: 'manual',
+    language: 'en',
+    version: 'V1/2',
+    file_path: '/documents/private-storage-name.PDF',
+  }), 'F66-660_Manual_EN_V1-2.pdf');
+});
+
+test('download extensions fall back to MIME type and a safe binary extension', () => {
+  assert.equal(downloadFileExtension({ mime_type: 'application/pdf' }), 'pdf');
+  assert.equal(downloadFileExtension({ mime_type: 'application/octet-stream' }), 'bin');
 });

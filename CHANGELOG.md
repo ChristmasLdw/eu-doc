@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-08-09
+
+### Added
+- 资料详情页新增标准文件名下载入口，下载名称按“型号、资料类型、语言、编号或版本”生成，不公开原始文件名。
+- 资料详情页新增问题报告对话框，支持资料过期、产品或型号不符、文件无法打开、内容错误和其他问题。
+- 通用资料报告接口支持证书、DoC 声明、说明书和其他公开资料，并继续兼容旧版证书报告数据。
+
+### Changed
+- 产品页、资料页、公司页和使用指南删除面向设计者的内部解释，改用公开事实信息；中英德三语同步更新。
+- 公司名称附近改为显示“主体已核验”，并明确该标识不代表对产品合规性或上传资料真实性作出背书。
+- 资料页顶部操作统一为“打开原文件、下载文件、分享资料、收藏”，使用指南与实际按钮名称保持一致。
+
+### Security
+- 公开问题报告仅接受已审核、企业主体已核验且仍公开的资料，并限制说明、姓名和邮箱长度及邮箱格式。
+
 ## [2.9.9] - 2026-08-07
 
 ### Added

@@ -118,6 +118,7 @@ function initTables() {
     CREATE TABLE IF NOT EXISTS certificate_reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       cert_id INTEGER NOT NULL,
+      document_id INTEGER,
       report_type TEXT NOT NULL,
       description TEXT,
       reporter_email TEXT,
@@ -303,6 +304,33 @@ function initDatabase() {
 
     // 检查并创建新表
     const existingTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(t => t.name);
+
+    if (!existingTables.includes('certificate_reports')) {
+      db.exec(`
+        CREATE TABLE certificate_reports (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          cert_id INTEGER NOT NULL,
+          document_id INTEGER,
+          report_type TEXT NOT NULL,
+          description TEXT,
+          reporter_email TEXT,
+          reporter_name TEXT,
+          status TEXT DEFAULT 'pending',
+          admin_response TEXT,
+          handled_by INTEGER,
+          handled_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('  [数据库] 创建 certificate_reports 表');
+    } else {
+      const reportColumns = db.prepare('PRAGMA table_info(certificate_reports)').all().map(col => col.name);
+      if (!reportColumns.includes('document_id')) {
+        db.prepare('ALTER TABLE certificate_reports ADD COLUMN document_id INTEGER').run();
+        console.log('  [数据库] certificate_reports 表已添加 document_id 字段');
+      }
+    }
 
     // 企业成员表
     if (!existingTables.includes('company_members')) {

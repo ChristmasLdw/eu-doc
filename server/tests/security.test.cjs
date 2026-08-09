@@ -118,6 +118,7 @@ db.exec(`
   CREATE TABLE certificate_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cert_id INTEGER NOT NULL,
+    document_id INTEGER,
     report_type TEXT NOT NULL,
     description TEXT,
     reporter_email TEXT,
@@ -172,8 +173,8 @@ insertUser.run(4, 'uploader@example.com', 'unused', 'Uploader', 'user');
 db.prepare('INSERT INTO companies (id, name) VALUES (1, ?)').run('Company One');
 db.prepare("INSERT INTO company_members (id, user_id, company_id, role) VALUES (1, 1, 1, 'owner')").run();
 db.prepare("INSERT INTO company_members (id, user_id, company_id, role) VALUES (2, 4, 1, 'uploader')").run();
-db.prepare("INSERT INTO products (id, company_id, name, created_by) VALUES (1, 1, 'Product One', 1)").run();
-db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, original_filename, status, review_status, uploaded_by, file_path, mime_type) VALUES (1, 1, 1, 'manual', 'Manual', 'manual_internal.pdf', 'active', 'approved', 4, '/documents/manual.pdf', 'application/pdf')").run();
+db.prepare("INSERT INTO products (id, company_id, name, model, created_by) VALUES (1, 1, 'Product One', 'F66', 1)").run();
+db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, original_filename, language, status, review_status, uploaded_by, file_path, mime_type) VALUES (1, 1, 1, 'manual', 'Manual', 'manual_internal.pdf', 'en', 'active', 'approved', 4, '/documents/manual.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (2, 1, 1, 'certificate', 'Certificate', 'active', 'approved', 4, '/documents/certificate.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO documents (id, company_id, product_id, document_type, title, status, review_status, uploaded_by, file_path, mime_type) VALUES (3, 1, 1, 'manual', 'Pending Manual', 'active', 'pending', 4, '/documents/pending.pdf', 'application/pdf')").run();
 db.prepare("INSERT INTO certificate_metadata (id, document_id, cert_no) VALUES (1, 2, 'CERT-1')").run();
@@ -390,6 +391,21 @@ test('public document titles are normalized, validated, and never expose interna
 
   const generatedDetail = await request('/api/v2/documents/1?lang=en');
   assert.equal(generatedDetail.body.data.display_title, 'Company One · Product One · User Manual');
+});
+
+test('public document downloads use the normalized attachment filename', async () => {
+  const fixturePath = path.join(__dirname, '..', 'uploads', 'documents', 'manual.pdf');
+  fs.mkdirSync(path.dirname(fixturePath), { recursive: true });
+  fs.writeFileSync(fixturePath, '%PDF-1.4\nsecurity fixture\n');
+  try {
+    const response = await fetch(`${baseUrl}/api/v2/documents/1/file?download=1`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-disposition') || '', /F66_Manual_EN_EU-D-000001\.pdf/);
+    assert.equal(response.headers.get('content-type'), 'application/pdf');
+    await response.arrayBuffer();
+  } finally {
+    fs.rmSync(fixturePath, { force: true });
+  }
 });
 
 test('document suggestions display public titles but search with a safe matching value', async () => {
@@ -708,6 +724,47 @@ test('platform management APIs use real data and enforce admin access', async ()
   assert.equal(savedSettings.status, 200);
   const settings = await request('/api/v2/platform-settings', { token: adminToken });
   assert.equal(settings.body.data.announcement, 'Maintenance notice');
+});
+
+test('public reports accept any public document and validate reporter input', async () => {
+  const submitted = await request('/api/reports', {
+    method: 'POST',
+    body: {
+      documentId: 1,
+      reportType: 'product_mismatch',
+      description: 'The listed model does not match the manual.',
+      reporterEmail: 'reader@example.com',
+    },
+  });
+  assert.equal(submitted.status, 200);
+  const saved = db.prepare('SELECT cert_id, document_id, report_type FROM certificate_reports WHERE id = ?')
+    .get(submitted.body.data.id);
+  assert.deepEqual(saved, { cert_id: 1, document_id: 1, report_type: 'product_mismatch' });
+
+  const adminList = await request('/api/reports?documentId=1', { token: adminToken });
+  assert.equal(adminList.status, 200);
+  const listed = adminList.body.data.find((item) => String(item.id) === String(submitted.body.data.id));
+  assert.ok(listed, `submitted report ${submitted.body.data.id} was not returned: ${JSON.stringify(adminList.body)}`);
+  assert.equal(listed.document_type, 'manual');
+  assert.equal(listed.document_title, 'Company One · Product One · 使用说明书');
+
+  const privateDocument = await request('/api/reports', {
+    method: 'POST',
+    body: { documentId: 3, reportType: 'file_unavailable' },
+  });
+  assert.equal(privateDocument.status, 404);
+
+  const invalidEmail = await request('/api/reports', {
+    method: 'POST',
+    body: { documentId: 1, reportType: 'wrong_info', reporterEmail: 'not-an-email' },
+  });
+  assert.equal(invalidEmail.status, 400);
+
+  const legacyCertificateCall = await request('/api/reports', {
+    method: 'POST',
+    body: { certId: 2, reportType: 'file_unavailable' },
+  });
+  assert.equal(legacyCertificateCall.status, 200);
 });
 
 test('platform admins can inspect verification materials and process real reports', async () => {

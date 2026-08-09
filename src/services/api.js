@@ -617,14 +617,14 @@ export function getUserStats() {
   });
 }
 
-// ===== 证书错误报告 API =====
+// ===== 公开资料问题报告 API =====
 
-/** 提交证书错误报告 */
-export function submitReport(certId, reportType, description, reporterEmail, reporterName) {
+/** 提交公开资料问题报告 */
+export function submitDocumentReport(documentId, reportType, description, reporterEmail, reporterName) {
   return request('/reports', {
     method: 'POST',
     body: JSON.stringify({
-      certId,
+      documentId,
       reportType,
       description,
       reporterEmail,
@@ -633,10 +633,19 @@ export function submitReport(certId, reportType, description, reporterEmail, rep
   });
 }
 
+/** 兼容旧版证书问题报告调用 */
+export function submitReport(certId, reportType, description, reporterEmail, reporterName) {
+  return request('/reports', {
+    method: 'POST',
+    body: JSON.stringify({ certId, reportType, description, reporterEmail, reporterName }),
+  });
+}
+
 /** 获取报告列表（管理员） */
 export function getReports(params = {}) {
   const query = new URLSearchParams();
   if (params.status) query.set('status', params.status);
+  if (params.documentId) query.set('documentId', params.documentId);
   if (params.certId) query.set('certId', params.certId);
   if (params.search) query.set('search', params.search);
   if (params.reportType) query.set('reportType', params.reportType);

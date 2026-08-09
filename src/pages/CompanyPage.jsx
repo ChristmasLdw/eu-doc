@@ -23,8 +23,7 @@ export default function CompanyPage() {
   const language = getLanguageCode(i18n.resolvedLanguage);
   const isEn = usesEnglishFallback(language);
   const ui = {
-    center: isEn ? 'Company Document Center' : '企业资料中心',
-    intro: isEn ? 'This page presents company basics, public product document packages, and compliance documents so users can confirm the company and open product document pages.' : '该页面集中展示企业基础信息、公开产品资料包与合规文件，方便用户确认企业并进入对应产品资料页。',
+    center: isEn ? 'Public company documents' : '企业公开资料',
     productPackages: isEn ? 'Product document packages' : '产品资料包',
     publicDocuments: isEn ? 'Public documents' : '公开资料',
     frontendStatus: isEn ? 'Public status' : '前台状态',
@@ -35,9 +34,10 @@ export default function CompanyPage() {
     unfavoriteTitle: isEn ? 'Remove favorite' : '取消收藏',
     shareCompany: isEn ? 'Share company' : '分享公司',
     publicStatus: isEn ? 'Public status' : '公开状态',
-    verificationStatus: isEn ? 'Verification' : '认证状态',
-    verified: isEn ? 'Company verified' : '已完成企业认证',
-    verificationPending: isEn ? 'Verification pending' : '认证信息待完善',
+    verificationStatus: isEn ? 'Company identity' : '主体核验',
+    verified: isEn ? 'Company identity verified' : '主体已核验',
+    verificationPending: isEn ? 'Identity not verified' : '主体待核验',
+    verificationNotice: isEn ? 'EU-DOC has verified this company’s identity. This badge does not endorse product compliance or the authenticity of documents uploaded by the company.' : 'EU-DOC 已核验该企业的主体信息。该标识不代表平台对产品合规性或企业上传资料的真实性作出背书。',
     mainCategory: isEn ? 'Main category' : '主营方向',
     contactEmail: isEn ? 'Email' : '联系邮箱',
     address: isEn ? 'Address' : '企业地址',
@@ -60,8 +60,7 @@ export default function CompanyPage() {
     shareSubtitle: isEn ? 'View this company’s public product document packages, compliance documents, and company basics.' : '查看该企业公开的产品资料包、合规文件与企业基础信息。',
   };
   if (language === 'de') Object.assign(ui, {
-    center: 'Unternehmensdokumentation',
-    intro: 'Diese Seite bündelt Unternehmensinformationen, öffentliche Produktdokumentation und Konformitätsunterlagen. So können Nutzer das Unternehmen prüfen und direkt zu den Produktseiten wechseln.',
+    center: 'Öffentliche Unternehmensdokumente',
     productPackages: 'Produktdokumentation',
     publicDocuments: 'Öffentliche Dokumente',
     frontendStatus: 'Öffentlicher Status',
@@ -72,9 +71,10 @@ export default function CompanyPage() {
     unfavoriteTitle: 'Aus Favoriten entfernen',
     shareCompany: 'Unternehmen teilen',
     publicStatus: 'Öffentlicher Status',
-    verificationStatus: 'Verifizierung',
-    verified: 'Unternehmen verifiziert',
-    verificationPending: 'Verifizierung ausstehend',
+    verificationStatus: 'Unternehmensidentität',
+    verified: 'Unternehmensidentität geprüft',
+    verificationPending: 'Identität nicht geprüft',
+    verificationNotice: 'EU-DOC hat die Identität dieses Unternehmens geprüft. Das Kennzeichen ist keine Bestätigung der Produktkonformität oder der Echtheit der vom Unternehmen hochgeladenen Dokumente.',
     mainCategory: 'Hauptkategorie',
     contactEmail: 'E-Mail',
     address: 'Adresse',
@@ -298,9 +298,10 @@ export default function CompanyPage() {
   const companyPublicStatus = publicStatusLabel(company, 'company', i18n.language);
   const companyName = localizedField(company, 'name', i18n.language);
   const companyDescription = localizedField(company, 'description', i18n.language);
+  const isVerified = company.verificationStatus === 'verified' || company.verification_status === 'verified';
   const companyBasics = [
     { label: ui.publicStatus, value: companyPublicStatus },
-    { label: ui.verificationStatus, value: company.verificationStatus === 'verified' || company.verification_status === 'verified' ? ui.verified : ui.verificationPending },
+    { label: ui.verificationStatus, value: isVerified ? ui.verified : ui.verificationPending },
     { label: ui.mainCategory, value: categoryLabel(company.mainCategory || company.main_category, language) },
     { label: ui.contactEmail, value: company.contactEmail || company.contact_email },
     { label: ui.address, value: isEn ? (company.addressEn || company.address_en || company.address) : company.address },
@@ -326,11 +327,15 @@ export default function CompanyPage() {
             <div className={styles.companyHeroGrid}>
               <div className={styles.companyCopy}>
                 <span className={styles.companyEyebrow}>{ui.center}</span>
-                <h1 className={styles.companyName}>{companyName}</h1>
+                <div className={styles.companyNameRow}>
+                  <h1 className={styles.companyName}>{companyName}</h1>
+                  {isVerified && <span className={styles.identityBadge}>✓ {ui.verified}</span>}
+                </div>
                 {!isEn && company.nameEn && company.nameEn !== company.name && (
                   <p className={styles.companyNameEn}>{company.nameEn}</p>
                 )}
-                <p className={styles.companyIntro}>{companyDescription || ui.intro}</p>
+                {isVerified && <p className={styles.identityNotice}>{ui.verificationNotice}</p>}
+                {companyDescription && <p className={styles.companyIntro}>{companyDescription}</p>}
                 <div className={styles.companyStats}>
                   <div className={styles.statItem}>
                     <span className={styles.statNumber}>{totalProducts}</span>

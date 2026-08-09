@@ -536,6 +536,18 @@ function documentTypeLabelKey(type) {
   return DOCUMENT_TYPE_OPTIONS.find((item) => item.value === type)?.labelKey || 'admin.fileManagement.types.other';
 }
 
+function platformReportTargetLabel(report = {}) {
+  const typeLabels = {
+    certificate: '资质证书',
+    declaration_of_conformity: 'DoC 声明',
+    manual: '说明书',
+    other: '其他资料',
+  };
+  return report.documentTitle
+    || report.certNo
+    || `${typeLabels[report.documentType] || '资料'} #${report.documentId || report.certId || '-'}`;
+}
+
 function importStepClass(styles, confirmedStep = 0, step) {
   if (confirmedStep >= step) return `${styles.importQuestion} ${styles.questionDone}`;
   if (confirmedStep + 1 === step) return `${styles.importQuestion} ${styles.questionActive}`;
@@ -1906,7 +1918,7 @@ export default function AdminV2Page() {
   const viewPlatformReport = async (reportId) => {
     try {
       const report = await api.getReport(reportId);
-      window.alert(`举报对象：${report.certNo || `证书 #${report.certId}`}\n企业：${report.companyName || '-'}\n产品：${report.productName || '-'}\n举报类型：${report.reportType}\n举报说明：${report.description || '-'}\n举报人：${report.reporterName || '-'} ${report.reporterEmail || ''}\n处理状态：${report.status}\n平台回复：${report.adminResponse || '-'}`);
+      window.alert(`举报对象：${platformReportTargetLabel(report)}\n资料类型：${report.documentType || '-'}\n企业：${report.companyName || '-'}\n产品：${report.productName || '-'}\n举报类型：${report.reportType}\n举报说明：${report.description || '-'}\n举报人：${report.reporterName || '-'} ${report.reporterEmail || ''}\n处理状态：${report.status}\n平台回复：${report.adminResponse || '-'}`);
     } catch (error) {
       showAction(error.message || '举报详情读取失败');
     }
@@ -4685,31 +4697,31 @@ export default function AdminV2Page() {
     }
 
     if (activePage === 'reports') {
-      const reportTypeLabels = { wrong_info: '信息错误', outdated_info: '资料过期', duplicate_entry: '重复条目', other: '其他问题' };
+      const reportTypeLabels = { wrong_info: '内容错误', outdated_info: '资料过期', product_mismatch: '产品或型号不符', file_unavailable: '文件无法打开', duplicate_entry: '重复条目', other: '其他问题' };
       const reportStatusLabels = { pending: '待处理', processing: '处理中', resolved: '已处理', rejected: '不成立' };
       const keyword = platformReportFilters.search.trim().toLowerCase();
       const filteredReports = platformReports.filter((report) => {
         if (platformReportFilters.status !== 'all' && report.status !== platformReportFilters.status) return false;
         if (platformReportFilters.reportType !== 'all' && report.reportType !== platformReportFilters.reportType) return false;
-        return !keyword || [report.certNo, report.productName, report.companyName, report.description, report.reporterEmail].some((value) => String(value || '').toLowerCase().includes(keyword));
+        return !keyword || [report.documentTitle, report.certNo, report.productName, report.companyName, report.description, report.reporterEmail].some((value) => String(value || '').toLowerCase().includes(keyword));
       });
       const reportCount = (status) => platformReports.filter((item) => item.status === status).length;
       return (
-        <Section title="举报处理" desc="处理用户针对证书资料提交的信息错误、过期和重复举报。">
+        <Section title="举报处理" desc="处理用户针对公开资料提交的过期、归属、文件和内容问题。">
           <div className={styles.reportSummaryGrid}>{[
             ['待处理', reportCount('pending'), '需要平台确认'], ['处理中', reportCount('processing'), '正在核查'], ['已处理', reportCount('resolved'), '已完成关闭'], ['不成立', reportCount('rejected'), '已驳回举报'],
           ].map(([name, count, desc]) => <div key={name} className={styles.reportSummaryCard}><strong>{count}</strong><span>{name}</span><p>{desc}</p></div>)}</div>
           <div className={styles.reportToolbar}>
-            <input value={platformReportFilters.search} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, search: event.target.value }))} placeholder="搜索证书、公司、产品或举报说明" />
+            <input value={platformReportFilters.search} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, search: event.target.value }))} placeholder="搜索资料、公司、产品或举报说明" />
             <select value={platformReportFilters.status} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, status: event.target.value }))}><option value="pending">待处理</option><option value="processing">处理中</option><option value="resolved">已处理</option><option value="rejected">不成立</option><option value="all">全部状态</option></select>
-            <select value={platformReportFilters.reportType} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, reportType: event.target.value }))}><option value="all">全部类型</option><option value="wrong_info">信息错误</option><option value="outdated_info">资料过期</option><option value="duplicate_entry">重复条目</option><option value="other">其他问题</option></select>
+            <select value={platformReportFilters.reportType} onChange={(event) => setPlatformReportFilters((value) => ({ ...value, reportType: event.target.value }))}><option value="all">全部类型</option><option value="outdated_info">资料过期</option><option value="product_mismatch">产品或型号不符</option><option value="file_unavailable">文件无法打开</option><option value="wrong_info">内容错误</option><option value="duplicate_entry">重复条目</option><option value="other">其他问题</option></select>
             <button className={styles.secondaryBtn} onClick={refreshPlatformReports}>刷新</button>
           </div>
           <div className={styles.reportList}>
             {filteredReports.length === 0 && <div className={styles.emptyState}>当前没有符合条件的举报。</div>}
             {filteredReports.map((report) => <article key={report.id} className={styles.reportCard}>
               <div className={report.reportType === 'wrong_info' ? styles.reportAccentHigh : styles.reportAccentNormal} />
-              <div className={styles.reportMain}><div className={styles.reportTitleRow}><div><span className={report.reportType === 'wrong_info' ? styles.reportRiskHigh : styles.reportRiskNormal}>{reportTypeLabels[report.reportType] || report.reportType}</span><h3>{report.certNo || `证书 #${report.certId}`}</h3></div><em className={report.status === 'pending' ? styles.reviewStatusPending : styles.reviewStatusMore}>{reportStatusLabels[report.status] || report.status}</em></div><p>{report.description || '未填写详细说明'}</p><div className={styles.reportObject}>{report.companyName || '未知企业'} · {report.productName || '未知产品'} · {formatActivityTime(report.createdAt)}</div></div>
+              <div className={styles.reportMain}><div className={styles.reportTitleRow}><div><span className={report.reportType === 'wrong_info' ? styles.reportRiskHigh : styles.reportRiskNormal}>{reportTypeLabels[report.reportType] || report.reportType}</span><h3>{platformReportTargetLabel(report)}</h3></div><em className={report.status === 'pending' ? styles.reviewStatusPending : styles.reviewStatusMore}>{reportStatusLabels[report.status] || report.status}</em></div><p>{report.description || '未填写详细说明'}</p><div className={styles.reportObject}>{report.companyName || '未知企业'} · {report.productName || '未知产品'} · {formatActivityTime(report.createdAt)}</div></div>
               <div className={styles.reportActions}><button className={styles.primaryBtn} onClick={() => viewPlatformReport(report.id)}>查看详情</button>{report.status === 'pending' && <button className={styles.secondaryBtn} onClick={() => updatePlatformReport(report, 'processing')}>开始处理</button>}{!['resolved', 'rejected'].includes(report.status) && <button className={styles.secondaryBtn} onClick={() => updatePlatformReport(report, 'resolved')}>处理完成</button>}{report.status === 'pending' && <button className={styles.reviewRejectBtn} onClick={() => updatePlatformReport(report, 'rejected')}>举报不成立</button>}</div>
             </article>)}
           </div>

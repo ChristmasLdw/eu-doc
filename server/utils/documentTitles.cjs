@@ -23,6 +23,30 @@ const DOCUMENT_TYPE_LABELS = {
 
 const PUBLIC_TITLE_FILE_EXTENSION = /\.(?:avif|bmp|docx?|gif|jpe?g|odt|pdf|png|pptx?|rtf|svg|tiff?|webp|xlsx?)$/i;
 
+const DOWNLOAD_TYPE_LABELS = {
+  certificate: 'Certificate',
+  declaration_of_conformity: 'DoC',
+  manual: 'Manual',
+  other: 'Document',
+};
+
+const MIME_EXTENSIONS = {
+  'application/msword': 'doc',
+  'application/pdf': 'pdf',
+  'application/rtf': 'rtf',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'image/gif': 'gif',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/svg+xml': 'svg',
+  'image/webp': 'webp',
+  'text/plain': 'txt',
+};
+
 function normalizeLanguage(value = 'zh') {
   const language = String(value || 'zh').toLowerCase();
   if (language.startsWith('de')) return 'de';
@@ -62,6 +86,48 @@ function internalTitleFromFilename(filename, fallback = 'Document') {
   return withoutExtension.replace(/\s+/g, ' ').trim() || fallback;
 }
 
+function safeDownloadSegment(value, fallback) {
+  const withoutControls = Array.from(
+    String(value || '').normalize('NFKC'),
+    (character) => character.codePointAt(0) < 32 ? '-' : character
+  ).join('');
+  const normalized = withoutControls
+    .replace(/[<>:"/\\|?*]+/g, '-')
+    .replace(/[\s,，、;；_]+/g, '-')
+    .replace(/\.{2,}/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[.\s-]+|[.\s-]+$/g, '')
+    .slice(0, 60);
+  return normalized || fallback;
+}
+
+function downloadFileExtension(document = {}) {
+  const candidates = [document.original_filename, document.file_path];
+  for (const candidate of candidates) {
+    const extension = path.extname(String(candidate || '').split(/[?#]/)[0]).slice(1).toLowerCase();
+    if (/^[a-z0-9]{1,10}$/.test(extension)) return extension;
+  }
+  return MIME_EXTENSIONS[String(document.mime_type || '').toLowerCase()] || 'bin';
+}
+
+function buildDocumentDownloadFilename(document = {}) {
+  const normalizedType = document.document_type === 'declaration'
+    ? 'declaration_of_conformity'
+    : document.document_type;
+  const model = safeDownloadSegment(
+    document.product_model || document.model,
+    `EU-P-${String(document.product_id || 0).padStart(6, '0')}`
+  );
+  const type = DOWNLOAD_TYPE_LABELS[normalizedType] || DOWNLOAD_TYPE_LABELS.other;
+  const language = safeDownloadSegment(String(document.language || 'UND').toUpperCase(), 'UND');
+  const metadata = document.certificate_metadata || {};
+  const identifier = safeDownloadSegment(
+    metadata.cert_no || document.cert_no || document.version || document.document_no || document.file_no,
+    `EU-D-${String(document.id || 0).padStart(6, '0')}`
+  );
+  return `${model}_${type}_${language}_${identifier}.${downloadFileExtension(document)}`;
+}
+
 function localizedName(document, key, language) {
   const original = document?.[key] || '';
   const english = document?.[`${key}_en`] || '';
@@ -99,7 +165,9 @@ function withDocumentDisplayTitle(document, language = 'zh') {
 }
 
 module.exports = {
+  buildDocumentDownloadFilename,
   buildDocumentDisplayTitle,
+  downloadFileExtension,
   internalTitleFromFilename,
   normalizeLanguage,
   normalizePublicTitle,

@@ -1086,6 +1086,43 @@
   min-width: 0 !important;
 }
 
+.companyNameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.companyNameRow .companyName {
+  margin: 0 !important;
+}
+
+.identityBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.identityNotice {
+  max-width: 720px;
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border-left: 3px solid rgba(34, 197, 94, 0.48);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(34, 197, 94, 0.055);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
 .companyIntro {
   max-width: 720px;
   margin: 16px 0 0;
@@ -1364,6 +1401,10 @@
 @media (max-width: 640px) {
   .companyCopy .companyStats {
     grid-template-columns: 1fr !important;
+  }
+
+  .companyNameRow {
+    align-items: flex-start;
   }
 }
 

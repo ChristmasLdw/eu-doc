@@ -1,58 +1,93 @@
 /**
- * EU-DOC 后端服务 - 证书错误报告路由
- * 版本: 2.0.0
+ * EU-DOC 后端服务 - 公开资料问题报告路由
  *
  * 功能:
- * - 用户报告证书信息错误
- * - 管理员查看和处理错误报告
- * - 支持多种报告类型：信息错误、过期信息、重复条目
+ * - 用户报告公开资料问题
+ * - 管理员查看和处理问题报告
+ * - 兼容旧版 certId 与 certificate_reports 数据
  */
 
 const { Router } = require('express');
 const { db } = require('../db.cjs');
 const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
+const { buildDocumentDisplayTitle } = require('../utils/documentTitles.cjs');
 
 const router = Router();
+const REPORT_TYPES = new Set([
+  'wrong_info',
+  'outdated_info',
+  'duplicate_entry',
+  'product_mismatch',
+  'file_unavailable',
+  'other',
+]);
+
+function optionalText(value) {
+  return value === undefined || value === null ? '' : String(value).trim();
+}
+
+function reportDocumentTitle(report) {
+  if (!report.document_id) return null;
+  return buildDocumentDisplayTitle(report, 'zh');
+}
 
 /**
  * POST /api/reports
- * 提交证书错误报告（公开接口）
+ * 提交公开资料问题报告（公开接口）
  */
 router.post('/', (req, res) => {
   try {
-    const { certId, reportType, description, reporterEmail, reporterName } = req.body;
+    const { documentId, certId, reportType } = req.body || {};
+    const targetId = Number(documentId ?? certId);
+    const description = optionalText(req.body?.description);
+    const reporterEmail = optionalText(req.body?.reporterEmail).toLowerCase();
+    const reporterName = optionalText(req.body?.reporterName);
 
-    if (!certId || !reportType) {
+    if (!Number.isInteger(targetId) || targetId <= 0 || !reportType) {
       return res.status(400).json({
         success: false,
-        message: '缺少必需参数：certId 和 reportType',
+        message: '缺少必需参数：documentId 和 reportType',
       });
     }
 
-    const validTypes = ['wrong_info', 'outdated_info', 'duplicate_entry', 'other'];
-    if (!validTypes.includes(reportType)) {
+    if (!REPORT_TYPES.has(reportType)) {
       return res.status(400).json({
         success: false,
         message: '无效的报告类型',
       });
     }
 
-    // 检查证书是否存在（v2.0: 从documents表查询）
-    const cert = db.prepare("SELECT id FROM documents WHERE id = ? AND document_type = 'certificate'").get(certId);
-    if (!cert) {
+    if (description.length > 2000 || reporterName.length > 80 || reporterEmail.length > 254) {
+      return res.status(400).json({ success: false, message: '提交内容超过长度限制' });
+    }
+    if (reporterEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reporterEmail)) {
+      return res.status(400).json({ success: false, message: '邮箱格式不正确' });
+    }
+
+    const document = db.prepare(`
+      SELECT d.id
+      FROM documents d
+      JOIN companies c ON c.id = d.company_id
+      WHERE d.id = ?
+        AND d.status = 'active'
+        AND d.review_status = 'approved'
+        AND c.verification_status = 'verified'
+        AND COALESCE(c.public_visible, 1) = 1
+    `).get(targetId);
+    if (!document) {
       return res.status(404).json({
         success: false,
-        message: '证书不存在',
+        message: '资料不存在或暂未公开',
       });
     }
 
     const stmt = db.prepare(`
       INSERT INTO certificate_reports (
-        cert_id, report_type, description, reporter_email, reporter_name, status
-      ) VALUES (?, ?, ?, ?, ?, 'pending')
+        cert_id, document_id, report_type, description, reporter_email, reporter_name, status
+      ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
     `);
 
-    const result = stmt.run(certId, reportType, description || null, reporterEmail || null, reporterName || null);
+    const result = stmt.run(targetId, targetId, reportType, description || null, reporterEmail || null, reporterName || null);
 
     res.json({
       success: true,
@@ -74,7 +109,9 @@ router.post('/', (req, res) => {
  */
 router.get('/', authMiddleware, requireAdmin, (req, res) => {
   try {
-    const { status, certId, search = '', reportType = '', page = 1, pageSize = 20 } = req.query;
+    const { status, certId, documentId, search = '', reportType = '' } = req.query;
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number.parseInt(req.query.pageSize, 10) || 20));
     const offset = (page - 1) * pageSize;
 
     const conditions = [];
@@ -85,9 +122,14 @@ router.get('/', authMiddleware, requireAdmin, (req, res) => {
       params.push(status);
     }
 
-    if (certId) {
-      conditions.push('r.cert_id = ?');
-      params.push(certId);
+    const requestedTargetId = documentId || certId;
+    if (requestedTargetId) {
+      const targetId = Number(requestedTargetId);
+      if (!Number.isInteger(targetId) || targetId <= 0) {
+        return res.status(400).json({ success: false, message: '资料 ID 无效' });
+      }
+      conditions.push('COALESCE(r.document_id, r.cert_id) = ?');
+      params.push(targetId);
     }
 
     if (reportType) {
@@ -97,8 +139,8 @@ router.get('/', authMiddleware, requireAdmin, (req, res) => {
 
     if (search.trim()) {
       const keyword = `%${search.trim()}%`;
-      conditions.push('(cm.cert_no LIKE ? OR p.name LIKE ? OR comp.name LIKE ? OR r.description LIKE ? OR r.reporter_email LIKE ?)');
-      params.push(keyword, keyword, keyword, keyword, keyword);
+      conditions.push('(cm.cert_no LIKE ? OR d.public_title LIKE ? OR p.name LIKE ? OR p.model LIKE ? OR comp.name LIKE ? OR r.description LIKE ? OR r.reporter_email LIKE ?)');
+      params.push(keyword, keyword, keyword, keyword, keyword, keyword, keyword);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -106,37 +148,43 @@ router.get('/', authMiddleware, requireAdmin, (req, res) => {
     const { total } = db.prepare(`
       SELECT COUNT(*) as total
       FROM certificate_reports r
-      LEFT JOIN documents d ON r.cert_id = d.id
+      LEFT JOIN documents d ON COALESCE(r.document_id, r.cert_id) = d.id
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
       ${whereClause}
     `).get(...params);
 
-    // v2.0: 从documents+certificate_metadata+products查询
     const reports = db.prepare(`
       SELECT
         r.*,
+        COALESCE(r.document_id, r.cert_id) AS document_id,
+        d.public_title,
+        d.document_type,
         cm.cert_no,
         p.name as product_name,
+        p.model as product_model,
         d.company_id,
         comp.name as company_name
       FROM certificate_reports r
-      LEFT JOIN documents d ON r.cert_id = d.id
+      LEFT JOIN documents d ON COALESCE(r.document_id, r.cert_id) = d.id
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
       ${whereClause}
       ORDER BY r.created_at DESC
       LIMIT ? OFFSET ?
-    `).all(...params, pageSize, offset);
+    `).all(...params, pageSize, offset).map((report) => ({
+      ...report,
+      document_title: reportDocumentTitle(report),
+    }));
 
     res.json({
       success: true,
       data: reports,
       pagination: {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
+        page,
+        pageSize,
         total,
         totalPages: Math.ceil(total / pageSize),
       },
@@ -161,16 +209,19 @@ router.get('/:id', authMiddleware, requireAdmin, (req, res) => {
     const report = db.prepare(`
       SELECT
         r.*,
+        COALESCE(r.document_id, r.cert_id) AS document_id,
+        d.public_title,
+        d.document_type,
         cm.cert_no,
         p.name as product_name,
-        p.model,
+        p.model as product_model,
         cm.issuer,
         cm.issue_date,
         cm.expiry_date,
         d.company_id,
         comp.name as company_name
       FROM certificate_reports r
-      LEFT JOIN documents d ON r.cert_id = d.id
+      LEFT JOIN documents d ON COALESCE(r.document_id, r.cert_id) = d.id
       LEFT JOIN certificate_metadata cm ON d.id = cm.document_id
       LEFT JOIN products p ON d.product_id = p.id
       LEFT JOIN companies comp ON d.company_id = comp.id
@@ -186,7 +237,7 @@ router.get('/:id', authMiddleware, requireAdmin, (req, res) => {
 
     res.json({
       success: true,
-      data: report,
+      data: { ...report, document_title: reportDocumentTitle(report) },
     });
   } catch (error) {
     console.error('获取报告详情失败:', error);

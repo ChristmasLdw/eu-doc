@@ -1,9 +1,9 @@
 /**
- * EU-DOC 管理后台 - 错误报告管理页面
+ * EU-DOC 管理后台 - 公开资料问题报告管理页面
  * 版本: 1.0.0
  *
  * 功能:
- * - 查看所有用户提交的证书错误报告
+ * - 查看所有用户提交的公开资料问题报告
  * - 按状态筛选报告
  * - 处理报告（标记为处理中/已解决/已拒绝）
  * - 添加管理员回复
@@ -85,8 +85,10 @@ export default function ReportsPage() {
   // 获取报告类型标签
   const getReportTypeLabel = (type) => {
     const labels = {
-      wrong_info: '信息有误',
-      outdated_info: '信息过时',
+      wrong_info: '内容错误',
+      outdated_info: '资料过期',
+      product_mismatch: '产品或型号不符',
+      file_unavailable: '文件无法打开',
       duplicate_entry: '重复录入',
       other: '其他问题',
     };
@@ -111,8 +113,8 @@ export default function ReportsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.titleSection}>
-          <h1 className={styles.title}>错误报告管理</h1>
-          <p className={styles.subtitle}>查看和处理用户提交的证书信息问题</p>
+          <h1 className={styles.title}>资料问题报告</h1>
+          <p className={styles.subtitle}>查看和处理用户提交的公开资料问题</p>
         </div>
 
         <div className={styles.filters}>
@@ -168,7 +170,7 @@ export default function ReportsPage() {
           <thead>
             <tr>
               <th>ID</th>
-              <th>证书信息</th>
+              <th>资料信息</th>
               <th>问题类型</th>
               <th>报告人</th>
               <th>状态</th>
@@ -189,7 +191,7 @@ export default function ReportsPage() {
                   <td>{report.id}</td>
                   <td>
                     <div className={styles.certInfo}>
-                      <div className={styles.certNo}>{report.certNo}</div>
+                      <div className={styles.certNo}>{report.documentTitle || report.certNo || `资料 #${report.documentId || report.certId}`}</div>
                       <div className={styles.certName}>{report.productName}</div>
                       <div className={styles.companyName}>{report.companyName}</div>
                     </div>
@@ -235,11 +237,11 @@ export default function ReportsPage() {
 
             <div className={styles.modalBody}>
               <div className={styles.detailSection}>
-                <h4>证书信息</h4>
+                <h4>资料信息</h4>
                 <div className={styles.detailGrid}>
                   <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>证书编号</span>
-                    <span className={styles.detailValue}>{selectedReport.certNo}</span>
+                    <span className={styles.detailLabel}>公开资料名称</span>
+                    <span className={styles.detailValue}>{selectedReport.documentTitle || selectedReport.certNo || `资料 #${selectedReport.documentId || selectedReport.certId}`}</span>
                   </div>
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>产品名称</span>

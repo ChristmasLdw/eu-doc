@@ -18,6 +18,7 @@ const { authMiddleware, requireAdmin } = require('../middleware/auth.cjs');
 const { hasCompanyRole } = require('../middleware/companyRole.cjs');
 const { assertUnverifiedCompanyUploadAllowed, removeUploadedFiles, UNVERIFIED_COMPANY_MAX_FILE_SIZE, documentFileFilter } = require('../utils/uploadLimits.cjs');
 const {
+  buildDocumentDownloadFilename,
   buildDocumentDisplayTitle,
   internalTitleFromFilename,
   requestLanguage,
@@ -416,9 +417,12 @@ router.get('/:id', optionalAuth, (req, res) => {
 
 router.get('/:id/file', optionalAuth, (req, res) => {
   const document = db.prepare(`
-    SELECT d.*, c.verification_status, c.public_visible
+    SELECT d.*, c.verification_status, c.public_visible,
+      p.model AS product_model, cm.cert_no
     FROM documents d
     JOIN companies c ON c.id = d.company_id
+    LEFT JOIN products p ON p.id = d.product_id
+    LEFT JOIN certificate_metadata cm ON cm.document_id = d.id
     WHERE d.id = ?
   `).get(req.params.id);
   if (!document) return res.status(404).json({ success: false, message: '文件不存在' });
@@ -431,6 +435,9 @@ router.get('/:id/file', optionalAuth, (req, res) => {
   const fullPath = resolveStoredFilePath(document.file_path);
   if (!fullPath || !fs.existsSync(fullPath)) {
     return res.status(404).json({ success: false, message: '文件不存在' });
+  }
+  if (req.query.download === '1') {
+    return res.download(fullPath, buildDocumentDownloadFilename(document));
   }
   res.type(document.mime_type || path.extname(fullPath));
   return res.sendFile(fullPath);

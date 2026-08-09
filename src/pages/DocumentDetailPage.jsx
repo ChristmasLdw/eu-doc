@@ -76,11 +76,32 @@ export default function DocumentDetailPage() {
     loading: isEn ? 'Loading document details...' : '正在加载资料详情...',
     notFound: isEn ? 'Document not found' : '资料不存在',
     loadFailed: isEn ? 'Failed to load document' : '加载资料失败',
-    directPage: isEn ? 'This is a direct page for one public product document, suitable for review, sharing, verification, and download. Return to the product page for the full document set.' : '这是单份产品资料的直达页面，适合审核、分享、验证和下载。产品完整资料请返回产品详情页查看。',
     openFile: isEn ? 'Open original file' : '打开原文件',
+    downloadFile: isEn ? 'Download file' : '下载文件',
     favorited: isEn ? '★ Favorited' : '★ 已收藏',
     favorite: isEn ? '☆ Favorite' : '☆ 收藏',
     share: isEn ? 'Share document' : '分享资料',
+    reportIssue: isEn ? 'Report a document issue' : '报告资料问题',
+    sourceNotice: isEn ? 'This document was uploaded by the company, which is responsible for its authenticity. EU-DOC does not endorse its authenticity, validity, or product compliance.' : '资料由企业上传并对内容真实性负责。EU-DOC 不对资料真实性、有效性或产品合规性作出背书。',
+    reportTitle: isEn ? 'Report a document issue' : '报告资料问题',
+    reportIntro: isEn ? 'Choose the closest issue type. Contact details are optional and are used only if follow-up is needed.' : '请选择最接近的问题类型。联系方式选填，仅在需要进一步核实时使用。',
+    issueType: isEn ? 'Issue type' : '问题类型',
+    chooseIssue: isEn ? 'Choose an issue type' : '请选择问题类型',
+    issueOutdated: isEn ? 'Document is outdated' : '资料过期',
+    issueMismatch: isEn ? 'Product or model mismatch' : '产品或型号不符',
+    issueUnavailable: isEn ? 'File cannot be opened' : '文件无法打开',
+    issueContent: isEn ? 'Content is incorrect' : '内容错误',
+    issueOther: isEn ? 'Other issue' : '其他问题',
+    description: isEn ? 'Description (optional)' : '问题描述（选填）',
+    descriptionPlaceholder: isEn ? 'Add details that may help us verify the issue' : '补充有助于核验问题的具体情况',
+    reporterName: isEn ? 'Name (optional)' : '姓名（选填）',
+    reporterEmail: isEn ? 'Email (optional)' : '邮箱（选填）',
+    cancel: isEn ? 'Cancel' : '取消',
+    submitReport: isEn ? 'Submit report' : '提交报告',
+    submittingReport: isEn ? 'Submitting...' : '正在提交...',
+    reportSuccess: isEn ? 'Thank you. Your report has been submitted for review.' : '感谢反馈，问题报告已提交核验。',
+    reportFailed: isEn ? 'Could not submit the report. Please try again.' : '报告提交失败，请稍后重试。',
+    close: isEn ? 'Close' : '关闭',
     switchTitle: isEn ? ' switch' : '切换',
     otherCertificates: isEn ? 'Other certificates for the same product' : '同一产品的其他证书类型',
     otherLanguages: isEn ? 'Other language versions of the same document type' : '同一资料的其他语言版本',
@@ -104,11 +125,32 @@ export default function DocumentDetailPage() {
     loading: 'Dokumentdetails werden geladen...',
     notFound: 'Dokument nicht gefunden',
     loadFailed: 'Dokument konnte nicht geladen werden',
-    directPage: 'Diese Seite führt direkt zu einem öffentlichen Produktdokument und eignet sich zum Prüfen, Teilen, Verifizieren und Herunterladen. Die vollständige Dokumentation finden Sie auf der Produktseite.',
     openFile: 'Originaldatei öffnen',
+    downloadFile: 'Datei herunterladen',
     favorited: '★ Favorisiert',
     favorite: '☆ Favorisieren',
     share: 'Dokument teilen',
+    reportIssue: 'Dokumentproblem melden',
+    sourceNotice: 'Dieses Dokument wurde vom Unternehmen hochgeladen, das für seine Echtheit verantwortlich ist. EU-DOC übernimmt keine Gewähr für Echtheit, Gültigkeit oder Produktkonformität.',
+    reportTitle: 'Dokumentproblem melden',
+    reportIntro: 'Wählen Sie die passendste Problemart. Kontaktdaten sind optional und werden nur für Rückfragen verwendet.',
+    issueType: 'Problemart',
+    chooseIssue: 'Problemart auswählen',
+    issueOutdated: 'Dokument ist veraltet',
+    issueMismatch: 'Produkt oder Modell stimmt nicht überein',
+    issueUnavailable: 'Datei lässt sich nicht öffnen',
+    issueContent: 'Inhalt ist fehlerhaft',
+    issueOther: 'Sonstiges Problem',
+    description: 'Beschreibung (optional)',
+    descriptionPlaceholder: 'Ergänzen Sie Angaben, die bei der Prüfung helfen',
+    reporterName: 'Name (optional)',
+    reporterEmail: 'E-Mail (optional)',
+    cancel: 'Abbrechen',
+    submitReport: 'Meldung senden',
+    submittingReport: 'Wird gesendet...',
+    reportSuccess: 'Vielen Dank. Ihre Meldung wurde zur Prüfung übermittelt.',
+    reportFailed: 'Die Meldung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+    close: 'Schließen',
     switchTitle: ' wechseln',
     otherCertificates: 'Weitere Zertifikate für dasselbe Produkt',
     otherLanguages: 'Andere Sprachversionen desselben Dokumenttyps',
@@ -147,8 +189,22 @@ export default function DocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportForm, setReportForm] = useState({ reportType: '', description: '', reporterName: '', reporterEmail: '' });
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [reportError, setReportError] = useState('');
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteId, setFavoriteId] = useState(null);
+
+  useEffect(() => {
+    if (!reportOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && !reportSubmitting) setReportOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [reportOpen, reportSubmitting]);
 
   useEffect(() => {
     let cancelled = false;
@@ -180,6 +236,7 @@ export default function DocumentDetailPage() {
   }, [id, i18n.language, i18n.resolvedLanguage, ui.notFound, ui.loadFailed]);
 
   const fileUrl = useMemo(() => getFileUrl(documentData), [documentData]);
+  const downloadUrl = fileUrl ? `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}download=1` : '';
   const thumbUrl = useMemo(() => getThumbUrl(documentData), [documentData]);
   const certMeta = documentData?.certificate_metadata || documentData?.certificateMetadata || {};
   const typeLabel = documentTypeLabel(documentData || {}, i18n.language);
@@ -247,6 +304,37 @@ export default function DocumentDetailPage() {
     setShareOpen(true);
   };
 
+  const openReport = () => {
+    setReportForm({ reportType: '', description: '', reporterName: '', reporterEmail: '' });
+    setReportSubmitted(false);
+    setReportError('');
+    setReportOpen(true);
+  };
+
+  const closeReport = () => {
+    if (!reportSubmitting) setReportOpen(false);
+  };
+
+  const handleReportSubmit = async (event) => {
+    event.preventDefault();
+    setReportSubmitting(true);
+    setReportError('');
+    try {
+      await api.submitDocumentReport(
+        Number(id),
+        reportForm.reportType,
+        reportForm.description,
+        reportForm.reporterEmail,
+        reportForm.reporterName
+      );
+      setReportSubmitted(true);
+    } catch (err) {
+      setReportError(err.message || ui.reportFailed);
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <div className={styles.statePage}><div className={styles.spinner} /><p>{ui.loading}</p></div>;
   }
@@ -262,6 +350,12 @@ export default function DocumentDetailPage() {
 
   const productName = localizedField({ name: documentData.product_name || documentData.productName, name_en: documentData.product_name_en || documentData.productNameEn }, 'name', i18n.language);
   const companyName = localizedField({ name: documentData.company_name || documentData.companyName, name_en: documentData.company_name_en || documentData.companyNameEn }, 'name', i18n.language);
+  const heroFacts = [...new Set([
+    productName,
+    documentData.product_model || documentData.productModel,
+    documentData.language ? String(documentData.language).toUpperCase() : null,
+    documentPublicStatus,
+  ].filter(Boolean))];
   const facts = [
     { label: language === 'de' ? ui.documentType : isEn ? 'Document type' : '资料类型', value: typeLabel },
     { label: language === 'de' ? ui.product : isEn ? 'Product' : '所属产品', value: productName },
@@ -291,12 +385,13 @@ export default function DocumentDetailPage() {
           <div>
             <span className={styles.typeBadge}>{typeLabel}</span>
             <h1>{title}</h1>
-            <p>{ui.directPage}</p>
+            {heroFacts.length > 0 && <p>{heroFacts.join(' · ')}</p>}
           </div>
           <div className={styles.heroActions}>
             {fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer">{ui.openFile}</a>}
-            <button onClick={handleFavorite}>{isFavorited ? ui.favorited : ui.favorite}</button>
+            {downloadUrl && <a href={downloadUrl} download>{ui.downloadFile}</a>}
             <button onClick={copyLink}>{ui.share}</button>
+            <button onClick={handleFavorite}>{isFavorited ? ui.favorited : ui.favorite}</button>
           </div>
         </section>
 
@@ -327,6 +422,10 @@ export default function DocumentDetailPage() {
               <h2>{ui.info}</h2>
               <div className={styles.factList}>
                 {facts.map((item) => <div key={item.label}><span>{item.label}</span><strong>{item.value || ui.noRecord}</strong></div>)}
+              </div>
+              <div className={styles.reportBlock}>
+                <p>{ui.sourceNotice}</p>
+                <button type="button" onClick={openReport}>{ui.reportIssue}</button>
               </div>
             </div>
 
@@ -377,6 +476,81 @@ export default function DocumentDetailPage() {
             language: documentData.language,
           }}
         />
+        {reportOpen && (
+          <div className={styles.reportOverlay} onMouseDown={(event) => event.target === event.currentTarget && closeReport()}>
+            <section className={styles.reportDialog} role="dialog" aria-modal="true" aria-labelledby="document-report-title">
+              <div className={styles.reportHeader}>
+                <div>
+                  <span>{typeLabel}</span>
+                  <h2 id="document-report-title">{ui.reportTitle}</h2>
+                </div>
+                <button type="button" onClick={closeReport} aria-label={ui.close} disabled={reportSubmitting}>×</button>
+              </div>
+
+              {reportSubmitted ? (
+                <div className={styles.reportSuccess}>
+                  <strong>✓</strong>
+                  <p>{ui.reportSuccess}</p>
+                  <button type="button" onClick={closeReport}>{ui.close}</button>
+                </div>
+              ) : (
+                <form className={styles.reportForm} onSubmit={handleReportSubmit}>
+                  <p className={styles.reportIntro}>{ui.reportIntro}</p>
+                  <label>
+                    <span>{ui.issueType}</span>
+                    <select
+                      required
+                      autoFocus
+                      value={reportForm.reportType}
+                      onChange={(event) => setReportForm((current) => ({ ...current, reportType: event.target.value }))}
+                    >
+                      <option value="">{ui.chooseIssue}</option>
+                      <option value="outdated_info">{ui.issueOutdated}</option>
+                      <option value="product_mismatch">{ui.issueMismatch}</option>
+                      <option value="file_unavailable">{ui.issueUnavailable}</option>
+                      <option value="wrong_info">{ui.issueContent}</option>
+                      <option value="other">{ui.issueOther}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>{ui.description}</span>
+                    <textarea
+                      rows="4"
+                      maxLength="2000"
+                      placeholder={ui.descriptionPlaceholder}
+                      value={reportForm.description}
+                      onChange={(event) => setReportForm((current) => ({ ...current, description: event.target.value }))}
+                    />
+                  </label>
+                  <div className={styles.reportContactGrid}>
+                    <label>
+                      <span>{ui.reporterName}</span>
+                      <input
+                        maxLength="80"
+                        value={reportForm.reporterName}
+                        onChange={(event) => setReportForm((current) => ({ ...current, reporterName: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>{ui.reporterEmail}</span>
+                      <input
+                        type="email"
+                        maxLength="254"
+                        value={reportForm.reporterEmail}
+                        onChange={(event) => setReportForm((current) => ({ ...current, reporterEmail: event.target.value }))}
+                      />
+                    </label>
+                  </div>
+                  {reportError && <p className={styles.reportError} role="alert">{reportError}</p>}
+                  <div className={styles.reportActions}>
+                    <button type="button" onClick={closeReport} disabled={reportSubmitting}>{ui.cancel}</button>
+                    <button type="submit" disabled={reportSubmitting}>{reportSubmitting ? ui.submittingReport : ui.submitReport}</button>
+                  </div>
+                </form>
+              )}
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );
